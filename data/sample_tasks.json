@@ -1,0 +1,60 @@
+{
+  "sample_tasks": [
+    {
+      "id": 1,
+      "title": "完成毕业设计",
+      "description": "包括选题、调研、设计、实现和论文撰写",
+      "priority": 4,
+      "status": "进行中",
+      "progress": 35,
+      "deadline": "2026-06-15T00:00:00",
+      "tags": ["毕业设计", "论文"],
+      "subtasks": [
+        {"title": "选题与开题报告", "estimated_hours": 8, "completed": true},
+        {"title": "文献调研", "estimated_hours": 12, "completed": true},
+        {"title": "系统设计与实现", "estimated_hours": 40, "completed": false},
+        {"title": "论文撰写", "estimated_hours": 30, "completed": false}
+      ]
+    },
+    {
+      "id": 2,
+      "title": "准备PPT汇报",
+      "description": "下周组会需要汇报项目进展",
+      "priority": 3,
+      "status": "待办",
+      "progress": 0,
+      "deadline": "2026-06-05T00:00:00",
+      "tags": ["PPT", "汇报"]
+    },
+    {
+      "id": 3,
+      "title": "学习React框架",
+      "description": "完成React官方教程和实战项目",
+      "priority": 2,
+      "status": "进行中",
+      "progress": 60,
+      "deadline": "2026-06-20T00:00:00",
+      "tags": ["学习", "前端"]
+    },
+    {
+      "id": 4,
+      "title": "团队项目代码Review",
+      "description": "审核组员提交的代码，确保质量",
+      "priority": 3,
+      "status": "待办",
+      "progress": 0,
+      "deadline": "2026-06-03T00:00:00",
+      "tags": ["代码审查", "团队"]
+    },
+    {
+      "id": 5,
+      "title": "整理读书笔记",
+      "description": "整理《设计模式》的读书笔记",
+      "priority": 1,
+      "status": "已完成",
+      "progress": 100,
+      "deadline": "2026-05-30T00:00:00",
+      "tags": ["学习", "笔记"]
+    }
+  ]
+}

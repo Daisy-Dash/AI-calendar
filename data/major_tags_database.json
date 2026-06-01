@@ -1,0 +1,38 @@
+{
+  "majors": [
+    {
+      "name": "设计类",
+      "common_assignments": ["UI设计", "海报设计", "LOGO设计", "品牌设计", "包装设计"],
+      "recommended_tags": ["Figma", "Sketch", "PS", "AI", "C4D", "PPT"]
+    },
+    {
+      "name": "计算机类",
+      "common_assignments": ["前端开发", "后端开发", "算法实现", "数据库设计", "系统架构"],
+      "recommended_tags": ["Python", "JavaScript", "Java", "SQL", "Git", "React"]
+    },
+    {
+      "name": "产品类",
+      "common_assignments": ["需求分析", "产品设计", "竞品分析", "用户调研", "PRD撰写"],
+      "recommended_tags": ["Figma", "PPT", "Excel", "Axure", "思维导图"]
+    },
+    {
+      "name": "市场类",
+      "common_assignments": ["市场调研", "营销方案", "数据分析", "文案撰写", "活动策划"],
+      "recommended_tags": ["PPT", "Excel", "PS", "数据分析工具"]
+    }
+  ],
+  "assignment_templates": {
+    "UI设计": {
+      "subtasks": ["需求分析", "竞品调研", "线框图设计", "视觉设计", "切图交付"],
+      "required_skills": ["Figma", "设计规范"]
+    },
+    "前端开发": {
+      "subtasks": ["需求分析", "技术选型", "组件开发", "接口联调", "测试部署"],
+      "required_skills": ["JavaScript", "React", "CSS"]
+    },
+    "毕业设计": {
+      "subtasks": ["选题开题", "文献调研", "方案设计", "系统实现", "论文撰写", "答辩准备"],
+      "required_skills": ["研究方法", "写作", "专业知识"]
+    }
+  }
+}
