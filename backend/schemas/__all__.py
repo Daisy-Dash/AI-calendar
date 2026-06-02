@@ -4,7 +4,9 @@ from schemas import (
     AISplitRequest, AISplitResponse,
     AIAssignRequest, AIAssignResponse,
     AIChatRequest, AIChatResponse,
-    ScheduleCreate, ScheduleResponse,
-    GroupCreate, GroupInvite, GroupRespond, GroupResponse, GroupStats,
+    ScheduleCreate, ScheduleUpdate, ScheduleResponse,
+    GroupCreate, GroupInvite, GroupRespond, GroupResponse, GroupDetailResponse, GroupStats,
     ProgressUpdate,
+    NotificationResponse, UnreadCountResponse,
+    UserSettingsUpdate, UserSettingsResponse, UserStatsResponse,
 )

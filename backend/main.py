@@ -37,6 +37,8 @@ from routers.schedule import router as schedule_router
 from routers.ai import router as ai_router
 from routers.users import router as users_router
 from routers.groups import router as groups_router
+from routers.notifications import router as notifications_router
+from routers.ws import router as ws_router
 
 app.include_router(auth_router)
 app.include_router(tasks_router)
@@ -44,6 +46,8 @@ app.include_router(schedule_router)
 app.include_router(ai_router)
 app.include_router(users_router)
 app.include_router(groups_router)
+app.include_router(notifications_router)
+app.include_router(ws_router)
 
 
 @app.get("/")

@@ -1,6 +1,7 @@
 """Pydantic schemas"""
 from pydantic import BaseModel, EmailStr
 from typing import Optional, Any
+from datetime import datetime
 
 
 class UserCreate(BaseModel):
@@ -53,6 +54,8 @@ class TaskUpdate(BaseModel):
     progress: Optional[int] = None
     estimated_hours: Optional[float] = None
     tags: Optional[list[str]] = None
+    group_id: Optional[int] = None
+    assigned_to: Optional[int] = None
 
 
 class TaskResponse(BaseModel):
@@ -115,6 +118,16 @@ class ScheduleCreate(BaseModel):
     note: Optional[str] = ""
 
 
+class ScheduleUpdate(BaseModel):
+    title: Optional[str] = None
+    date: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    color: Optional[str] = None
+    note: Optional[str] = None
+    task_id: Optional[int] = None
+
+
 class ScheduleResponse(BaseModel):
     id: int
     user_id: int
@@ -159,6 +172,20 @@ class GroupResponse(BaseModel):
         from_attributes = True
 
 
+class GroupDetailResponse(BaseModel):
+    id: int
+    name: str
+    description: str
+    invite_code: str
+    created_by: int
+    member_count: int
+    created_at: Any
+    members: list[dict] = []
+
+    class Config:
+        from_attributes = True
+
+
 class GroupStats(BaseModel):
     total_tasks: int
     completed_tasks: int
@@ -168,3 +195,54 @@ class GroupStats(BaseModel):
 
 class ProgressUpdate(BaseModel):
     progress: int  # 0-100
+
+
+class NotificationResponse(BaseModel):
+    id: int
+    user_id: int
+    type: str
+    title: str
+    message: str
+    related_task_id: Optional[int] = None
+    related_group_id: Optional[int] = None
+    is_read: bool
+    created_at: Any
+
+    class Config:
+        from_attributes = True
+
+
+class UnreadCountResponse(BaseModel):
+    count: int
+
+
+class UserSettingsUpdate(BaseModel):
+    theme: Optional[str] = None
+    notifications: Optional[bool] = None
+    ddlReminder: Optional[bool] = None
+    aiSuggestion: Optional[bool] = None
+    sound: Optional[bool] = None
+
+
+class UserSettingsResponse(BaseModel):
+    theme: str = "light"
+    notifications: bool = True
+    ddlReminder: bool = True
+    aiSuggestion: bool = True
+    sound: bool = False
+
+    class Config:
+        from_attributes = True
+
+
+class UserStatsResponse(BaseModel):
+    total_tasks: int = 0
+    completed_tasks: int = 0
+    in_progress_tasks: int = 0
+    pending_tasks: int = 0
+    completion_rate: int = 0
+    urgent_deadline: int = 0
+    overdue_tasks: int = 0
+    month_schedules: int = 0
+    group_count: int = 0
+    streak_days: int = 0

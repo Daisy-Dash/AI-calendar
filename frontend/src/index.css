@@ -1,9 +1,9 @@
+/* 手绘风格基础样式 */
+@import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* 手绘风格基础样式 */
-@import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
 
 * {
   margin: 0;
@@ -243,4 +243,310 @@ body {
   height: 3px;
   background: #FF9F43;
   border-radius: 2px;
+}
+
+/* =============================================
+   深色主题 (Dark Mode)
+   ============================================= */
+
+.dark body {
+  background-color: #1a1a2e;
+  color: #e0e0e0;
+}
+
+/* 基础背景 */
+.dark .app-container {
+  background-color: #1a1a2e;
+}
+
+/* 卡片 */
+.dark .hand-card {
+  background: #252540;
+  border-color: #353560;
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.2);
+}
+
+/* 按钮 */
+.dark .hand-btn {
+  background: linear-gradient(135deg, #FF9F43, #E67A00);
+}
+
+.dark .hand-btn-outline {
+  background: #252540;
+  color: #FF9F43;
+  border-color: #FF9F43;
+}
+
+/* 输入框 */
+.dark .hand-input {
+  background: #1a1a2e;
+  border-color: #353560;
+  color: #e0e0e0;
+}
+
+.dark .hand-input::placeholder {
+  color: #606080;
+}
+
+.dark .hand-input:focus {
+  border-color: #FF9F43;
+  box-shadow: 0 0 0 3px rgba(255, 159, 67, 0.15);
+}
+
+/* 进度条 */
+.dark .progress-bar {
+  background: #353560;
+}
+
+/* 标签 */
+.dark .tag {
+  background: #2a2a45;
+  color: #FFB347;
+  border-color: #353560;
+}
+
+/* 底部导航 */
+.dark .bottom-nav {
+  background: #252540;
+  border-top-color: #353560;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* AI 对话气泡 */
+.dark .ai-bubble {
+  background: linear-gradient(135deg, #2a2a45, #353560);
+  border-color: #404070;
+  color: #e0e0e0;
+}
+
+.dark .user-bubble {
+  background: linear-gradient(135deg, #FF9F43, #E67A00);
+}
+
+/* 渐变卡片覆盖 */
+.dark .hand-card.bg-gradient-to-r.from-warm-50 {
+  background: linear-gradient(to right, #252540, #2a2a45) !important;
+}
+
+.dark .hand-card.bg-gradient-to-r.from-purple-50 {
+  background: linear-gradient(to right, #252540, #2a2040) !important;
+}
+
+.dark .hand-card.bg-gradient-to-r.from-green-50 {
+  background: linear-gradient(to right, #202535, #252540) !important;
+}
+
+/* 文本颜色覆盖 */
+.dark .text-gray-700 {
+  color: #c0c0d0;
+}
+
+.dark .text-gray-800 {
+  color: #d0d0e0;
+}
+
+.dark .text-gray-600 {
+  color: #a0a0b0;
+}
+
+.dark .text-gray-500 {
+  color: #9090a0;
+}
+
+.dark .text-gray-400 {
+  color: #707080;
+}
+
+.dark .text-gray-300 {
+  color: #505060;
+}
+
+.dark .text-warm-700 {
+  color: #FFB347;
+}
+
+.dark .text-warm-600 {
+  color: #FF9F43;
+}
+
+.dark .text-warm-500 {
+  color: #FF9F43;
+}
+
+/* 背景色覆盖 */
+.dark .bg-warm-50 {
+  background-color: #252540;
+}
+
+.dark .bg-warm-100 {
+  background-color: #2a2a45;
+}
+
+.dark .bg-warm-50\/50 {
+  background-color: rgba(37, 37, 64, 0.5);
+}
+
+.dark .bg-white {
+  background-color: #1a1a2e;
+}
+
+.dark .bg-gray-50 {
+  background-color: #252540;
+}
+
+.dark .bg-gray-100 {
+  background-color: #2a2a45;
+}
+
+.dark .bg-red-50 {
+  background-color: #2a1520;
+}
+
+.dark .bg-green-50 {
+  background-color: #152520;
+}
+
+.dark .bg-blue-50 {
+  background-color: #15202a;
+}
+
+.dark .bg-purple-50 {
+  background-color: #201530;
+}
+
+.dark .bg-orange-50 {
+  background-color: #2a2015;
+}
+
+.dark .bg-pink-50 {
+  background-color: #2a1520;
+}
+
+.dark .bg-emerald-50 {
+  background-color: #152520;
+}
+
+.dark .bg-red-50\/30 {
+  background-color: rgba(42, 21, 32, 0.3);
+}
+
+/* 边框覆盖 */
+.dark .border-warm-50 {
+  border-color: #353560;
+}
+
+.dark .border-warm-100 {
+  border-color: #353560;
+}
+
+.dark .border-warm-200 {
+  border-color: #404070;
+}
+
+.dark .border-red-100 {
+  border-color: #402030;
+}
+
+.dark .border-red-200 {
+  border-color: #502535;
+}
+
+.dark .border-green-200 {
+  border-color: #203520;
+}
+
+.dark .border-purple-100 {
+  border-color: #302040;
+}
+
+.dark .border-purple-200 {
+  border-color: #352550;
+}
+
+/* 悬停效果 */
+.dark .hover\:bg-warm-50:hover {
+  background-color: #2a2a45;
+}
+
+.dark .hover\:bg-warm-100:hover {
+  background-color: #303050;
+}
+
+.dark .hover\:bg-red-50:hover {
+  background-color: #2a1520;
+}
+
+.dark .hover\:bg-warm-50\/50:hover {
+  background-color: rgba(42, 42, 69, 0.5);
+}
+
+.dark .hover\:text-warm-500:hover {
+  color: #FFB347;
+}
+
+/* 日历日 */
+.dark .calendar-day:hover {
+  background: #2a2a45;
+}
+
+/* 手绘边框 */
+.dark .hand-border {
+  border-color: #353560;
+  box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.3);
+}
+
+.dark .hand-border:hover {
+  box-shadow: 4px 4px 0px rgba(255, 159, 67, 0.2);
+}
+
+/* 滚动条 */
+.dark ::-webkit-scrollbar-thumb {
+  background: #404070;
+}
+
+/* 选中/激活的文字色 */
+.dark .text-purple-600 {
+  color: #b388ff;
+}
+
+.dark .text-green-700 {
+  color: #81c784;
+}
+
+.dark .text-red-500 {
+  color: #ef5350;
+}
+
+/* select 下拉框 */
+.dark select {
+  color: #e0e0e0;
+}
+
+.dark select option {
+  background: #1a1a2e;
+  color: #e0e0e0;
+}
+
+/* 分割线 */
+.dark .border-t {
+  border-top-color: #353560;
+}
+
+.dark .border-b {
+  border-bottom-color: #353560;
+}
+
+/* SVG 圆环 (统计页) */
+.dark svg circle[fill="none"] {
+  /* 保持透明 */
+}
+
+/* 通知未读红点背景 */
+.dark .bg-red-500 {
+  background-color: #ef5350;
+}
+
+/* 模态背景 */
+.dark .bg-black\/20 {
+  background-color: rgba(0, 0, 0, 0.5);
 }
