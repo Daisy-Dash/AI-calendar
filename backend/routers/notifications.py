@@ -12,16 +12,19 @@ router = APIRouter(prefix="/api/notifications", tags=["通知"])
 @router.get("", response_model=list[NotificationResponse])
 def list_notifications(
     unread_only: bool = Query(False, alias="unread_only"),
+    type_filter: str = Query(None, alias="type"),
     limit: int = Query(50, ge=1, le=100),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """获取通知列表"""
+    """获取通知列表（支持分类筛选）"""
     query = db.query(Notification).filter(
         Notification.user_id == current_user.id,
     )
     if unread_only:
         query = query.filter(Notification.is_read == False)
+    if type_filter and type_filter != "all":
+        query = query.filter(Notification.type == type_filter)
 
     query = query.order_by(Notification.created_at.desc()).limit(limit)
     return query.all()

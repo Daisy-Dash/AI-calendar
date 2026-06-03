@@ -8,8 +8,24 @@ from database import get_db
 from models import User, Schedule
 from schemas import ScheduleCreate, ScheduleUpdate, ScheduleResponse
 from auth import get_current_user
+import asyncio
 
 router = APIRouter(prefix="/api/schedule", tags=["日程"])
+
+
+def _broadcast_schedule_change(user_id: int, event: str, data: dict):
+    """异步广播日程变更"""
+    try:
+        from services.ws_manager import manager
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(manager.send_to_user(user_id, {
+                "type": "schedule_update",
+                "event": event,
+                "data": data,
+            }))
+    except Exception:
+        pass
 
 
 @router.get("", response_model=list[ScheduleResponse])
@@ -55,6 +71,9 @@ def create_schedule(
     db.add(schedule)
     db.commit()
     db.refresh(schedule)
+    _broadcast_schedule_change(current_user.id, "created", {
+        "id": schedule.id, "title": schedule.title, "date": str(schedule.date),
+    })
     return schedule
 
 
@@ -82,6 +101,9 @@ def update_schedule(
 
     db.commit()
     db.refresh(schedule)
+    _broadcast_schedule_change(current_user.id, "updated", {
+        "id": schedule.id, "title": schedule.title,
+    })
     return schedule
 
 

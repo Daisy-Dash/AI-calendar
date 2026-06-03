@@ -53,13 +53,16 @@ def _extract_json(text: str) -> dict | None:
 
 
 class AIService:
-    """AI服务适配器，支持 Claude 和 GPT"""
+    """AI服务适配器，支持 Claude / GPT / DeepSeek"""
 
     def __init__(self):
         self.provider = settings.AI_PROVIDER
         self.claude_api_key = settings.CLAUDE_API_KEY
         self.gpt_api_key = settings.GPT_API_KEY
-        self._has_real_api = bool(self.claude_api_key or self.gpt_api_key)
+        self.deepseek_api_key = settings.DEEPSEEK_API_KEY
+        self._has_real_api = bool(
+            self.claude_api_key or self.gpt_api_key or self.deepseek_api_key
+        )
 
     @property
     def is_available(self) -> bool:
@@ -71,6 +74,15 @@ class AIService:
             return self._call_claude(message, context)
         elif self.provider == "gpt" and self.gpt_api_key:
             return self._call_gpt(message, context)
+        elif self.provider == "deepseek" and self.deepseek_api_key:
+            return self._call_deepseek(message, context)
+        # 尝试任何可用的 provider
+        elif self.claude_api_key:
+            return self._call_claude(message, context)
+        elif self.gpt_api_key:
+            return self._call_gpt(message, context)
+        elif self.deepseek_api_key:
+            return self._call_deepseek(message, context)
         else:
             return self._smart_mock_reply(message, context)
 
@@ -158,63 +170,113 @@ class AIService:
         except Exception as e:
             return f"AI服务暂时不可用（{str(e)[:100]}），请稍后再试"
 
+    def _call_deepseek(self, message: str, context: str) -> str:
+        """调用 DeepSeek API (OpenAI 兼容接口)"""
+        import httpx
+        system_prompt = self._get_system_prompt()
+        messages = [{"role": "system", "content": system_prompt}]
+        if context:
+            messages.append({"role": "user", "content": context})
+            messages.append({"role": "assistant", "content": "好的，我了解了以上背景信息。"})
+        messages.append({"role": "user", "content": message})
+
+        try:
+            resp = httpx.post(
+                "https://api.deepseek.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.deepseek_api_key}",
+                    "content-type": "application/json",
+                },
+                json={
+                    "model": settings.DEEPSEEK_API_MODEL,
+                    "messages": messages,
+                    "max_tokens": 2048,
+                    "temperature": 0.7,
+                },
+                timeout=60,
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"]
+        except Exception as e:
+            return f"AI服务暂时不可用（{str(e)[:100]}），请稍后再试"
+
     def _call_ai_structured(self, prompt: str, is_array: bool = False) -> list[dict] | None:
         """调用AI API并鲁棒解析JSON响应"""
         import httpx
 
-        if self.provider == "claude" and self.claude_api_key:
-            try:
-                resp = httpx.post(
-                    "https://api.anthropic.com/v1/messages",
-                    headers={
-                        "x-api-key": self.claude_api_key,
-                        "anthropic-version": "2023-06-01",
-                        "content-type": "application/json",
-                    },
-                    json={
-                        "model": settings.CLAUDE_API_MODEL,
-                        "max_tokens": 2048,
-                        "system": "你是一个JSON API。你必须只返回有效的JSON，不要包含任何其他文字或markdown格式。",
-                        "messages": [{"role": "user", "content": prompt}],
-                    },
-                    timeout=60,
-                )
-                resp.raise_for_status()
-                text = resp.json()["content"][0]["text"]
-                result = _extract_json(text)
-                if result:
-                    if is_array and isinstance(result, dict):
-                        # 某些模型会在对象里包裹数组
-                        for v in result.values():
-                            if isinstance(v, list):
-                                return v
-                        return [result]
-                    return result if is_array else result
-            except Exception:
-                pass
+        # 收集所有可用的 API keys
+        api_configs = []
+        if self.claude_api_key:
+            api_configs.append(("claude", self.claude_api_key))
+        if self.gpt_api_key:
+            api_configs.append(("gpt", self.gpt_api_key))
+        if self.deepseek_api_key:
+            api_configs.append(("deepseek", self.deepseek_api_key))
 
-        elif self.provider == "gpt" and self.gpt_api_key:
+        for provider_name, api_key in api_configs:
             try:
-                resp = httpx.post(
-                    "https://api.openai.com/v1/chat/completions",
-                    headers={
-                        "Authorization": f"Bearer {self.gpt_api_key}",
-                        "content-type": "application/json",
-                    },
-                    json={
-                        "model": settings.GPT_API_MODEL,
-                        "messages": [
-                            {"role": "system", "content": "你是一个JSON API。你必须只返回有效的JSON，不要包含任何其他文字或markdown格式。"},
-                            {"role": "user", "content": prompt},
-                        ],
-                        "max_tokens": 2048,
-                        "temperature": 0.7,
-                        "response_format": {"type": "json_object"},
-                    },
-                    timeout=60,
-                )
-                resp.raise_for_status()
-                text = resp.json()["choices"][0]["message"]["content"]
+                if provider_name == "claude":
+                    resp = httpx.post(
+                        "https://api.anthropic.com/v1/messages",
+                        headers={
+                            "x-api-key": api_key,
+                            "anthropic-version": "2023-06-01",
+                            "content-type": "application/json",
+                        },
+                        json={
+                            "model": settings.CLAUDE_API_MODEL,
+                            "max_tokens": 2048,
+                            "system": "你是一个JSON API。你必须只返回有效的JSON，不要包含任何其他文字或markdown格式。",
+                            "messages": [{"role": "user", "content": prompt}],
+                        },
+                        timeout=60,
+                    )
+                    resp.raise_for_status()
+                    text = resp.json()["content"][0]["text"]
+
+                elif provider_name == "gpt":
+                    resp = httpx.post(
+                        "https://api.openai.com/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {api_key}",
+                            "content-type": "application/json",
+                        },
+                        json={
+                            "model": settings.GPT_API_MODEL,
+                            "messages": [
+                                {"role": "system", "content": "你是一个JSON API。你必须只返回有效的JSON，不要包含任何其他文字或markdown格式。"},
+                                {"role": "user", "content": prompt},
+                            ],
+                            "max_tokens": 2048,
+                            "temperature": 0.7,
+                            "response_format": {"type": "json_object"},
+                        },
+                        timeout=60,
+                    )
+                    resp.raise_for_status()
+                    text = resp.json()["choices"][0]["message"]["content"]
+
+                elif provider_name == "deepseek":
+                    resp = httpx.post(
+                        "https://api.deepseek.com/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {api_key}",
+                            "content-type": "application/json",
+                        },
+                        json={
+                            "model": settings.DEEPSEEK_API_MODEL,
+                            "messages": [
+                                {"role": "system", "content": "你是一个JSON API。你必须只返回有效的JSON，不要包含任何其他文字或markdown格式。"},
+                                {"role": "user", "content": prompt},
+                            ],
+                            "max_tokens": 2048,
+                            "temperature": 0.7,
+                        },
+                        timeout=60,
+                    )
+                    resp.raise_for_status()
+                    text = resp.json()["choices"][0]["message"]["content"]
+
                 result = _extract_json(text)
                 if result:
                     if is_array and isinstance(result, dict):
@@ -224,7 +286,7 @@ class AIService:
                         return [result]
                     return result if is_array else result
             except Exception:
-                pass
+                continue
 
         return None
 

@@ -17,12 +17,14 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7天
 
-    # AI API 配置（支持 Claude / GPT）
-    AI_PROVIDER: str = "claude"  # "claude" | "gpt"
+    # AI API 配置（支持 Claude / GPT / DeepSeek）
+    AI_PROVIDER: str = "deepseek"  # "claude" | "gpt" | "deepseek"
     CLAUDE_API_KEY: Optional[str] = None
     CLAUDE_API_MODEL: str = "claude-sonnet-4-20250514"
     GPT_API_KEY: Optional[str] = None
     GPT_API_MODEL: str = "gpt-4o"
+    DEEPSEEK_API_KEY: Optional[str] = None
+    DEEPSEEK_API_MODEL: str = "deepseek-chat"
 
     # CORS 配置
     CORS_ORIGINS: list[str] = [

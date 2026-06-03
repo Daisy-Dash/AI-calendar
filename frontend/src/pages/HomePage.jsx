@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { taskAPI, scheduleAPI } from '../utils/api'
 import { useWebSocket } from '../hooks/useWebSocket'
+import { useBrowserNotification } from '../hooks/useBrowserNotification'
 import { formatDate, getDaysUntilDeadline } from '../utils/helpers'
 
 export default function HomePage() {
@@ -61,10 +62,28 @@ export default function HomePage() {
     return () => clearInterval(timer)
   }, [loadData])
 
-  // WebSocket 实时更新 — 收到变更时自动刷新
+  // 浏览器推送通知
+  const { showNotification } = useBrowserNotification()
+
+  // WebSocket 实时更新 — 收到变更时自动刷新 + 浏览器通知
   useWebSocket({
-    onTaskUpdate: () => loadData(),
-    onNotification: () => loadData(),
+    onTaskUpdate: (msg) => {
+      loadData()
+      if (msg.event === 'created') {
+        showNotification('新任务', { body: msg.data?.title || '任务已创建' })
+      }
+    },
+    onNotification: (data) => {
+      loadData()
+      // 浏览器推送通知
+      if (data && data.title) {
+        showNotification(data.title, {
+          body: data.message || '',
+          tag: `notif-${data.id || Date.now()}`,
+          data: { type: data.type },
+        })
+      }
+    },
   })
 
   // 下拉刷新处理

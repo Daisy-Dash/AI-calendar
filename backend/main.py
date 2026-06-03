@@ -11,6 +11,11 @@ from database import init_db
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
     init_db()
+    # 启动DDL提醒调度器
+    from services.ddl_reminder import init_scheduler, check_ddl_and_notify
+    init_scheduler()
+    # 启动时立即检查一次
+    check_ddl_and_notify()
     yield
 
 
@@ -52,11 +57,27 @@ app.include_router(ws_router)
 
 @app.get("/")
 def root():
-    """根路径 - 健康检查"""
+    """根路径 - 健康检查 + 使用指南"""
     return {
         "app": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "status": "running",
+        "docs": {
+            "frontend": "http://localhost:5173",
+            "api_docs": "http://localhost:8000/docs",
+            "openapi": "http://localhost:8000/openapi.json",
+        },
+        "ai_provider": settings.AI_PROVIDER or "mock (配置API Key后启用)",
+        "endpoints": {
+            "auth": "/api/auth",
+            "tasks": "/api/tasks",
+            "schedule": "/api/schedule",
+            "groups": "/api/groups",
+            "ai": "/api/ai",
+            "users": "/api/users",
+            "notifications": "/api/notifications",
+            "websocket": "/ws",
+        },
     }
 
 
