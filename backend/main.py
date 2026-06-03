@@ -85,3 +85,16 @@ def root():
 def health_check():
     """健康检查"""
     return {"status": "ok"}
+
+
+@app.get("/api/data/majors")
+def get_majors_data():
+    """获取专业和技能标签数据"""
+    import json
+    import os
+    data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "major_tags_database.json")
+    try:
+        with open(data_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"majors": [], "assignment_templates": {}}

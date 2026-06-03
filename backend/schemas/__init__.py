@@ -8,6 +8,8 @@ class UserCreate(BaseModel):
     username: str
     email: str
     password: str
+    major: Optional[str] = ""
+    skills: Optional[list[str]] = []
 
 
 class UserLogin(BaseModel):
@@ -21,6 +23,8 @@ class UserResponse(BaseModel):
     email: str
     avatar: str
     bio: str
+    major: Optional[str] = ""
+    skills: Optional[list] = []
     is_active: bool
     created_at: Any
 

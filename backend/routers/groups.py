@@ -4,8 +4,9 @@ from sqlalchemy.orm import Session
 import secrets
 import string
 import json
+from datetime import datetime
 from database import get_db
-from models import User, Group, GroupMember, Task
+from models import User, Group, GroupMember, GroupInvitation, Task
 from schemas import GroupCreate, GroupInvite, GroupRespond, GroupResponse, GroupDetailResponse, GroupStats
 from auth import get_current_user
 
@@ -305,3 +306,214 @@ def get_group_stats(
         completion_rate=(completed_tasks / total_tasks * 100) if total_tasks > 0 else 0,
         member_stats=member_stats,
     )
+
+
+# ─── 邮箱邀请系统 ───────────────────────────────────────
+
+@router.post("/invite-by-email", response_model=dict)
+def invite_by_email(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """通过邮箱邀请用户加入群组，AI自动分配任务"""
+    group_id = data.get("group_id")
+    invitee_email = data.get("email", "").strip()
+    message = data.get("message", "")
+
+    # 检查群组
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="群组不存在")
+
+    # 检查邀请者权限
+    inviter = db.query(GroupMember).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.user_id == current_user.id,
+    ).first()
+    if not inviter:
+        raise HTTPException(status_code=403, detail="您不是该群组成员")
+
+    # 查找被邀请用户
+    invitee = db.query(User).filter(User.email == invitee_email).first()
+    if not invitee:
+        raise HTTPException(status_code=404, detail=f"未找到邮箱为 {invitee_email} 的用户，请确认对方已注册")
+
+    # 检查是否已是成员
+    existing = db.query(GroupMember).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.user_id == invitee.id,
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="该用户已是群组成员")
+
+    # 检查是否有待处理的邀请
+    pending = db.query(GroupInvitation).filter(
+        GroupInvitation.group_id == group_id,
+        GroupInvitation.to_user_id == invitee.id,
+        GroupInvitation.status == "pending",
+    ).first()
+    if pending:
+        raise HTTPException(status_code=400, detail="已向该用户发送过邀请，等待回复中")
+
+    # AI 分配任务：获取群组未分配任务
+    unassigned = db.query(Task).filter(
+        Task.group_id == group_id,
+        Task.assigned_to.is_(None),
+        Task.status != "已完成",
+    ).all()
+
+    assignments = []
+    if unassigned:
+        # 获取被邀请者信息用于AI分配
+        invitee_skills = invitee.skills or []
+        from services.smart_assign import SmartAssigner
+        assigner = SmartAssigner()
+        for task in unassigned[:3]:  # 最多分配3个任务
+            member_data = [{
+                "id": invitee.id,
+                "name": invitee.username,
+                "skills": invitee_skills,
+            }]
+            ai_result = assigner.ai_service.smart_assign(task.title, member_data)
+            if ai_result:
+                assignments.append({
+                    "task_id": task.id,
+                    "task_title": task.title,
+                    "task_deadline": task.deadline.strftime("%Y-%m-%d") if task.deadline else None,
+                    "suggestion": ai_result[0].get("reason", "") if ai_result else "",
+                    "subtask": ai_result[0].get("subtask", task.title) if ai_result else task.title,
+                })
+
+    # 创建邀请记录
+    invitation = GroupInvitation(
+        group_id=group_id,
+        from_user_id=current_user.id,
+        to_user_id=invitee.id,
+        status="pending",
+        task_assignments=assignments,
+        message=message or f"{current_user.username} 邀请你加入群组「{group.name}」",
+    )
+    db.add(invitation)
+    db.commit()
+    db.refresh(invitation)
+
+    # 发送通知
+    from routers.notifications import create_notification
+    create_notification(
+        db=db,
+        user_id=invitee.id,
+        type="group",
+        title="团队邀请",
+        message=f"{current_user.username} 邀请你加入「{group.name}」" +
+                (f"，已为你分配 {len(assignments)} 个任务" if assignments else ""),
+        related_group_id=group_id,
+    )
+
+    return {
+        "message": f"已向 {invitee_email} 发送邀请",
+        "invitation_id": invitation.id,
+        "assignments": assignments,
+    }
+
+
+@router.get("/invitations/pending", response_model=list[dict])
+def get_pending_invitations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """获取当前用户的待处理邀请"""
+    invitations = db.query(GroupInvitation).filter(
+        GroupInvitation.to_user_id == current_user.id,
+        GroupInvitation.status == "pending",
+    ).order_by(GroupInvitation.created_at.desc()).all()
+
+    result = []
+    for inv in invitations:
+        group = db.query(Group).filter(Group.id == inv.group_id).first()
+        from_user = db.query(User).filter(User.id == inv.from_user_id).first()
+        result.append({
+            "id": inv.id,
+            "group_id": inv.group_id,
+            "group_name": group.name if group else "未知群组",
+            "from_user": from_user.username if from_user else "未知",
+            "message": inv.message,
+            "task_assignments": inv.task_assignments or [],
+            "created_at": inv.created_at.isoformat() if inv.created_at else "",
+        })
+
+    return result
+
+
+@router.put("/invitations/{invitation_id}/respond", response_model=dict)
+def respond_invitation(
+    invitation_id: int,
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """接受或拒绝邀请"""
+    accept = data.get("accept", False)
+    feedback = data.get("feedback", "")
+
+    invitation = db.query(GroupInvitation).filter(
+        GroupInvitation.id == invitation_id,
+        GroupInvitation.to_user_id == current_user.id,
+        GroupInvitation.status == "pending",
+    ).first()
+    if not invitation:
+        raise HTTPException(status_code=404, detail="邀请不存在或已处理")
+
+    if accept:
+        # 加入群组
+        existing = db.query(GroupMember).filter(
+            GroupMember.group_id == invitation.group_id,
+            GroupMember.user_id == current_user.id,
+        ).first()
+        if not existing:
+            member = GroupMember(
+                group_id=invitation.group_id,
+                user_id=current_user.id,
+                role="member",
+                skills=json.dumps(current_user.skills or []),
+            )
+            db.add(member)
+
+        # 分配任务
+        for assignment in (invitation.task_assignments or []):
+            task = db.query(Task).filter(Task.id == assignment.get("task_id")).first()
+            if task and not task.assigned_to:
+                task.assigned_to = current_user.id
+
+        invitation.status = "accepted"
+        # 通知邀请者
+        from routers.notifications import create_notification
+        create_notification(
+            db=db,
+            user_id=invitation.from_user_id,
+            type="group",
+            title="成员已接受邀请",
+            message=f"{current_user.username} 已接受邀请，加入群组",
+            related_group_id=invitation.group_id,
+        )
+    else:
+        invitation.status = "declined"
+        if feedback:
+            # 通知邀请者拒绝原因
+            from routers.notifications import create_notification
+            create_notification(
+                db=db,
+                user_id=invitation.from_user_id,
+                type="group",
+                title="成员拒绝了邀请",
+                message=f"{current_user.username} 拒绝了邀请。反馈: {feedback}",
+                related_group_id=invitation.group_id,
+            )
+
+    invitation.responded_at = datetime.now()
+    db.commit()
+
+    return {
+        "message": "已接受邀请" if accept else "已拒绝邀请",
+        "status": invitation.status,
+    }

@@ -1,5 +1,5 @@
 """数据库模型 - 群组"""
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Enum, Boolean, JSON
 from sqlalchemy.sql import func
 from database import Base
 import enum
@@ -32,3 +32,18 @@ class GroupMember(Base):
     role = Column(String(20), default=MemberRole.MEMBER.value)
     skills = Column(String(500), default="")  # JSON array of skill tags
     joined_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class GroupInvitation(Base):
+    """群组邀请记录"""
+    __tablename__ = "group_invitations"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    group_id = Column(Integer, ForeignKey("groups.id"), nullable=False, index=True)
+    from_user_id = Column(Integer, ForeignKey("users.id"), nullable=False)  # 邀请人
+    to_user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)  # 被邀请人
+    status = Column(String(20), default="pending")  # pending/accepted/declined
+    task_assignments = Column(JSON, default=list)  # AI分配的任务详情
+    message = Column(String(500), default="")  # 邀请附言
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    responded_at = Column(DateTime(timezone=True), nullable=True)

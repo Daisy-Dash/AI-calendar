@@ -79,6 +79,9 @@ export const groupAPI = {
   stats: (id) => api.get(`/groups/${id}/stats`),
   leave: (id) => api.delete(`/groups/${id}/leave`),
   removeMember: (groupId, userId) => api.delete(`/groups/${groupId}/members/${userId}`),
+  inviteByEmail: (data) => api.post('/groups/invite-by-email', data),
+  pendingInvitations: () => api.get('/groups/invitations/pending'),
+  respondInvitation: (id, data) => api.put(`/groups/invitations/${id}/respond`, data),
 }
 
 // AI接口

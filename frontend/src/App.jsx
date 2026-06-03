@@ -14,6 +14,7 @@ import SettingsPage from './pages/SettingsPage'
 import StatsPage from './pages/StatsPage'
 import NotificationPage from './pages/NotificationPage'
 import GroupManagePage from './pages/GroupManagePage'
+import InvitationPopup from './components/InvitationPopup'
 import ProfilePage from './pages/ProfilePage'
 
 function PrivateRoute({ children }) {
@@ -54,6 +55,7 @@ export default function App() {
         <Route path="/groups/manage" element={<PrivateRoute><GroupManagePage /></PrivateRoute>} />
         <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
       </Routes>
+      {user && <InvitationPopup />}
       {user && <NavBar />}
     </div>
   )

@@ -417,7 +417,34 @@ export default function GroupManagePage() {
                 {inviteCode}
               </div>
             </div>
-            <p className="text-xs text-gray-400 text-center">好友输入此邀请码即可加入群组</p>
+
+            {/* 邮箱邀请 */}
+            <div className="border-t border-warm-100 pt-4 mt-4">
+              <p className="text-sm font-medium text-gray-600 mb-2">📧 通过邮箱邀请已注册用户</p>
+              <form onSubmit={(e) => {
+                e.preventDefault()
+                const email = e.target.email.value.trim()
+                if (!email) return
+                groupAPI.inviteByEmail({ group_id: parseInt(groupId), email })
+                  .then(res => {
+                    alert(`已向 ${email} 发送邀请！AI已预分配 ${res.data.assignments.length} 个任务`)
+                    setShowInvite(false)
+                  })
+                  .catch(err => alert(err.response?.data?.detail || '邀请失败'))
+              }} className="flex gap-2">
+                <input
+                  name="email"
+                  type="email"
+                  className="hand-input flex-1 text-sm"
+                  placeholder="输入对方注册邮箱"
+                  required
+                />
+                <button type="submit" className="hand-btn text-sm py-2 px-4 flex-shrink-0">
+                  邀请
+                </button>
+              </form>
+              <p className="text-xs text-gray-400 mt-1 ml-1">AI 将根据对方专业和技能自动分配任务</p>
+            </div>
           </div>
         </div>
       )}
