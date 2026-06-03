@@ -11,6 +11,31 @@ from services.smart_assign import SmartAssigner
 router = APIRouter(prefix="/api", tags=["AI"])
 
 
+@router.post("/ai/parse", response_model=dict)
+def ai_parse_message(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """AI 解析用户消息 — 提取任务、时间、标签"""
+    text = data.get("text", "")
+    deep = data.get("deep", False)
+
+    from services.ai_parse import parse_user_message
+    result = parse_user_message(text, deep=deep)
+
+    # 如果用户已登录，用解析结果更新画像
+    if result.get("skill_tags"):
+        existing_skills = set(current_user.skills or [])
+        new_skills = set(result["skill_tags"])
+        merged = list(existing_skills | new_skills)
+        if merged != (current_user.skills or []):
+            current_user.skills = merged
+            db.commit()
+
+    return result
+
+
 @router.post("/tasks/split", response_model=AISplitResponse)
 def ai_split_task(
     data: AISplitRequest,

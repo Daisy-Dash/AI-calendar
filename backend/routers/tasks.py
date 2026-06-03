@@ -152,6 +152,10 @@ def create_task(
     )
     if data.deadline:
         task.deadline = datetime.fromisoformat(data.deadline.replace("Z", "+00:00"))
+    if data.start_time:
+        task.start_time = datetime.fromisoformat(data.start_time.replace("Z", "+00:00"))
+    if data.end_time:
+        task.end_time = datetime.fromisoformat(data.end_time.replace("Z", "+00:00"))
 
     db.add(task)
     db.commit()
@@ -196,8 +200,9 @@ def update_task(
         raise HTTPException(status_code=404, detail="任务不存在")
 
     update_data = data.model_dump(exclude_unset=True)
-    if "deadline" in update_data and update_data["deadline"]:
-        update_data["deadline"] = datetime.fromisoformat(update_data["deadline"].replace("Z", "+00:00"))
+    for time_field in ("deadline", "start_time", "end_time"):
+        if time_field in update_data and update_data[time_field]:
+            update_data[time_field] = datetime.fromisoformat(update_data[time_field].replace("Z", "+00:00"))
 
     for key, value in update_data.items():
         setattr(task, key, value)

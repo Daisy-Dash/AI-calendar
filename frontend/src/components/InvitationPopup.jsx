@@ -1,46 +1,47 @@
-import { useState, useEffect } from 'react'
-import { groupAPI, notificationAPI } from '../utils/api'
+import { useState, useEffect, useCallback } from 'react'
+import { groupAPI } from '../utils/api'
 
 export default function InvitationPopup() {
   const [invitations, setInvitations] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [feedback, setFeedback] = useState('')
-  const [responding, setResponding] = useState(false)
+  const [feedback, setFeedback] = useState({})
+  const [responding, setResponding] = useState({})
+
+  const loadInvitations = useCallback(async () => {
+    try {
+      const res = await groupAPI.pendingInvitations()
+      const data = Array.isArray(res.data) ? res.data : []
+      setInvitations(data)
+    } catch (err) {
+      // 静默失败，避免刷屏
+      console.error('Failed to load invitations:', err)
+    }
+  }, [])
 
   useEffect(() => {
     loadInvitations()
-    // 每30秒检查一次
-    const timer = setInterval(loadInvitations, 30000)
+    // 每10秒检查一次
+    const timer = setInterval(loadInvitations, 10000)
     return () => clearInterval(timer)
-  }, [])
-
-  const loadInvitations = async () => {
-    try {
-      const res = await groupAPI.pendingInvitations()
-      setInvitations(res.data)
-    } catch (err) {
-      // 静默
-    }
-  }
+  }, [loadInvitations])
 
   const handleRespond = async (invitationId, accept) => {
-    setResponding(true)
+    setResponding(prev => ({ ...prev, [invitationId]: true }))
     try {
       await groupAPI.respondInvitation(invitationId, {
         accept,
-        feedback: accept ? '' : feedback,
+        feedback: accept ? '' : (feedback[invitationId] || ''),
       })
-      setFeedback('')
-      // 刷新通知和邀请
-      await Promise.all([
-        groupAPI.pendingInvitations().then(r => setInvitations(r.data)),
-      ])
-      // 也刷新一下通知数量
-      try { await notificationAPI.unreadCount() } catch {}
+      // 从列表中移除
+      setInvitations(prev => prev.filter(inv => inv.id !== invitationId))
+      if (accept) {
+        alert('已成功加入团队！')
+        // 刷新页面以更新团队列表
+        window.location.reload()
+      }
     } catch (err) {
       alert('操作失败: ' + (err.response?.data?.detail || '请重试'))
     }
-    setResponding(false)
+    setResponding(prev => ({ ...prev, [invitationId]: false }))
   }
 
   if (invitations.length === 0) return null
@@ -48,8 +49,8 @@ export default function InvitationPopup() {
   return (
     <>
       {invitations.map(inv => (
-        <div key={inv.id} className="fixed inset-0 bg-black/30 z-[150] flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-app max-h-[90vh] overflow-y-auto p-6 shadow-2xl fade-in-up">
+        <div key={inv.id} className="fixed inset-0 bg-black/30 z-[200] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1a1a2e] rounded-2xl w-full max-w-sm max-h-[85vh] overflow-y-auto p-6 shadow-2xl fade-in-up">
             {/* 头部 */}
             <div className="text-center mb-4">
               <div className="text-5xl mb-3">📨</div>
@@ -78,17 +79,10 @@ export default function InvitationPopup() {
                         <div>
                           <h4 className="text-sm font-medium text-gray-800">{a.task_title}</h4>
                           {a.subtask && (
-                            <p className="text-xs text-purple-500 mt-0.5">
-                              你的分工: {a.subtask}
-                            </p>
-                          )}
-                          {a.suggestion && (
-                            <p className="text-xs text-gray-400 mt-0.5">{a.suggestion}</p>
+                            <p className="text-xs text-purple-500 mt-0.5">你的分工: {a.subtask}</p>
                           )}
                           {a.task_deadline && (
-                            <p className="text-xs text-red-400 mt-1">
-                              ⏰ 截止: {a.task_deadline}
-                            </p>
+                            <p className="text-xs text-red-400 mt-1">⏰ 截止: {a.task_deadline}</p>
                           )}
                         </div>
                       </div>
@@ -99,33 +93,31 @@ export default function InvitationPopup() {
             )}
 
             {/* 拒绝反馈 */}
-            {feedback !== undefined && (
-              <div className="mb-4">
-                <textarea
-                  className="hand-input text-sm"
-                  placeholder="如果拒绝，可以填写原因帮助组长调整安排..."
-                  rows={2}
-                  value={feedback}
-                  onChange={e => setFeedback(e.target.value)}
-                />
-              </div>
-            )}
+            <div className="mb-4">
+              <textarea
+                className="hand-input text-sm"
+                placeholder="如果不接受，可以写原因帮助组长调整..."
+                rows={2}
+                value={feedback[inv.id] || ''}
+                onChange={e => setFeedback(prev => ({ ...prev, [inv.id]: e.target.value }))}
+              />
+            </div>
 
             {/* 按钮 */}
             <div className="flex gap-3">
               <button
                 onClick={() => handleRespond(inv.id, false)}
-                disabled={responding}
+                disabled={responding[inv.id]}
                 className="flex-1 py-3 text-sm font-medium text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all"
               >
                 拒绝
               </button>
               <button
                 onClick={() => handleRespond(inv.id, true)}
-                disabled={responding}
+                disabled={responding[inv.id]}
                 className="flex-1 py-3 text-sm font-medium text-white bg-gradient-to-r from-warm-400 to-warm-500 rounded-xl hover:shadow-lg transition-all"
               >
-                {responding ? '处理中...' : '同意加入'}
+                {responding[inv.id] ? '处理中...' : '同意加入'}
               </button>
             </div>
           </div>

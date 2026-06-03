@@ -87,6 +87,7 @@ export const groupAPI = {
 // AI接口
 export const aiAPI = {
   chat: (data) => api.post('/ai/chat', data),
+  parse: (data) => api.post('/ai/parse', data),
 }
 
 // 通知接口
@@ -104,6 +105,7 @@ export const userAPI = {
   getSettings: () => api.get('/users/me/settings'),
   updateSettings: (data) => api.put('/users/me/settings', data),
   getStats: () => api.get('/users/me/stats'),
+  getAbilityProfile: () => api.get('/users/me/ability-profile'),
 }
 
 export default api

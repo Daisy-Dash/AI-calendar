@@ -42,6 +42,8 @@ class TaskCreate(BaseModel):
     title: str
     description: Optional[str] = ""
     deadline: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
     priority: Optional[int] = 1
     estimated_hours: Optional[float] = None
     tags: Optional[list[str]] = []
@@ -53,6 +55,8 @@ class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     deadline: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
     priority: Optional[int] = None
     status: Optional[str] = None
     progress: Optional[int] = None
@@ -70,6 +74,8 @@ class TaskResponse(BaseModel):
     title: str
     description: str
     deadline: Optional[Any] = None
+    start_time: Optional[Any] = None
+    end_time: Optional[Any] = None
     priority: int
     status: str
     progress: int
@@ -120,6 +126,7 @@ class ScheduleCreate(BaseModel):
     end_time: Optional[str] = None
     color: Optional[str] = "#FF9F43"
     note: Optional[str] = ""
+    repeat_type: Optional[str] = "none"  # none / weekly / monthly
 
 
 class ScheduleUpdate(BaseModel):
@@ -250,3 +257,11 @@ class UserStatsResponse(BaseModel):
     month_schedules: int = 0
     group_count: int = 0
     streak_days: int = 0
+
+
+class AbilityProfileResponse(BaseModel):
+    top_skills: list[dict] = []        # [{name: "Python", count: 5, level: "expert"}, ...]
+    task_types: list[dict] = []        # [{type: "设计", count: 3}, ...]
+    on_time_rate: int = 0              # 准时完成率
+    total_completed: int = 0
+    analysis: str = ""                 # AI分析文字

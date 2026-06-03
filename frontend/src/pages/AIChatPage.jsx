@@ -1,19 +1,22 @@
 import { useState, useRef, useEffect } from 'react'
-import { aiAPI } from '../utils/api'
+import { useNavigate } from 'react-router-dom'
+import { aiAPI, taskAPI } from '../utils/api'
 
 const quickPrompts = [
+  { label: '分析近况', icon: '🔍', prompt: '我最近在做：\n1.\n2.\n3.\n请帮我分析提炼成任务清单' },
   { label: '3天方案', icon: '⚡', prompt: '帮我做一个3天的紧急方案' },
-  { label: '5天方案', icon: '📋', prompt: '帮我做一个5天的标准方案' },
   { label: '任务分解', icon: '🔨', prompt: '帮我分解一个大型任务' },
   { label: '日程优化', icon: '📅', prompt: '帮我优化我的日程安排' },
 ]
 
 export default function AIChatPage() {
+  const navigate = useNavigate()
   const [messages, setMessages] = useState([
-    { role: 'ai', content: '你好！我是你的AI日程助手 👋\n我可以帮你：\n• 分解复杂任务为子任务\n• 制定学习/工作计划\n• 优化日程安排\n• 提供效率建议\n\n有什么我可以帮你的吗？' },
+    { role: 'ai', content: '你好！我是你的AI日程助手 👋\n\n✨ **快速创建**：直接告诉我你要做什么，我帮你解析成任务\n📋 **分析近况**：列出你最近在做的事，我帮你提炼成任务清单\n🔨 **任务分解**：把大任务拆成小步骤\n📅 **日程优化**：帮你合理安排时间\n\n💬 试试输入你最近在忙的事情吧！' },
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [extractedTasks, setExtractedTasks] = useState([])
   const messagesEndRef = useRef(null)
 
   useEffect(() => {
@@ -27,19 +30,63 @@ export default function AIChatPage() {
     setMessages(newMessages)
     setInput('')
     setLoading(true)
+    setExtractedTasks([])
 
     try {
-      const res = await aiAPI.chat({ message: content, context: '' })
-      setMessages([...newMessages, { role: 'ai', content: res.data.reply }])
+      // 判断是否包含"分析"、"提炼"、"最近"等关键词 → 深度分析模式
+      const isAnalysis = /分析|提炼|最近|近况|任务清单/.test(content)
+
+      if (isAnalysis) {
+        // 用深度分析提取任务
+        const parseRes = await aiAPI.parse({ text: content, deep: true })
+        const tasks = parseRes.data.tasks || []
+        const summary = parseRes.data.summary || ''
+
+        if (tasks.length > 0) {
+          setExtractedTasks(tasks)
+          const taskList = tasks.map((t, i) =>
+            `${i+1}. 📋 **${t.title}** ${t.deadline ? '📅 ' + t.deadline : ''} ${t.priority >= 3 ? '🔴' : '🟡'}`
+          ).join('\n')
+          setMessages([...newMessages, {
+            role: 'ai',
+            content: `我分析了你的近况，提炼出 ${tasks.length} 个任务：\n\n${taskList}\n\n📊 ${summary}\n\n💡 下方可以一键创建所有任务到你的任务清单和日程中。`,
+            hasTasks: true,
+          }])
+        } else {
+          const chatRes = await aiAPI.chat({ message: content })
+          setMessages([...newMessages, { role: 'ai', content: chatRes.data.reply }])
+        }
+      } else {
+        const res = await aiAPI.chat({ message: content, context: '' })
+        setMessages([...newMessages, { role: 'ai', content: res.data.reply }])
+      }
     } catch (err) {
-      // Fallback mock response
-      const mockReplies = [
-        `好的！关于"${content.slice(0, 20)}..."，我建议按以下步骤进行：\n\n1. 📌 明确目标和范围\n2. 📊 分解为3-5个关键步骤\n3. ⏰ 为每个步骤设定时间节点\n4. 🔄 定期检查和调整\n\n需要我帮你进一步细化吗？`,
-        `我来帮你分析这个任务。首先建议：\n\n✨ **优先级排序**\n• 紧急且重要 → 立即执行\n• 重要不紧急 → 制定计划\n• 紧急不重要 → 委托或快速处理\n• 不重要不紧急 → 考虑舍弃\n\n想要我帮你生成具体的执行方案吗？`,
-        `我理解你的需求！以下是我的建议：\n\n📋 **执行方案**\n• Day 1-2: 前期准备与调研\n• Day 3-4: 核心执行阶段\n• Day 5: 检查与完善\n\n💡 提示：可以使用"任务分解"功能生成更详细的子任务列表！`,
-      ]
-      const mockReply = mockReplies[Math.floor(Math.random() * mockReplies.length)]
-      setMessages([...newMessages, { role: 'ai', content: mockReply }])
+      setMessages([...newMessages, { role: 'ai', content: '有什么我可以帮你的吗？试试输入你最近在忙的事情，我帮你分析提炼成任务清单。' }])
+    }
+    setLoading(false)
+  }
+
+  const handleBatchCreateTasks = async () => {
+    if (extractedTasks.length === 0) return
+    setLoading(true)
+    try {
+      for (const t of extractedTasks) {
+        await taskAPI.create({
+          title: t.title,
+          description: t.description || '',
+          deadline: t.deadline || null,
+          start_time: t.start_time || null,
+          end_time: t.end_time || null,
+          priority: t.priority || 2,
+          estimated_hours: t.estimated_hours || null,
+          tags: t.tags || [],
+        })
+      }
+      alert(`✅ 已创建 ${extractedTasks.length} 个任务！`)
+      setExtractedTasks([])
+      navigate('/tasks')
+    } catch (err) {
+      alert('创建失败，请重试')
     }
     setLoading(false)
   }
@@ -91,6 +138,15 @@ export default function AIChatPage() {
             )}
           </div>
         ))}
+        {/* 批量创建按钮 */}
+        {extractedTasks.length > 0 && (
+          <div className="flex justify-center my-3 fade-in-up">
+            <button onClick={handleBatchCreateTasks} className="hand-btn text-sm px-6" disabled={loading}>
+              {loading ? '创建中...' : `✅ 一键创建 ${extractedTasks.length} 个任务到日程`}
+            </button>
+          </div>
+        )}
+
         {loading && (
           <div className="flex mb-4">
             <div className="w-8 h-8 rounded-full bg-warm-100 flex items-center justify-center mr-2">🤖</div>

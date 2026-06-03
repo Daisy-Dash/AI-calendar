@@ -21,6 +21,7 @@ export default function CalendarPage() {
     end_time: '',
     color: '#FF9F43',
     note: '',
+    repeat_type: 'none',
   })
 
   const year = currentDate.getFullYear()
@@ -103,7 +104,7 @@ export default function CalendarPage() {
         date: dateStr,
       })
       setShowAddModal(false)
-      setNewSchedule({ title: '', date: '', start_time: '', end_time: '', color: '#FF9F43', note: '' })
+      setNewSchedule({ title: '', date: '', start_time: '', end_time: '', color: '#FF9F43', note: '', repeat_type: 'none' })
       loadMonthSchedules()
     } catch (err) {
       console.error('Failed to create schedule:', err)
@@ -435,6 +436,27 @@ export default function CalendarPage() {
                 value={newSchedule.note}
                 onChange={(e) => setNewSchedule({ ...newSchedule, note: e.target.value })}
               />
+
+              {/* 循环设置 */}
+              <div>
+                <label className="text-xs text-gray-400 mb-1.5 block">🔁 重复</label>
+                <div className="flex gap-2">
+                  {[
+                    { v: 'none', l: '仅一次' },
+                    { v: 'weekly', l: '每周' },
+                    { v: 'monthly', l: '每月' },
+                  ].map(opt => (
+                    <button key={opt.v} type="button"
+                      onClick={() => setNewSchedule({...newSchedule, repeat_type: opt.v})}
+                      className={`flex-1 py-2 text-xs rounded-lg border transition-all ${
+                        newSchedule.repeat_type === opt.v
+                          ? 'border-warm-500 bg-warm-50 text-warm-700'
+                          : 'border-gray-200 text-gray-500'
+                      }`}
+                    >{opt.l}</button>
+                  ))}
+                </div>
+              </div>
 
               {/* 颜色选择 */}
               <div>

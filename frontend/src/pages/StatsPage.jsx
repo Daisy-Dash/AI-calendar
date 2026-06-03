@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react'
-import { taskAPI } from '../utils/api'
+import { taskAPI, userAPI } from '../utils/api'
 
 export default function StatsPage() {
   const [tasks, setTasks] = useState([])
+  const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => { loadTasks() }, [])
+  useEffect(() => {
+    loadTasks()
+    userAPI.getAbilityProfile().then(r => setProfile(r.data)).catch(() => {})
+  }, [])
 
   const loadTasks = async () => {
     try {
@@ -101,7 +105,7 @@ export default function StatsPage() {
       </div>
 
       {/* AI效率分析 */}
-      <div className="hand-card bg-gradient-to-r from-purple-50 to-pink-50">
+      <div className="hand-card bg-gradient-to-r from-purple-50 to-pink-50 mb-6">
         <h3 className="text-sm font-medium text-gray-600 mb-2">🤖 AI效率分析</h3>
         {total === 0 ? (
           <p className="text-sm text-gray-400">暂无数据，开始创建任务吧</p>
@@ -115,6 +119,60 @@ export default function StatsPage() {
           </div>
         )}
       </div>
+
+      {/* 能力画像 */}
+      {profile && profile.total_completed > 0 && (
+        <div className="hand-card mb-6">
+          <h3 className="text-sm font-medium text-gray-600 mb-3">🧠 能力画像分析</h3>
+          <p className="text-xs text-gray-500 mb-3">{profile.analysis}</p>
+
+          {/* 技能雷达 */}
+          {profile.top_skills?.length > 0 && (
+            <div className="mb-3">
+              <p className="text-xs text-gray-400 mb-2">🏆 核心技能</p>
+              <div className="space-y-1.5">
+                {profile.top_skills.slice(0, 6).map(skill => {
+                  const maxCount = profile.top_skills[0]?.count || 1
+                  const pct = (skill.count / maxCount) * 100
+                  return (
+                    <div key={skill.name} className="flex items-center gap-2">
+                      <span className="text-xs text-gray-600 w-16 truncate">{skill.name}</span>
+                      <div className="flex-1 h-2.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-purple-400 to-pink-400 rounded-full"
+                          style={{ width: `${pct}%` }}></div>
+                      </div>
+                      <span className="text-xs text-gray-400 w-8">{skill.count}</span>
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-purple-50 text-purple-500">{skill.level}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 任务类型分布 */}
+          {profile.task_types?.length > 0 && (
+            <div className="mb-2">
+              <p className="text-xs text-gray-400 mb-2">📂 任务类型分布</p>
+              <div className="flex flex-wrap gap-1.5">
+                {profile.task_types.map(t => (
+                  <span key={t.type} className="text-xs px-2.5 py-1 rounded-full bg-purple-50 text-purple-600">
+                    {t.type} ×{t.count}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 准时率 */}
+          <div className="flex items-center justify-between text-xs text-gray-500">
+            <span>⏱ 准时完成率</span>
+            <span className={`font-bold ${profile.on_time_rate >= 80 ? 'text-green-500' : 'text-orange-500'}`}>
+              {profile.on_time_rate}%
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

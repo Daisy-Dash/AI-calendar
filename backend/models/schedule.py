@@ -17,4 +17,5 @@ class Schedule(Base):
     is_ai_generated = Column(Boolean, default=False)
     color = Column(String(7), default="#FF9F43")  # 日历颜色标记
     note = Column(String(500), default="")
+    repeat_type = Column(String(20), default="none")  # none / weekly / monthly
     created_at = Column(DateTime(timezone=True), server_default=func.now())

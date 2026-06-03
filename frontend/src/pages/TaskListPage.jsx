@@ -8,7 +8,7 @@ export default function TaskListPage() {
   const [tasks, setTasks] = useState([])
   const [filter, setFilter] = useState('all')
   const [showNewTask, setShowNewTask] = useState(false)
-  const [newTask, setNewTask] = useState({ title: '', deadline: '', priority: 1, description: '' })
+  const [newTask, setNewTask] = useState({ title: '', deadline: '', start_time: '', end_time: '', priority: 1, description: '' })
   const [loading, setLoading] = useState(false)
 
   useEffect(() => { loadTasks() }, [filter])
@@ -28,7 +28,7 @@ export default function TaskListPage() {
     try {
       await taskAPI.create(newTask)
       setShowNewTask(false)
-      setNewTask({ title: '', deadline: '', priority: 1, description: '' })
+      setNewTask({ title: '', deadline: '', start_time: '', end_time: '', priority: 1, description: '' })
       loadTasks()
     } catch (err) { console.error(err) }
     setLoading(false)
@@ -88,13 +88,24 @@ export default function TaskListPage() {
               <input className="hand-input" placeholder="任务标题" value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})} required />
               <textarea className="hand-input" placeholder="任务描述（可选）" value={newTask.description} onChange={e => setNewTask({...newTask, description: e.target.value})} rows={2} />
               <div className="flex gap-3">
-                <input type="date" className="hand-input flex-1" value={newTask.deadline} onChange={e => setNewTask({...newTask, deadline: e.target.value})} />
+                <input type="date" className="hand-input flex-1" value={newTask.deadline} onChange={e => setNewTask({...newTask, deadline: e.target.value})} placeholder="截止日期" />
                 <select className="hand-input flex-1" value={newTask.priority} onChange={e => setNewTask({...newTask, priority: parseInt(e.target.value)})}>
                   <option value={1}>低优先级</option>
                   <option value={2}>中优先级</option>
                   <option value={3}>高优先级</option>
                   <option value={4}>紧急</option>
                 </select>
+              </div>
+              <p className="text-xs text-gray-400 -mt-1 ml-1">📅 截止日期 (DDL)</p>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <input type="time" className="hand-input" value={newTask.start_time} onChange={e => setNewTask({...newTask, start_time: e.target.value})} />
+                  <p className="text-xs text-gray-400 mt-0.5 ml-1">开始时间</p>
+                </div>
+                <div className="flex-1">
+                  <input type="time" className="hand-input" value={newTask.end_time} onChange={e => setNewTask({...newTask, end_time: e.target.value})} />
+                  <p className="text-xs text-gray-400 mt-0.5 ml-1">结束时间</p>
+                </div>
               </div>
               <button type="submit" className="hand-btn w-full" disabled={loading}>
                 {loading ? '创建中...' : '创建任务'}
@@ -115,7 +126,8 @@ export default function TaskListPage() {
           tasks.map((task) => {
             const pc = getPriorityColor(task.priority)
             return (
-              <div key={task.id} className="hand-card task-card">
+              <div key={task.id} className="hand-card task-card cursor-pointer"
+                onClick={() => navigate(`/tasks/${task.id}`)}>
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1 min-w-0 mr-2">
                     <h4 className="font-medium text-gray-800 truncate">{task.title}</h4>

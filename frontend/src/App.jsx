@@ -15,6 +15,7 @@ import StatsPage from './pages/StatsPage'
 import NotificationPage from './pages/NotificationPage'
 import GroupManagePage from './pages/GroupManagePage'
 import InvitationPopup from './components/InvitationPopup'
+import TaskDetailPage from './pages/TaskDetailPage'
 import ProfilePage from './pages/ProfilePage'
 
 function PrivateRoute({ children }) {
@@ -43,6 +44,7 @@ export default function App() {
         <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
         <Route path="/" element={<PrivateRoute><HomePage /></PrivateRoute>} />
         <Route path="/tasks" element={<PrivateRoute><TaskListPage /></PrivateRoute>} />
+        <Route path="/tasks/:taskId" element={<PrivateRoute><TaskDetailPage /></PrivateRoute>} />
         <Route path="/calendar" element={<PrivateRoute><CalendarPage /></PrivateRoute>} />
         <Route path="/ai-split" element={<PrivateRoute><AISplitPage /></PrivateRoute>} />
         <Route path="/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />

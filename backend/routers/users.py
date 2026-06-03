@@ -5,8 +5,9 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 from database import get_db
 from models import User, Task, Schedule, GroupMember
-from schemas import UserResponse, UserSettingsUpdate, UserSettingsResponse, UserStatsResponse
+from schemas import UserResponse, UserSettingsUpdate, UserSettingsResponse, UserStatsResponse, AbilityProfileResponse
 from auth import get_current_user
+from collections import Counter
 
 router = APIRouter(prefix="/api/users", tags=["用户"])
 
@@ -155,4 +156,68 @@ def get_user_stats(
         month_schedules=month_schedules,
         group_count=group_count,
         streak_days=streak,
+    )
+
+
+@router.get("/me/ability-profile", response_model=AbilityProfileResponse)
+def get_ability_profile(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """分析用户能力画像（基于历史任务标签和完成情况）"""
+    completed = db.query(Task).filter(
+        Task.user_id == current_user.id,
+        Task.status == "已完成",
+    ).all()
+
+    total_completed = len(completed)
+    if total_completed == 0:
+        return AbilityProfileResponse(analysis="还没有完成任务，开始创建任务吧！")
+
+    # 统计技能标签
+    tag_counter = Counter()
+    type_counter = Counter()
+    on_time = 0
+
+    for task in completed:
+        tags = task.tags or []
+        for tag in tags:
+            tag_counter[tag] += 1
+
+        # 任务类型分类
+        title = task.title.lower()
+        for kw, category in [("设计", "设计"), ("开发", "开发"), ("写", "写作"), ("ppt", "演示"),
+                             ("汇报", "演示"), ("数据", "数据"), ("调研", "调研"), ("学习", "学习")]:
+            if kw in title:
+                type_counter[category] += 1
+                break
+        else:
+            type_counter["其他"] += 1
+
+        # 准时完成（有DDL且在DDL前完成）
+        if task.deadline and task.updated_at:
+            if task.updated_at <= task.deadline:
+                on_time += 1
+
+    # Top skills
+    top_skills = [{"name": tag, "count": cnt, "level": "expert" if cnt >= 5 else "熟练" if cnt >= 3 else "了解"}
+                  for tag, cnt in tag_counter.most_common(10)]
+
+    # Task types
+    task_types = [{"type": t, "count": c} for t, c in type_counter.most_common(6)]
+
+    on_time_rate = round(on_time / total_completed * 100) if total_completed > 0 else 0
+
+    # AI 分析
+    skill_names = [s["name"] for s in top_skills[:5]]
+    analysis = f"共完成 {total_completed} 个任务，核心技能: {', '.join(skill_names) if skill_names else '待积累'}。" \
+               f"准时率 {on_time_rate}%。" + \
+               ("继续保持!" if on_time_rate >= 80 else "注意按时完成任务!" if on_time_rate >= 50 else "需要提升时间管理!")
+
+    return AbilityProfileResponse(
+        top_skills=top_skills,
+        task_types=task_types,
+        on_time_rate=on_time_rate,
+        total_completed=total_completed,
+        analysis=analysis,
     )

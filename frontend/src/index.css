@@ -550,3 +550,15 @@ body {
 .dark .bg-black\/20 {
   background-color: rgba(0, 0, 0, 0.5);
 }
+
+/* 底部弹窗 — 避免被 NavBar (z-100) 遮挡 */
+.fixed.inset-0.z-50,
+.fixed.inset-0.z-\[50\] {
+  z-index: 110 !important;
+}
+
+/* 底部弹窗内容区 — 为 NavBar 留空间 */
+.fixed.inset-0.items-end .bg-white.rounded-t-2xl,
+.fixed.inset-0.items-end .bg-white.dark\:bg-\[\#1a1a2e\].rounded-t-2xl {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px) !important;
+}

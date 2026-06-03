@@ -20,7 +20,9 @@ class Task(Base):
     parent_id = Column(Integer, ForeignKey("tasks.id"), nullable=True, index=True)
     title = Column(String(200), nullable=False)
     description = Column(Text, default="")
-    deadline = Column(DateTime(timezone=True), nullable=True)
+    deadline = Column(DateTime(timezone=True), nullable=True)      # DDL截止日期
+    start_time = Column(DateTime(timezone=True), nullable=True)    # 开始时间（短日程用）
+    end_time = Column(DateTime(timezone=True), nullable=True)      # 结束时间（短日程用）
     priority = Column(Integer, default=1)  # 1-低, 2-中, 3-高, 4-紧急
     status = Column(String(20), default=TaskStatus.PENDING.value)
     progress = Column(Integer, default=0)  # 0-100

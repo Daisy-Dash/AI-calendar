@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { taskAPI, scheduleAPI } from '../utils/api'
+import { taskAPI, scheduleAPI, aiAPI } from '../utils/api'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { useBrowserNotification } from '../hooks/useBrowserNotification'
 import { formatDate, getDaysUntilDeadline } from '../utils/helpers'
@@ -120,41 +120,76 @@ export default function HomePage() {
     setRefreshing(false)
   }
 
-  // 自然语言解析
+  // AI 深度解析
+  const [parsedTasks, setParsedTasks] = useState([])
+  const [parseSummary, setParseSummary] = useState('')
+
   const handleQuickParse = async () => {
     if (!quickInput.trim()) return
     setParsing(true)
     setParsedResult(null)
+    setParsedTasks([])
     try {
-      const res = await scheduleAPI.parse(quickInput)
-      const suggestion = res.data.suggestions?.[0]
-      if (suggestion && suggestion.title && res.data.parsed) {
-        setParsedResult(suggestion)
+      const res = await aiAPI.parse({ text: quickInput, deep: false })
+      const data = res.data
+      if (data.tasks?.length > 0) {
+        setParsedTasks(data.tasks)
+        setParseSummary(data.summary || '')
+        // 设置第一个任务作为默认预览
+        const first = data.tasks[0]
+        setParsedResult({
+          ...first,
+          date: first.deadline || new Date().toISOString().split('T')[0],
+          isTask: true,
+          note: first.description || '',
+          color: first.priority === 4 ? '#F44336' : first.priority === 3 ? '#FF9800' : '#2196F3',
+        })
       } else {
-        // 如果解析不成功，作为任务创建
         setParsedResult({
           title: quickInput,
           date: new Date().toISOString().split('T')[0],
-          start_time: '',
-          end_time: '',
-          note: '',
-          color: '#FF9F43',
-          isTask: true,
+          start_time: '', end_time: '',
+          note: '', color: '#FF9F43', isTask: true,
         })
       }
     } catch (err) {
       console.error('Parse failed:', err)
       setParsedResult({
-        title: quickInput,
-        date: new Date().toISOString().split('T')[0],
-        start_time: '',
-        end_time: '',
-        note: '',
-        color: '#FF9F43',
-        isTask: true,
+        title: quickInput, date: new Date().toISOString().split('T')[0],
+        start_time: '', end_time: '', note: '', color: '#FF9F43', isTask: true,
       })
     }
     setParsing(false)
+  }
+
+  // 批量创建任务
+  const handleCreateAllTasks = async () => {
+    if (parsedTasks.length === 0) return
+    setCreating(true)
+    try {
+      for (const t of parsedTasks) {
+        await taskAPI.create({
+          title: t.title,
+          description: t.description || '',
+          deadline: t.deadline || null,
+          start_time: t.start_time || null,
+          end_time: t.end_time || null,
+          priority: t.priority || 2,
+          estimated_hours: t.estimated_hours || null,
+          tags: t.tags || [],
+        })
+      }
+      setShowQuickAdd(false)
+      setQuickInput('')
+      setParsedResult(null)
+      setParsedTasks([])
+      loadData()
+      navigate('/tasks')
+    } catch (err) {
+      console.error(err)
+      alert('创建失败')
+    }
+    setCreating(false)
   }
 
   // 确认创建（日程或任务）
@@ -351,6 +386,26 @@ export default function HomePage() {
               <h3 className="text-lg font-medium">✨ 快速添加</h3>
               <button onClick={() => setShowQuickAdd(false)} className="text-gray-400 hover:text-gray-600 text-xl">✕</button>
             </div>
+
+            {/* 多任务预览 */}
+            {parsedTasks.length > 1 && (
+              <div className="mb-4">
+                <p className="text-xs text-gray-400 mb-2">AI 识别到 {parsedTasks.length} 个任务：</p>
+                <div className="space-y-1 max-h-40 overflow-y-auto">
+                  {parsedTasks.map((t, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs bg-warm-50 rounded-lg p-2">
+                      <span className="text-warm-500">{i+1}.</span>
+                      <span className="truncate">{t.title}</span>
+                      {t.deadline && <span className="text-gray-400 flex-shrink-0">📅{t.deadline}</span>}
+                    </div>
+                  ))}
+                </div>
+                <button onClick={handleCreateAllTasks}
+                  className="hand-btn w-full text-sm mt-2" disabled={creating}>
+                  {creating ? '创建中...' : `✅ 全部创建 (${parsedTasks.length}个)`}
+                </button>
+              </div>
+            )}
 
             {!parsedResult ? (
               <div>
