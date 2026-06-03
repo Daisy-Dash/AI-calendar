@@ -5,8 +5,16 @@ import json
 import re
 import httpx
 
-# 共享 httpx 客户端 — 跳过系统代理（解决 127.0.0.1:1080 代理拦截问题）
-_http_client = httpx.Client(proxy=None, timeout=60, follow_redirects=True)
+# 彻底禁用代理 — 你的系统有 127.0.0.1:1080 代理拦截
+import os
+os.environ.pop("HTTP_PROXY", None)
+os.environ.pop("HTTPS_PROXY", None)
+os.environ.pop("http_proxy", None)
+os.environ.pop("https_proxy", None)
+os.environ.pop("ALL_PROXY", None)
+os.environ.pop("NO_PROXY", None)
+
+_http_client = httpx.Client(proxy=None, trust_env=False, timeout=60, follow_redirects=True)
 
 
 def _extract_json(text: str) -> dict | None:
