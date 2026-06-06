@@ -1,9 +1,14 @@
-fastapi==0.115.6
-uvicorn==0.34.0
-sqlalchemy==2.0.36
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-python-multipart==0.0.19
-httpx==0.28.1
-pydantic==2.10.3
-pydantic-settings==2.7.0
+# AI日程协作者 - 后端依赖
+# Python 3.14 兼容：不锁定版本，让 pip 自动选择有 wheel 的最新版
+
+fastapi
+uvicorn
+sqlalchemy
+alembic
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+python-multipart
+httpx
+pydantic
+pydantic-settings

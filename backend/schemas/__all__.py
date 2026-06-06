@@ -8,5 +8,5 @@ from schemas import (
     GroupCreate, GroupInvite, GroupRespond, GroupResponse, GroupDetailResponse, GroupStats,
     ProgressUpdate,
     NotificationResponse, UnreadCountResponse,
-    UserSettingsUpdate, UserSettingsResponse, UserStatsResponse,
+    UserSettingsUpdate, UserSettingsResponse, UserStatsResponse, AbilityProfileResponse,
 )

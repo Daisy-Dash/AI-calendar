@@ -4,12 +4,48 @@ from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
 from database import get_db
-from models import User, Task, GroupMember, TaskStatus
+from models import User, Task, GroupMember, TaskStatus, Schedule
 from schemas import TaskCreate, TaskUpdate, TaskResponse, ProgressUpdate
 from auth import get_current_user
 import asyncio
 
 router = APIRouter(prefix="/api/tasks", tags=["任务"])
+
+
+def _sync_task_to_schedule(db: Session, task: Task):
+    """将任务DDL同步到日历日程"""
+    if not task.deadline:
+        return
+    # 查找是否已有该任务的日程
+    existing = db.query(Schedule).filter(Schedule.task_id == task.id).first()
+    if existing:
+        # 更新已有日程
+        existing.title = task.title
+        existing.date = task.deadline
+        existing.color = _get_task_color(task.priority)
+        existing.note = f"优先级: {['低','中','高','紧急'][task.priority-1]} | 进度: {task.progress}%"
+    else:
+        # 创建新日程
+        schedule = Schedule(
+            user_id=task.user_id,
+            task_id=task.id,
+            title=task.title,
+            date=task.deadline,
+            color=_get_task_color(task.priority),
+            note=f"优先级: {['低','中','高','紧急'][task.priority-1]} | 进度: {task.progress}%",
+        )
+        db.add(schedule)
+
+
+def _remove_task_schedule(db: Session, task_id: int):
+    """删除任务对应的日程"""
+    db.query(Schedule).filter(Schedule.task_id == task_id).delete()
+
+
+def _get_task_color(priority: int) -> str:
+    """根据优先级返回颜色"""
+    colors = {1: "#9E9E9E", 2: "#2196F3", 3: "#FF9800", 4: "#F44336"}
+    return colors.get(priority, "#FF9F43")
 
 
 @router.get("/export/csv")
@@ -116,10 +152,19 @@ def create_task(
     )
     if data.deadline:
         task.deadline = datetime.fromisoformat(data.deadline.replace("Z", "+00:00"))
+    if data.start_time:
+        task.start_time = datetime.fromisoformat(data.start_time.replace("Z", "+00:00"))
+    if data.end_time:
+        task.end_time = datetime.fromisoformat(data.end_time.replace("Z", "+00:00"))
 
     db.add(task)
     db.commit()
     db.refresh(task)
+
+    # 同步到日历日程
+    if task.deadline:
+        _sync_task_to_schedule(db, task)
+        db.commit()
 
     # 广播变更
     _broadcast_task_change(current_user.id, "created", {
@@ -155,14 +200,19 @@ def update_task(
         raise HTTPException(status_code=404, detail="任务不存在")
 
     update_data = data.model_dump(exclude_unset=True)
-    if "deadline" in update_data and update_data["deadline"]:
-        update_data["deadline"] = datetime.fromisoformat(update_data["deadline"].replace("Z", "+00:00"))
+    for time_field in ("deadline", "start_time", "end_time"):
+        if time_field in update_data and update_data[time_field]:
+            update_data[time_field] = datetime.fromisoformat(update_data[time_field].replace("Z", "+00:00"))
 
     for key, value in update_data.items():
         setattr(task, key, value)
 
     db.commit()
     db.refresh(task)
+
+    # 同步DDL到日历
+    _sync_task_to_schedule(db, task)
+    db.commit()
 
     _broadcast_task_change(current_user.id, "updated", {
         "id": task.id, "title": task.title, "status": task.status, "progress": task.progress,
@@ -182,6 +232,8 @@ def delete_task(
     if not task:
         raise HTTPException(status_code=404, detail="任务不存在")
     db.delete(task)
+    # 同时删除对应日程
+    _remove_task_schedule(db, task_id)
     db.commit()
 
     _broadcast_task_change(current_user.id, "deleted", {"id": task_id})

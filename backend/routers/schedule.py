@@ -62,6 +62,7 @@ def create_schedule(
         date=datetime.fromisoformat(data.date.replace("Z", "+00:00")),
         color=data.color,
         note=data.note or "",
+        repeat_type=data.repeat_type or "none",
     )
     if data.start_time:
         schedule.start_time = datetime.fromisoformat(data.start_time.replace("Z", "+00:00"))

@@ -23,6 +23,8 @@ def register(data: UserCreate, db: Session = Depends(get_db)):
         username=data.username,
         email=data.email,
         password_hash=hash_password(data.password),
+        major=data.major or "",
+        skills=data.skills or [],
     )
     db.add(user)
     db.commit()

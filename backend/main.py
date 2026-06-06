@@ -9,12 +9,24 @@ from database import init_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期管理"""
-    init_db()
+    """应用生命周期管理 — 自动运行数据库迁移"""
+    # 使用 Alembic 迁移（保留已有数据）
+    import os as _os
+    try:
+        from alembic.config import Config as AlembicConfig
+        from alembic import command
+        alembic_ini = _os.path.join(_os.path.dirname(__file__), "alembic.ini")
+        alembic_cfg = AlembicConfig(alembic_ini)
+        command.upgrade(alembic_cfg, "head")
+        print("[Migration] Database up to date")
+    except Exception as e:
+        # 回退：如果 Alembic 不可用，使用 create_all
+        print(f"[Migration] Alembic failed ({e}), falling back to create_all")
+        init_db()
+
     # 启动DDL提醒调度器
     from services.ddl_reminder import init_scheduler, check_ddl_and_notify
     init_scheduler()
-    # 启动时立即检查一次
     check_ddl_and_notify()
     yield
 
@@ -85,3 +97,16 @@ def root():
 def health_check():
     """健康检查"""
     return {"status": "ok"}
+
+
+@app.get("/api/data/majors")
+def get_majors_data():
+    """获取专业和技能标签数据"""
+    import json
+    import os
+    data_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "major_tags_database.json")
+    try:
+        with open(data_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"majors": [], "assignment_templates": {}}

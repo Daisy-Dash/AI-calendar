@@ -172,16 +172,22 @@ cd AI-calendar
 ```bash
 cd backend
 
-# 创建虚拟环境 (推荐)
+# 创建虚拟环境 (强烈推荐)
 python -m venv venv
 
-# Windows
+# 激活虚拟环境
+# Windows:
 venv\Scripts\activate
-# macOS/Linux
+# macOS/Linux:
 source venv/bin/activate
 
-# 安装依赖
-pip install -r requirements.txt
+# 方式一：一键安装 (推荐，Python 3.14 安全)
+python install.py
+
+# 方式二：手动安装
+python -m pip install --upgrade pip
+python -m pip install --no-cache-dir pydantic pydantic-settings
+python -m pip install --no-cache-dir fastapi uvicorn sqlalchemy "python-jose[cryptography]" "passlib[bcrypt]" "bcrypt<5.0" python-multipart httpx
 
 # 启动服务器
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
@@ -189,8 +195,8 @@ uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
 后端运行在 `http://localhost:8000`
 
-- API 文档 (Swagger): `http://localhost:8000/docs`
-- 健康检查: `http://localhost:8000/`
+- 📚 API 文档 (Swagger): `http://localhost:8000/docs`
+- 🩺 健康检查: `http://localhost:8000/`
 
 ### 3. 启动前端
 
@@ -579,6 +585,65 @@ AI 任务分解              → AISplitPage.jsx              ✅ 已完成 (需
 - [ ] 日志系统
 - [ ] PWA 支持
 - [ ] CI/CD 流水线
+
+---
+
+## 故障排除
+
+### Python 3.14: pip install 报错 / pydantic-core 编译失败
+
+**症状**: `Failed to build installable wheels... pydantic-core` 或 `Rust not found`
+
+**原因**: Python 3.14 上 pip 缓存了旧版 pydantic-core，旧版没有预编译 wheel
+
+**解决**:
+
+```bash
+# ✅ 一键修复（推荐）
+python install.py
+
+# 或手动执行:
+python -m pip install --upgrade pip
+python -m pip install --no-cache-dir pydantic pydantic-settings
+python -m pip install --no-cache-dir fastapi uvicorn sqlalchemy "python-jose[cryptography]" "passlib[bcrypt]" "bcrypt<5.0" python-multipart httpx
+```
+
+> 💡 关键是 `--no-cache-dir`，它会强制 pip 从 PyPI 下载最新 wheel，而不是使用缓存的旧版本。
+
+### bcrypt / passlib 报错
+
+**症状**: `AttributeError: module 'bcrypt' has no attribute '__about__'`
+
+**原因**: bcrypt 5.0+ 与 passlib 1.7 不兼容
+
+**解决**:
+```bash
+pip install "bcrypt>=4.0,<5.0"
+```
+
+### 端口被占用 / 权限错误
+
+**症状**: `[WinError 10013]` 或 `[Errno 10048]` (Windows) 或 `Address already in use`
+
+**原因**: 上次启动的 uvicorn 进程未关闭，或端口被其他程序占用
+
+**解决**:
+```bash
+# 1. 查找占用端口的进程
+netstat -ano | findstr :8000
+
+# 2. 杀掉该进程（替换 <PID> 为上一步查到的数字）
+taskkill /F /PID <PID>
+
+# 3. 验证端口已释放
+netstat -ano | findstr :8000    # 应无输出
+
+# macOS/Linux
+lsof -i :8000
+kill -9 <PID>
+```
+
+> 💡 关闭终端窗口**不会**自动停止 uvicorn。用 `Ctrl+C` 停止，或每次启动前检查端口。
 
 ---
 

@@ -3,6 +3,18 @@ from config import settings
 from typing import Optional
 import json
 import re
+import httpx
+
+# 彻底禁用代理 — 你的系统有 127.0.0.1:1080 代理拦截
+import os
+os.environ.pop("HTTP_PROXY", None)
+os.environ.pop("HTTPS_PROXY", None)
+os.environ.pop("http_proxy", None)
+os.environ.pop("https_proxy", None)
+os.environ.pop("ALL_PROXY", None)
+os.environ.pop("NO_PROXY", None)
+
+_http_client = httpx.Client(proxy=None, trust_env=False, timeout=60, follow_redirects=True)
 
 
 def _extract_json(text: str) -> dict | None:
@@ -110,7 +122,6 @@ class AIService:
 
     def _call_claude(self, message: str, context: str) -> str:
         """调用 Claude API"""
-        import httpx
         system_prompt = self._get_system_prompt()
         messages = []
         if context:
@@ -119,7 +130,7 @@ class AIService:
         messages.append({"role": "user", "content": message})
 
         try:
-            resp = httpx.post(
+            resp = _http_client.post(
                 "https://api.anthropic.com/v1/messages",
                 headers={
                     "x-api-key": self.claude_api_key,
@@ -132,7 +143,6 @@ class AIService:
                     "system": system_prompt,
                     "messages": messages,
                 },
-                timeout=60,
             )
             resp.raise_for_status()
             data = resp.json()
@@ -142,7 +152,6 @@ class AIService:
 
     def _call_gpt(self, message: str, context: str) -> str:
         """调用 GPT API"""
-        import httpx
         system_prompt = self._get_system_prompt()
         messages = [{"role": "system", "content": system_prompt}]
         if context:
@@ -151,7 +160,7 @@ class AIService:
         messages.append({"role": "user", "content": message})
 
         try:
-            resp = httpx.post(
+            resp = _http_client.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers={
                     "Authorization": f"Bearer {self.gpt_api_key}",
@@ -163,7 +172,6 @@ class AIService:
                     "max_tokens": 2048,
                     "temperature": 0.7,
                 },
-                timeout=60,
             )
             resp.raise_for_status()
             return resp.json()["choices"][0]["message"]["content"]
@@ -172,7 +180,6 @@ class AIService:
 
     def _call_deepseek(self, message: str, context: str) -> str:
         """调用 DeepSeek API (OpenAI 兼容接口)"""
-        import httpx
         system_prompt = self._get_system_prompt()
         messages = [{"role": "system", "content": system_prompt}]
         if context:
@@ -181,7 +188,7 @@ class AIService:
         messages.append({"role": "user", "content": message})
 
         try:
-            resp = httpx.post(
+            resp = _http_client.post(
                 "https://api.deepseek.com/v1/chat/completions",
                 headers={
                     "Authorization": f"Bearer {self.deepseek_api_key}",
@@ -193,7 +200,6 @@ class AIService:
                     "max_tokens": 2048,
                     "temperature": 0.7,
                 },
-                timeout=60,
             )
             resp.raise_for_status()
             return resp.json()["choices"][0]["message"]["content"]
