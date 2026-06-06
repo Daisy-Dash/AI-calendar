@@ -9,20 +9,12 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    const savedUser = localStorage.getItem('user')
-    if (token && savedUser) {
-      setUser(JSON.parse(savedUser))
-      // 刷新用户信息
-      userAPI.me()
-        .then((res) => {
-          setUser(res.data)
-          localStorage.setItem('user', JSON.stringify(res.data))
-        })
+    if (token) {
+      userAPI.getMe()
+        .then(res => setUser(res.data))
         .catch(() => {
-          // token过期，清除
           localStorage.removeItem('token')
           localStorage.removeItem('user')
-          setUser(null)
         })
         .finally(() => setLoading(false))
     } else {
@@ -33,17 +25,15 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const res = await authAPI.login({ email, password })
     localStorage.setItem('token', res.data.access_token)
-    localStorage.setItem('user', JSON.stringify(res.data.user))
     setUser(res.data.user)
-    return res.data
+    return res.data.user
   }
 
   const register = async (username, email, password) => {
     const res = await authAPI.register({ username, email, password })
     localStorage.setItem('token', res.data.access_token)
-    localStorage.setItem('user', JSON.stringify(res.data.user))
     setUser(res.data.user)
-    return res.data
+    return res.data.user
   }
 
   const logout = () => {
@@ -52,17 +42,19 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
+  const updateUser = (data) => {
+    setUser(prev => ({ ...prev, ...data }))
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   )
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within AuthProvider')
-  }
-  return context
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
+  return ctx
 }

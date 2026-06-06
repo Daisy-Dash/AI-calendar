@@ -1,117 +1,168 @@
-/* 手绘风格基础样式 */
-@import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+/* ======================================
+   手绘甜品风 × 莫兰迪色系
+   ====================================== */
+@import url('https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-  font-family: 'Noto Sans SC', system-ui, sans-serif;
-  background-color: #FFF8F0;
-  color: #2D2D2D;
+  font-family: 'LXGW WenKai', 'Noto Sans SC', system-ui, sans-serif;
+  background-color: #FAF6F1;
+  color: #7D6B5D;
   -webkit-font-smoothing: antialiased;
-}
-
-/* 移动端APP容器 - 模拟手机视图 */
-.app-container {
-  max-width: 430px;
-  margin: 0 auto;
+  background-image:
+    radial-gradient(ellipse at 15% 50%, rgba(212,165,165,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 20%, rgba(184,169,202,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(168,191,160,0.04) 0%, transparent 50%);
   min-height: 100vh;
-  background-color: #FFF8F0;
-  position: relative;
 }
 
-/* 手绘风格边框 */
-.hand-border {
-  border: 2px solid #FFE8CC;
-  border-radius: 12px 8px 16px 10px;
-  box-shadow: 3px 3px 0px rgba(0,0,0,0.06);
-  transition: all 0.2s ease;
+/* ========== 甜品风卡片 ========== */
+.hand-card {
+  background: white;
+  border: 1.5px solid #E8DDD2;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(125,107,93,0.06);
+  transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.hand-card:hover {
+  box-shadow: 0 4px 20px rgba(125,107,93,0.1);
+  transform: translateY(-1px);
 }
 
-.hand-border:hover {
-  box-shadow: 4px 4px 0px rgba(255, 159, 67, 0.15);
-  transform: translate(-1px, -1px);
-}
-
-/* 手绘按钮 */
+/* ========== 马卡龙按钮 ========== */
 .hand-btn {
-  background: linear-gradient(135deg, #FF9F43, #FF8C00);
+  background: linear-gradient(135deg, #D4A5A5, #C48B8B);
   color: white;
   border: none;
-  border-radius: 10px 6px 12px 8px;
-  padding: 10px 20px;
+  border-radius: 999px;
+  padding: 10px 24px;
   font-weight: 500;
-  box-shadow: 3px 3px 0px rgba(255, 159, 67, 0.3);
+  font-family: inherit;
+  box-shadow: 0 3px 0 #B37474, 0 6px 16px rgba(212,165,165,0.25);
   transition: all 0.2s ease;
   cursor: pointer;
 }
-
 .hand-btn:hover {
-  transform: translate(-1px, -1px);
-  box-shadow: 4px 4px 0px rgba(255, 159, 67, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #B37474, 0 8px 20px rgba(212,165,165,0.3);
 }
-
 .hand-btn:active {
-  transform: translate(1px, 1px);
-  box-shadow: 1px 1px 0px rgba(255, 159, 67, 0.3);
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #B37474, 0 2px 8px rgba(212,165,165,0.2);
+}
+.hand-btn:disabled {
+  background: linear-gradient(135deg, #D9CCBC, #C4B5A5);
+  box-shadow: 0 3px 0 #A69485;
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .hand-btn-outline {
   background: white;
-  color: #FF9F43;
-  border: 2px solid #FF9F43;
-  border-radius: 10px 6px 12px 8px;
-  padding: 10px 20px;
+  color: #D4A5A5;
+  border: 2px solid #D4A5A5;
+  border-radius: 999px;
+  padding: 10px 24px;
   font-weight: 500;
-  box-shadow: 3px 3px 0px rgba(255, 159, 67, 0.2);
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(212,165,165,0.1);
   transition: all 0.2s ease;
   cursor: pointer;
 }
+.hand-btn-outline:hover { background: #FAF1F1; }
 
-/* 手绘风格卡片 */
-.hand-card {
-  background: white;
-  border: 2px solid #FFE8CC;
-  border-radius: 14px 10px 18px 12px;
-  padding: 16px;
-  box-shadow: 4px 4px 0px rgba(0,0,0,0.04);
-  transition: all 0.2s ease;
+/* ========== 手绘输入框 ========== */
+.hand-input {
+  border: 1.5px solid #E8DDD2;
+  border-radius: 16px;
+  padding: 10px 16px;
+  outline: none;
+  transition: all 0.25s ease;
+  background: #FDFBF9;
+  width: 100%;
+  font-family: inherit;
+  color: #7D6B5D;
 }
+.hand-input:focus {
+  border-color: #D4A5A5;
+  box-shadow: 0 0 0 3px rgba(212,165,165,0.12);
+  background: white;
+}
+.hand-input::placeholder { color: #C4B5A5; }
 
-/* 进度条 */
+/* ========== 奶油进度条 ========== */
 .progress-bar {
   height: 8px;
-  background: #FFE8CC;
-  border-radius: 4px;
+  background: #F3ECE4;
+  border-radius: 999px;
   overflow: hidden;
 }
-
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #FF9F43, #FF8C00);
-  border-radius: 4px;
-  transition: width 0.5s ease;
+  background: linear-gradient(90deg, #D4A5A5, #B8A9CA);
+  border-radius: 999px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
 }
 
-/* 标签样式 */
+/* ========== 糖果标签 ========== */
 .tag {
   display: inline-block;
-  padding: 2px 8px;
-  background: #FFF5E6;
-  color: #CC6A00;
-  border-radius: 6px 4px 8px 5px;
+  padding: 2px 10px;
+  background: #FAF1F1;
+  color: #B37474;
+  border-radius: 999px;
   font-size: 12px;
-  border: 1px solid #FFE8CC;
+  border: 1px solid #EDD5D5;
 }
 
-/* 底部导航 */
+/* ========== 马卡龙技能标签 ========== */
+.skill-tag {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: #FDFBF9;
+  border: 1.5px solid #E8DDD2;
+  font-size: 13px;
+  color: #8B7A6B;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.skill-tag:hover {
+  background: #F3ECE4;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(125,107,93,0.08);
+}
+.skill-tag:active { transform: scale(0.95); }
+
+.skill-tag-selected,
+.skill-tag-selected-rosa {
+  background: linear-gradient(135deg, #D4A5A5, #C48B8B) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 8px rgba(212,165,165,0.35);
+}
+.skill-tag-selected-dusty {
+  background: linear-gradient(135deg, #9FB5C4, #7A9AB0) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 8px rgba(159,181,196,0.35);
+}
+.skill-tag-selected-lilac {
+  background: linear-gradient(135deg, #B8A9CA, #9A88B5) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 8px rgba(184,169,202,0.35);
+}
+
+/* ========== 底部导航 ========== */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -120,433 +171,111 @@ body {
   width: 100%;
   max-width: 430px;
   background: white;
-  border-top: 2px solid #FFE8CC;
-  border-radius: 16px 16px 0 0;
-  padding: 8px 0;
+  border-top: 1.5px solid #F2E1E1;
+  border-radius: 20px 20px 0 0;
+  padding: 6px 0 8px;
   z-index: 100;
-  box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+  box-shadow: 0 -4px 20px rgba(212,165,165,0.08);
 }
 
-/* 滚动条 */
-::-webkit-scrollbar {
-  width: 4px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #FFE8CC;
-  border-radius: 2px;
-}
-
-/* AI对话气泡 */
+/* ========== AI对话气泡 ========== */
 .ai-bubble {
-  background: linear-gradient(135deg, #FFF5E6, #FFE8CC);
-  border-radius: 16px 16px 16px 4px;
+  background: linear-gradient(135deg, #FDFBF9, #F2E1E1);
+  border-radius: 20px 20px 20px 6px;
   padding: 12px 16px;
   max-width: 80%;
-  border: 1px solid #FFD6A5;
+  border: 1px solid #EDD5D5;
 }
-
 .user-bubble {
-  background: linear-gradient(135deg, #FF9F43, #FF8C00);
+  background: linear-gradient(135deg, #B8A9CA, #9A88B5);
   color: white;
-  border-radius: 16px 16px 4px 16px;
+  border-radius: 20px 20px 6px 20px;
   padding: 12px 16px;
   max-width: 80%;
 }
 
-/* 日历样式 */
-.calendar-day {
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.calendar-day:hover {
-  background: #FFF5E6;
-}
-
-.calendar-day.today {
-  background: #FF9F43;
-  color: white;
-  font-weight: 700;
-}
-
-.calendar-day.has-task {
-  border: 2px solid #FFD6A5;
-  font-weight: 500;
-}
-
-/* 动画 */
+/* ========== 动画 ========== */
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in-up { animation: fadeInUp 0.35s ease-out; }
+
+@keyframes bounceIn {
+  0%   { opacity: 0; transform: scale(0.3) translateY(20px); }
+  50%  { opacity: 1; transform: scale(1.05) translateY(-4px); }
+  70%  { transform: scale(0.97) translateY(1px); }
+  100% { transform: scale(1) translateY(0); }
+}
+.task-bounce-in { animation: bounceIn 0.5s ease-out both; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33%      { transform: translateY(-6px) rotate(3deg); }
+  66%      { transform: translateY(-3px) rotate(-2deg); }
+}
+.animate-float { animation: float 3s ease-in-out infinite; }
+
+@keyframes sweetPulse {
+  0%   { box-shadow: 0 3px 0 #6F8F66, 0 4px 16px rgba(168,191,160,0.3); }
+  50%  { box-shadow: 0 3px 0 #6F8F66, 0 4px 28px rgba(168,191,160,0.55); }
+  100% { box-shadow: 0 3px 0 #6F8F66, 0 4px 16px rgba(168,191,160,0.3); }
+}
+.authorize-btn {
+  background: linear-gradient(135deg, #A8BFA0, #8AA880);
+  animation: sweetPulse 2s ease-in-out infinite;
 }
 
-.fade-in-up {
-  animation: fadeInUp 0.3s ease-out;
+@keyframes confettiFall {
+  0%   { opacity: 1; transform: translateY(-100vh) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+}
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  animation: confettiFall 2s ease-out forwards;
 }
 
-/* 输入框手绘风格 */
-.hand-input {
-  border: 2px solid #FFE8CC;
-  border-radius: 10px 6px 12px 8px;
-  padding: 10px 14px;
-  outline: none;
-  transition: all 0.2s ease;
-  background: white;
-  width: 100%;
-  font-family: 'Noto Sans SC', system-ui, sans-serif;
+/* ========== 滚动条 ========== */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #E8DDD2; border-radius: 999px; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ========== 工具类 ========== */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.hand-input:focus {
-  border-color: #FF9F43;
-  box-shadow: 0 0 0 3px rgba(255, 159, 67, 0.1);
+/* ========== 手绘风装饰边框 ========== */
+.hand-border {
+  border: 1.5px solid #E8DDD2;
+  border-radius: 20px 16px 24px 18px;
+  box-shadow: 0 2px 12px rgba(125,107,93,0.06);
 }
 
-/* 任务卡片拖动效果 */
-.task-card {
-  transition: all 0.2s ease;
-}
-
-.task-card:active {
-  transform: scale(0.98);
-}
-
-/* 导航图标活跃状态 */
-.nav-active {
-  color: #FF9F43;
+/* ========== 甜品装饰背景点 ========== */
+.deco-dots {
   position: relative;
 }
-
-.nav-active::after {
+.deco-dots::before {
   content: '';
   position: absolute;
-  bottom: -2px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 20px;
-  height: 3px;
-  background: #FF9F43;
-  border-radius: 2px;
-}
-
-/* =============================================
-   深色主题 (Dark Mode)
-   ============================================= */
-
-.dark body {
-  background-color: #1a1a2e;
-  color: #e0e0e0;
-}
-
-/* 基础背景 */
-.dark .app-container {
-  background-color: #1a1a2e;
-}
-
-/* 卡片 */
-.dark .hand-card {
-  background: #252540;
-  border-color: #353560;
-  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.2);
-}
-
-/* 按钮 */
-.dark .hand-btn {
-  background: linear-gradient(135deg, #FF9F43, #E67A00);
-}
-
-.dark .hand-btn-outline {
-  background: #252540;
-  color: #FF9F43;
-  border-color: #FF9F43;
-}
-
-/* 输入框 */
-.dark .hand-input {
-  background: #1a1a2e;
-  border-color: #353560;
-  color: #e0e0e0;
-}
-
-.dark .hand-input::placeholder {
-  color: #606080;
-}
-
-.dark .hand-input:focus {
-  border-color: #FF9F43;
-  box-shadow: 0 0 0 3px rgba(255, 159, 67, 0.15);
-}
-
-/* 进度条 */
-.dark .progress-bar {
-  background: #353560;
-}
-
-/* 标签 */
-.dark .tag {
-  background: #2a2a45;
-  color: #FFB347;
-  border-color: #353560;
-}
-
-/* 底部导航 */
-.dark .bottom-nav {
-  background: #252540;
-  border-top-color: #353560;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-}
-
-/* AI 对话气泡 */
-.dark .ai-bubble {
-  background: linear-gradient(135deg, #2a2a45, #353560);
-  border-color: #404070;
-  color: #e0e0e0;
-}
-
-.dark .user-bubble {
-  background: linear-gradient(135deg, #FF9F43, #E67A00);
-}
-
-/* 渐变卡片覆盖 */
-.dark .hand-card.bg-gradient-to-r.from-warm-50 {
-  background: linear-gradient(to right, #252540, #2a2a45) !important;
-}
-
-.dark .hand-card.bg-gradient-to-r.from-purple-50 {
-  background: linear-gradient(to right, #252540, #2a2040) !important;
-}
-
-.dark .hand-card.bg-gradient-to-r.from-green-50 {
-  background: linear-gradient(to right, #202535, #252540) !important;
-}
-
-/* 文本颜色覆盖 */
-.dark .text-gray-700 {
-  color: #c0c0d0;
-}
-
-.dark .text-gray-800 {
-  color: #d0d0e0;
-}
-
-.dark .text-gray-600 {
-  color: #a0a0b0;
-}
-
-.dark .text-gray-500 {
-  color: #9090a0;
-}
-
-.dark .text-gray-400 {
-  color: #707080;
-}
-
-.dark .text-gray-300 {
-  color: #505060;
-}
-
-.dark .text-warm-700 {
-  color: #FFB347;
-}
-
-.dark .text-warm-600 {
-  color: #FF9F43;
-}
-
-.dark .text-warm-500 {
-  color: #FF9F43;
-}
-
-/* 背景色覆盖 */
-.dark .bg-warm-50 {
-  background-color: #252540;
-}
-
-.dark .bg-warm-100 {
-  background-color: #2a2a45;
-}
-
-.dark .bg-warm-50\/50 {
-  background-color: rgba(37, 37, 64, 0.5);
-}
-
-.dark .bg-white {
-  background-color: #1a1a2e;
-}
-
-.dark .bg-gray-50 {
-  background-color: #252540;
-}
-
-.dark .bg-gray-100 {
-  background-color: #2a2a45;
-}
-
-.dark .bg-red-50 {
-  background-color: #2a1520;
-}
-
-.dark .bg-green-50 {
-  background-color: #152520;
-}
-
-.dark .bg-blue-50 {
-  background-color: #15202a;
-}
-
-.dark .bg-purple-50 {
-  background-color: #201530;
-}
-
-.dark .bg-orange-50 {
-  background-color: #2a2015;
-}
-
-.dark .bg-pink-50 {
-  background-color: #2a1520;
-}
-
-.dark .bg-emerald-50 {
-  background-color: #152520;
-}
-
-.dark .bg-red-50\/30 {
-  background-color: rgba(42, 21, 32, 0.3);
-}
-
-/* 边框覆盖 */
-.dark .border-warm-50 {
-  border-color: #353560;
-}
-
-.dark .border-warm-100 {
-  border-color: #353560;
-}
-
-.dark .border-warm-200 {
-  border-color: #404070;
-}
-
-.dark .border-red-100 {
-  border-color: #402030;
-}
-
-.dark .border-red-200 {
-  border-color: #502535;
-}
-
-.dark .border-green-200 {
-  border-color: #203520;
-}
-
-.dark .border-purple-100 {
-  border-color: #302040;
-}
-
-.dark .border-purple-200 {
-  border-color: #352550;
-}
-
-/* 悬停效果 */
-.dark .hover\:bg-warm-50:hover {
-  background-color: #2a2a45;
-}
-
-.dark .hover\:bg-warm-100:hover {
-  background-color: #303050;
-}
-
-.dark .hover\:bg-red-50:hover {
-  background-color: #2a1520;
-}
-
-.dark .hover\:bg-warm-50\/50:hover {
-  background-color: rgba(42, 42, 69, 0.5);
-}
-
-.dark .hover\:text-warm-500:hover {
-  color: #FFB347;
-}
-
-/* 日历日 */
-.dark .calendar-day:hover {
-  background: #2a2a45;
-}
-
-/* 手绘边框 */
-.dark .hand-border {
-  border-color: #353560;
-  box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.3);
-}
-
-.dark .hand-border:hover {
-  box-shadow: 4px 4px 0px rgba(255, 159, 67, 0.2);
-}
-
-/* 滚动条 */
-.dark ::-webkit-scrollbar-thumb {
-  background: #404070;
-}
-
-/* 选中/激活的文字色 */
-.dark .text-purple-600 {
-  color: #b388ff;
-}
-
-.dark .text-green-700 {
-  color: #81c784;
-}
-
-.dark .text-red-500 {
-  color: #ef5350;
-}
-
-/* select 下拉框 */
-.dark select {
-  color: #e0e0e0;
-}
-
-.dark select option {
-  background: #1a1a2e;
-  color: #e0e0e0;
-}
-
-/* 分割线 */
-.dark .border-t {
-  border-top-color: #353560;
-}
-
-.dark .border-b {
-  border-bottom-color: #353560;
-}
-
-/* SVG 圆环 (统计页) */
-.dark svg circle[fill="none"] {
-  /* 保持透明 */
-}
-
-/* 通知未读红点背景 */
-.dark .bg-red-500 {
-  background-color: #ef5350;
-}
-
-/* 模态背景 */
-.dark .bg-black\/20 {
-  background-color: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background-image:
+    radial-gradient(circle, #D4A5A5 0.8px, transparent 0.8px),
+    radial-gradient(circle, #B8A9CA 0.6px, transparent 0.6px),
+    radial-gradient(circle, #A8BFA0 0.7px, transparent 0.7px);
+  background-size: 40px 40px, 35px 35px, 45px 45px;
+  background-position: 0 0, 15px 20px, 25px 8px;
+  opacity: 0.15;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
 }

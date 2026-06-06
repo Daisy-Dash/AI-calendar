@@ -1,256 +1,259 @@
-# AI 日程协作者 — 技术文档
+# AI 统筹组长 — 技术文档
 
-> 版本: 1.0 | 日期: 2026-06-03
+> 版本: 2.0 | 日期: 2026-06-06
 
 ---
 
 ## 1. 技术架构
 
 ```
-┌──────────────────────────────────────────────────┐
-│                    用户浏览器                      │
-│          React 18 + Tailwind CSS (PWA)            │
-│               localhost:5173 / Vercel             │
-├──────────────────────────────────────────────────┤
-│                HTTP REST + WebSocket               │
-│                JSON / JWT Bearer                   │
-├──────────────────────────────────────────────────┤
-│                  FastAPI 后端                      │
-│              Uvicorn ASGI Server                   │
-│               localhost:8000 / Railway             │
-│  ┌──────────┬──────────┬──────────┬──────────┐   │
-│  │  Auth    │  Tasks   │ Schedule │ Groups   │   │
-│  │  Router  │  Router  │  Router  │  Router  │   │
-│  ├──────────┼──────────┼──────────┼──────────┤   │
-│  │   AI     │  Users   │  Notify  │    WS    │   │
-│  │  Router  │  Router  │  Router  │  Router  │   │
-│  └──────────┴──────────┴──────────┴──────────┘   │
-├──────────────────────────────────────────────────┤
-│              AI Services (可插拔)                  │
-│     Claude API  │  GPT API  │  DeepSeek API       │
-│         本地解析引擎 (中文日期/时间)                │
-├──────────────────────────────────────────────────┤
-│                 数据存储层                         │
-│         SQLite (开发) / PostgreSQL (生产)          │
-│            SQLAlchemy ORM 2.0+                    │
-└──────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────┐
+│                   用户浏览器                   │
+│          React 18 + Tailwind CSS (SPA)        │
+│               localhost:5173                   │
+├──────────────────────────────────────────────┤
+│                  前端应用层                     │
+│  ┌──────────┬──────────┬──────────────────┐  │
+│  │ 页面组件  │ 自定义组件 │  交互手势/动画   │  │
+│  │ 6个核心页 │ TaskCard  │  侧滑/长按      │  │
+│  │          │ SkillTag  │  弹跳/转场      │  │
+│  │          │ RadarChart│                 │  │
+│  └──────────┴──────────┴──────────────────┘  │
+├──────────────────────────────────────────────┤
+│                  数据持久层                     │
+│          localStorage (JSON 序列化)            │
+│       store.js — 统一读写接口                   │
+├──────────────────────────────────────────────┤
+│                AI Mock 服务                    │
+│        mockAI.js — 模拟 AI Agent 响应          │
+│    (可替换为真实 API: DeepSeek / Claude)        │
+└──────────────────────────────────────────────┘
 ```
+
+**无后端设计**: 本项目为纯前端 SPA，所有数据通过 localStorage 持久化。不需要登录系统、不需要真实后端。AI 交互通过 mockAI.js 模拟，可按需替换为真实 API 调用。
 
 ---
 
 ## 2. 技术栈
 
-### 2.1 后端
+### 2.1 前端
 
-| 技术 | 版本 | 用途 | 选型理由 |
-|------|------|------|---------|
-| Python | 3.10+ | 运行环境 | 团队熟悉 + AI/数据科学生态 |
-| FastAPI | 0.115+ | Web 框架 | 高性能异步、自动生成 API 文档、Pydantic 集成 |
-| Uvicorn | 0.34+ | ASGI 服务器 | FastAPI 官方推荐 |
-| SQLAlchemy | 2.0+ | ORM | Python 最成熟的 ORM |
-| python-jose | 3.5+ | JWT 认证 | 标准 JWT 实现 |
-| passlib | 1.7+ | 密码哈希 | bcrypt 支持 |
-| httpx | 0.28+ | HTTP 客户端 | 异步支持、AI API 调用 |
-| Pydantic | 2.10+ | 数据验证 | FastAPI 原生支持 |
+| 技术 | 版本 | 用途 |
+|------|------|------|
+| React | 18.3 | UI 框架 |
+| Vite | 6.0+ | 构建工具 |
+| Tailwind CSS | 3.4 | 样式框架 |
+| React Router | 6.28 | 路由管理 |
 
-### 2.2 前端
+### 2.2 数据存储
 
-| 技术 | 版本 | 用途 | 选型理由 |
-|------|------|------|---------|
-| React | 18.3 | UI 框架 | 生态丰富、团队熟悉 |
-| Vite | 6.0+ | 构建工具 | 极快 HMR、ESM 原生 |
-| Tailwind CSS | 3.4 | 样式框架 | 原子化 CSS、dark mode 支持 |
-| React Router | 6.28 | 路由 | 标准 SPA 路由方案 |
-| Axios | 1.7 | HTTP 客户端 | 拦截器、错误处理 |
+| 方案 | 用途 |
+|------|------|
+| localStorage | 项目数据、用户技能、聊天记录 — 持久化 |
+| React State | 页面级临时状态 |
 
-### 2.3 AI 服务
+### 2.3 AI 服务（Mock / 可选真实接入）
 
-| Provider | 模型 | API 端点 | 用途 |
-|----------|------|---------|------|
-| DeepSeek | deepseek-chat | api.deepseek.com/v1 | **当前主力** — 任务分解/分配/对话 |
-| Claude | claude-sonnet-4 | api.anthropic.com/v1 | 备选 — 复杂推理 |
-| GPT | gpt-4o | api.openai.com/v1 | 备选 — JSON 结构化输出 |
-| 本地引擎 | — | 内置 | 中文日期解析（毫秒级，无需API） |
-
-### 2.4 数据库
-
-| 环境 | 数据库 | 连接 |
-|------|--------|------|
-| 开发 | SQLite | `sqlite:///./data/ai_calendar.db` |
-| 生产 | PostgreSQL (推荐) | 通过 Railway/ Supabase 提供 |
-
-### 2.5 部署
-
-| 组件 | 平台 | URL |
-|------|------|-----|
-| 前端 | Vercel | `https://ai-calendar.vercel.app` |
-| 后端 | Railway | `https://ai-calendar-api.railway.app` |
-| 数据库 | Railway Postgres | 内网连接 |
+| Provider | 说明 |
+|----------|------|
+| mockAI.js | 默认 — 预设的模拟 AI 响应，无需 API Key |
+| DeepSeek API | 可选 — 通过 VITE_AI_API_KEY 环境变量启用 |
 
 ---
 
-## 3. 数据库设计
+## 3. 数据模型
 
-### 3.1 ER 图（简化）
-
-```
-users ──1:N──> tasks ──N:1──> groups
-  │              │               │
-  │              │               │
-  ├──1:N──> schedules        group_members (关联表)
-  │                     
-  ├──1:N──> notifications
-  │
-  └── (preferences JSON)
-```
-
-### 3.2 核心表
-
-| 表名 | 主要字段 | 索引 |
-|------|---------|------|
-| `users` | id, username, email, password_hash, preferences(JSON) | email(unique), username(unique) |
-| `tasks` | id, user_id(FK), group_id(FK), title, deadline, priority(1-4), status, progress(0-100), tags(JSON), assigned_to(FK) | user_id, group_id, parent_id |
-| `schedules` | id, user_id(FK), task_id(FK), title, date, start_time, end_time, color, note | user_id, date |
-| `groups` | id, name, invite_code(6位), created_by(FK) | invite_code(unique) |
-| `group_members` | id, group_id(FK), user_id(FK), role(owner/admin/member), skills | group_id, user_id |
-| `notifications` | id, user_id(FK), type, title, message, is_read | user_id, is_read |
-
-### 3.3 任务状态机
+### 3.1 localStorage Keys
 
 ```
-待办 (PENDING) ──进度>0──> 进行中 (IN_PROGRESS) ──进度100──> 已完成 (COMPLETED)
-     ↑                                                          │
-     └──────────────── 进度归零 ←───────────────────────────────┘
+aical_user_profile   — 用户技能名片
+aical_projects       — 项目列表
 ```
 
----
+### 3.2 数据结构
 
-## 4. API 设计
+```typescript
+// 用户技能名片
+interface UserProfile {
+  name: string
+  major: string[]          // 专业方向: ["设计", "计算机"]
+  tools: string[]          // 熟练工具: ["Figma", "Python"]
+  skills: string[]         // 擅长技能: ["UI设计", "数据分析"]
+  created_at: string
+}
 
-### 4.1 认证方案
+// 项目
+interface Project {
+  id: string
+  name: string
+  description: string
+  status: 'discussing' | 'confirmed' | 'in_progress' | 'completed'
+  created_at: string
+  confirmed_goal: string   // 人工确认的最终方案
+  chat_history: ChatMessage[]
+  tasks: Task[]
+  inspirations: Inspiration[]
+}
+
+// 聊天消息
+interface ChatMessage {
+  id: string
+  role: 'user' | 'ai'
+  content: string
+  timestamp: string
+  type: 'text' | 'inspiration' | 'authorize'
+}
+
+// 子任务
+interface Task {
+  id: string
+  title: string
+  description: string
+  status: 'unclaimed' | 'in_progress' | 'completed'
+  assigned_to: string | null
+  difficulty: 1 | 2 | 3 | 4 | 5
+  skills_required: string[]
+  estimated_days: number
+  guide_steps: GuideStep[]
+  match_score: number | null   // 技能匹配度 0-100
+}
+
+// 操作指南步骤
+interface GuideStep {
+  title: string
+  description: string
+  done: boolean
+}
+
+// 竞品灵感
+interface Inspiration {
+  title: string
+  description: string
+  type: string              // "APP" | "网站" | "论文" | "开源项目"
+  tags: string[]
+}
+```
+
+### 3.3 状态流转
 
 ```
-POST /api/auth/register  → JWT Token (7天有效)
-POST /api/auth/login     → JWT Token
+项目状态:
+  discussing → confirmed → in_progress → completed
+                  ↑              |
+                  └── 返回修改 ──┘
 
-所有后续请求携带:
-Authorization: Bearer <token>
-```
-
-### 4.2 端点规范
-
-- **命名**: RESTful，复数名词
-- **版本**: 通过 `/api/` 前缀
-- **分页**: 暂未实现，数据量小时全量返回
-- **筛选**: Query 参数 (`?status_filter=待办&priority=3`)
-- **错误**: 标准 HTTP 状态码 + `{"detail": "错误描述"}`
-
-### 4.3 WebSocket
-
-```
-ws://host:8000/ws?token=<jwt_token>
-
-消息格式:
-→ {"type": "ping"}                    # 心跳
-← {"type": "pong"}                    # 心跳响应
-← {"type": "connected", ...}          # 连接确认
-← {"type": "task_update", ...}        # 任务变更
-← {"type": "schedule_update", ...}    # 日程变更
-← {"type": "notification", ...}       # 新通知
-
-自动重连: 非认证失败时 5s 后重连
+任务状态:
+  unclaimed → in_progress → completed
+      ↑                         |
+      └──── 取消认领 ────────────┘
 ```
 
 ---
 
-## 5. 关键设计决策
+## 4. 文件结构
 
-### 5.1 为什么用 SQLite 而不是 PostgreSQL？
-
-- **开发简单**: 零配置，文件即数据库
-- **课程项目**: 不需要生产级并发
-- **迁移容易**: SQLAlchemy ORM 只需改 URL 即可切换
-
-### 5.2 为什么 AI Provider 设计为可插拔？
-
-三种 AI Provider（Claude/GPT/DeepSeek）共享相同接口，通过 `.env` 中 `AI_PROVIDER` 切换。无 API Key 时自动回退到本地引擎（日期解析）和智能 Mock（对话/分解）。
-
-### 5.3 为什么移动端优先 430px？
-
-- 目标用户主要在手机上使用
-- 430px 是 iPhone 14 Pro Max 的逻辑宽度
-- 桌面端居中显示，模拟手机体验
-- 后续可扩展为响应式
-
-### 5.4 为什么用手绘风格？
-
-- 降低工具感，减少使用焦虑
-- 与大学生群体审美匹配
-- 差异化视觉记忆点
-- 不规则圆角和阴影模拟纸质笔记本
-
----
-
-## 6. 技术限制
-
-### 6.1 已知限制
-
-| 限制 | 说明 | 解决方案 |
-|------|------|---------|
-| SQLite 并发 | 不支持高并发写入 | 生产环境切换到 PostgreSQL |
-| 无文件上传 | 不支持任务附件 | 后续集成 Supabase Storage |
-| 本地解析覆盖 | 中文日期解析只覆盖常用模式 | 持续扩充正则规则 |
-| WebSocket 单进程 | 多进程部署时消息丢失 | 使用 Redis Pub/Sub |
-| 无端到端加密 | 团队任务数据明文存储 | 生产环境启用 HTTPS |
-
-### 6.2 性能瓶颈
-
-| 场景 | 瓶颈 | 优化方案 |
-|------|------|---------|
-| AI API 调用 | 3-5s 延迟 | 本地解析优先、缓存常见模式 |
-| 月视图日历 | 前端渲染 30+ 日程 | 虚拟滚动（数据量小时不必要） |
-| 通知广播 | WebSocket 全量推送 | 按频道订阅（后续优化） |
-
-### 6.3 安全考虑
-
-- `.env` 文件已在 `.gitignore` 中（但历史中曾提交过 Key，需轮换）
-- API Key 不应暴露给前端
-- 用户密码使用 bcrypt 哈希（12 rounds）
-- CORS 限制为 `localhost:5173` 和 `*.vercel.app`
+```
+frontend/src/
+├── App.jsx                      # 路由配置
+├── main.jsx                     # 入口
+├── index.css                    # 全局样式 + 手绘风格 + 动画
+│
+├── components/
+│   ├── NavBar.jsx               # 底部导航
+│   └── Toast.jsx                # 提示组件
+│
+├── contexts/
+│   └── ThemeContext.jsx          # 主题切换
+│
+├── pages/
+│   ├── ProjectListPage.jsx      # P01 项目列表（首页）
+│   ├── SkillProfilePage.jsx     # P02 技能名片
+│   ├── DiscussionPage.jsx       # P03 破冰讨论
+│   ├── AuthorizePage.jsx        # P04 人工授权
+│   ├── KanbanPage.jsx           # P05 任务看板
+│   └── TaskDetailPage.jsx       # P06 任务详情
+│
+├── utils/
+│   ├── store.js                 # localStorage 数据管理
+│   ├── mockAI.js                # AI 模拟响应
+│   └── helpers.js               # 工具函数
+│
+└── public/
+    └── manifest.json            # PWA 配置
+```
 
 ---
 
-## 7. 开发环境
+## 5. 关键技术实现
 
-### 7.1 本地启动
+### 5.1 本地数据持久化
+
+使用 `store.js` 封装所有 localStorage 操作，确保数据一致性:
+- 每次写入同步序列化为 JSON
+- 提供 CRUD 接口
+- 支持项目级别的增删改查
+
+### 5.2 手势交互
+
+- **侧滑删除**: 通过 touchstart/touchmove/touchend 事件实现，滑动距离超过阈值显示删除按钮
+- **长按编辑**: 通过 setTimeout 检测长按，触发编辑模式
+
+### 5.3 动画系统
+
+- **页面转场**: CSS @keyframes fadeInUp 从底部滑入
+- **列表弹跳**: 任务卡片依次出现，使用 staggered animation-delay
+- **按钮脉冲**: @keyframes pulse 呼吸发光效果
+- **认领成功**: scale + rotate 组合动画
+
+### 5.4 AI 记忆机制
+
+用户技能名片存储在 localStorage 中。新建项目进入讨论页时:
+1. 读取 `aical_user_profile`
+2. 根据用户专业标签生成定制化问候语
+3. 后续 AI 响应基于用户技能调整推荐内容
+
+### 5.5 雷达图
+
+使用纯 SVG 实现五维雷达图，无需额外库。根据用户技能与任务所需技能的交集计算匹配度。
+
+---
+
+## 6. 开发环境
+
+### 6.1 本地启动
 
 ```bash
-# 后端
-cd backend
-uvicorn main:app --reload --port 8000
-
-# 前端
 cd frontend
+npm install
 npm run dev
-
-# 访问
-前端: http://localhost:5173
-后端API文档: http://localhost:8000/docs
+# 访问 http://localhost:5173
 ```
 
-### 7.2 测试
+### 6.2 构建
 
 ```bash
-cd backend
-python -m pytest tests/ -v    # 31个测试
+npm run build    # 输出到 dist/
+npm run preview  # 预览生产构建
 ```
 
-### 7.3 构建
+---
 
-```bash
-cd frontend
-npm run build                  # 输出到 dist/
+## 7. 关键设计决策
 
-# 预览生产构建
-npm run preview
-```
+### 7.1 为什么纯前端、不需要后端？
+
+- 课程作业演示场景，不需要多用户并发
+- localStorage 完全满足数据持久化需求
+- 降低部署和环境配置复杂度
+- 评委可以直接在浏览器中体验
+
+### 7.2 为什么用 Mock AI 而不是真实 API？
+
+- 避免 API Key 泄露风险
+- 演示稳定性：不受网络/限额影响
+- Mock 数据可精确控制演示效果
+- 代码结构支持随时替换为真实 API
+
+### 7.3 为什么不用拖拽库？
+
+手势交互使用原生 Touch API 实现，避免引入额外依赖，同时满足"手势交互"考核要求的展示效果。

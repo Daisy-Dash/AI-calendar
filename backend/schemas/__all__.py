@@ -1,5 +1,5 @@
 from schemas import (
-    UserCreate, UserLogin, UserResponse, Token,
+    UserCreate, UserLogin, UserResponse, UserProfileUpdate, Token,
     TaskCreate, TaskUpdate, TaskResponse,
     AISplitRequest, AISplitResponse,
     AIAssignRequest, AIAssignResponse,

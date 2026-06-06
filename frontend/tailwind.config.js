@@ -1,6 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -8,57 +7,84 @@ export default {
   theme: {
     extend: {
       colors: {
-        warm: {
-          50: '#FFF8F0',
-          100: '#FFF5E6',
-          200: '#FFE8CC',
-          300: '#FFD6A5',
-          400: '#FFB347',
-          500: '#FF9F43',
-          600: '#FF8C00',
-          700: '#E67A00',
-          800: '#CC6A00',
-          900: '#995000',
+        cream: {
+          50: '#FDFBF9',
+          100: '#FAF6F1',
+          200: '#F3ECE4',
+          300: '#E8DDD2',
+          400: '#D9CCBC',
         },
-        adhd: {
-          bg: '#FFF8F0',
-          card: '#FFFFFF',
-          accent: '#FF9F43',
-          text: '#2D2D2D',
-          muted: '#8C8C8C',
-          border: '#FFE8CC',
-          success: '#4CAF50',
-          warning: '#FF9800',
-          danger: '#F44336',
-          info: '#2196F3',
+        rosa: {
+          50: '#FAF1F1',
+          100: '#F2E1E1',
+          200: '#E8CDCD',
+          300: '#D4A5A5',
+          400: '#C48B8B',
+          500: '#B37474',
+          600: '#9E5F5F',
+        },
+        sage: {
+          50: '#F2F5F0',
+          100: '#E0E9DC',
+          200: '#CFDBCA',
+          300: '#A8BFA0',
+          400: '#8AA880',
+          500: '#6F8F66',
+        },
+        dusty: {
+          50: '#F0F3F6',
+          100: '#D5DEE5',
+          200: '#C0CED9',
+          300: '#9FB5C4',
+          400: '#7A9AB0',
+        },
+        lilac: {
+          50: '#F4F1F7',
+          100: '#E3DDF0',
+          200: '#D5CDE4',
+          300: '#B8A9CA',
+          400: '#9A88B5',
+        },
+        caramel: {
+          50: '#F7F2EB',
+          100: '#ECE1D3',
+          200: '#E0D2BC',
+          300: '#C9A87C',
+          400: '#B08F60',
+        },
+        choco: {
+          50: '#F5F0EC',
+          100: '#E6DDD4',
+          200: '#C4B5A5',
+          300: '#A69485',
+          400: '#8B7A6B',
+          500: '#7D6B5D',
+          600: '#655549',
+          700: '#4D4038',
         },
       },
       fontFamily: {
-        hand: ['"ZCOOL KuaiLe"', 'cursive', 'sans-serif'],
+        hand: ['"LXGW WenKai"', 'cursive', 'sans-serif'],
         body: ['"Noto Sans SC"', 'system-ui', 'sans-serif'],
-      },
-      borderRadius: {
-        'hand': '12px 8px 16px 10px',
       },
       maxWidth: {
         'app': '430px',
       },
-      boxShadow: {
-        'hand': '3px 3px 0px rgba(0,0,0,0.08)',
-        'hand-lg': '5px 5px 0px rgba(0,0,0,0.08)',
-      },
       animation: {
         'float': 'float 3s ease-in-out infinite',
-        'wiggle': 'wiggle 0.5s ease-in-out infinite',
+        'jelly': 'jelly 0.5s ease-out',
       },
       keyframes: {
         float: {
-          '0%, 100%': { transform: 'translateY(0px)' },
-          '50%': { transform: 'translateY(-5px)' },
+          '0%, 100%': { transform: 'translateY(0px) rotate(0deg)' },
+          '33%': { transform: 'translateY(-6px) rotate(2deg)' },
+          '66%': { transform: 'translateY(-3px) rotate(-1deg)' },
         },
-        wiggle: {
-          '0%, 100%': { transform: 'rotate(-1deg)' },
-          '50%': { transform: 'rotate(1deg)' },
+        jelly: {
+          '0%': { transform: 'scale(0.7)' },
+          '50%': { transform: 'scale(1.05)' },
+          '70%': { transform: 'scale(0.95)' },
+          '100%': { transform: 'scale(1)' },
         },
       },
     },

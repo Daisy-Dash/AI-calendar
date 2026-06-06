@@ -21,11 +21,23 @@ class UserResponse(BaseModel):
     email: str
     avatar: str
     bio: str
+    major: list = []
+    skills: list = []
+    tools: list = []
     is_active: bool
     created_at: Any
 
     class Config:
         from_attributes = True
+
+
+class UserProfileUpdate(BaseModel):
+    username: Optional[str] = None
+    avatar: Optional[str] = None
+    bio: Optional[str] = None
+    major: Optional[list[str]] = None
+    skills: Optional[list[str]] = None
+    tools: Optional[list[str]] = None
 
 
 class Token(BaseModel):

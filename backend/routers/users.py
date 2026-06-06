@@ -5,7 +5,7 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 from database import get_db
 from models import User, Task, Schedule, GroupMember
-from schemas import UserResponse, UserSettingsUpdate, UserSettingsResponse, UserStatsResponse
+from schemas import UserResponse, UserProfileUpdate, UserSettingsUpdate, UserSettingsResponse, UserStatsResponse
 from auth import get_current_user
 
 router = APIRouter(prefix="/api/users", tags=["用户"])
@@ -29,18 +29,40 @@ def get_me(current_user: User = Depends(get_current_user)):
 
 @router.put("/me", response_model=UserResponse)
 def update_me(
-    data: dict,
+    data: UserProfileUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """更新当前用户信息"""
-    allowed_fields = {"username", "avatar", "bio"}
-    for key, value in data.items():
-        if key in allowed_fields and value is not None:
-            setattr(current_user, key, value)
+    """更新当前用户信息（含技能名片）"""
+    update_data = data.model_dump(exclude_unset=True)
+    if "username" in update_data:
+        existing = db.query(User).filter(
+            User.username == update_data["username"],
+            User.id != current_user.id,
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="该昵称已被使用")
+    for key, value in update_data.items():
+        setattr(current_user, key, value)
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.get("/search", response_model=list[UserResponse])
+def search_users(
+    q: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """通过昵称或邮箱搜索用户"""
+    if len(q) < 2:
+        return []
+    results = db.query(User).filter(
+        User.id != current_user.id,
+        (User.username.contains(q) | User.email.contains(q)),
+    ).limit(20).all()
+    return results
 
 
 @router.get("/me/settings", response_model=UserSettingsResponse)
