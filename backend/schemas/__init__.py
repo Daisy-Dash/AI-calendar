@@ -8,7 +8,7 @@ class UserCreate(BaseModel):
     username: str
     email: str
     password: str
-    major: Optional[str] = ""
+    major: Optional[list[str]] = []
     skills: Optional[list[str]] = []
 
 
@@ -23,14 +23,9 @@ class UserResponse(BaseModel):
     email: str
     avatar: str
     bio: str
-<<<<<<< HEAD
     major: list = []
     skills: list = []
     tools: list = []
-=======
-    major: Optional[str] = ""
-    skills: Optional[list] = []
->>>>>>> 85652a8d7910558fefa90e8ec9562240eff85d5b
     is_active: bool
     created_at: Any
 
@@ -191,6 +186,7 @@ class GroupResponse(BaseModel):
     description: str
     invite_code: str
     created_by: int
+    status: Optional[str] = "gathering"
     member_count: Optional[int] = 0
     created_at: Any
 
@@ -204,6 +200,7 @@ class GroupDetailResponse(BaseModel):
     description: str
     invite_code: str
     created_by: int
+    status: Optional[str] = "gathering"
     member_count: int
     created_at: Any
     members: list[dict] = []

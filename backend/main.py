@@ -9,9 +9,20 @@ from database import init_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """应用生命周期管理 — 自动运行数据库迁移"""
-    # 使用 Alembic 迁移（保留已有数据）
+    """应用生命周期管理 — 自动备份 + 数据库迁移"""
     import os as _os
+
+    # 每次启动前自动备份数据库（保护用户数据）
+    db_path = _os.path.join(_os.path.dirname(__file__), "data", "ai_calendar.db")
+    if _os.path.exists(db_path):
+        try:
+            from db_backup import backup
+            backup()
+            print("[Backup] Database backed up before migration")
+        except Exception as e:
+            print(f"[Backup] Auto-backup skipped: {e}")
+
+    # 使用 Alembic 迁移（保留已有数据）
     try:
         from alembic.config import Config as AlembicConfig
         from alembic import command
@@ -23,6 +34,14 @@ async def lifespan(app: FastAPI):
         # 回退：如果 Alembic 不可用，使用 create_all
         print(f"[Migration] Alembic failed ({e}), falling back to create_all")
         init_db()
+
+    # 安全地添加可能缺失的新列（兼容旧数据库）
+    try:
+        from safe_migrate import safe_migrate
+        safe_migrate()
+        print("[Migration] Safe column check done")
+    except Exception as e:
+        print(f"[Migration] Safe migrate skipped: {e}")
 
     # 启动DDL提醒调度器
     from services.ddl_reminder import init_scheduler, check_ddl_and_notify
@@ -56,6 +75,8 @@ from routers.users import router as users_router
 from routers.groups import router as groups_router
 from routers.notifications import router as notifications_router
 from routers.ws import router as ws_router
+from routers.friends import router as friends_router
+from routers.messages import router as messages_router
 
 app.include_router(auth_router)
 app.include_router(tasks_router)
@@ -65,6 +86,8 @@ app.include_router(users_router)
 app.include_router(groups_router)
 app.include_router(notifications_router)
 app.include_router(ws_router)
+app.include_router(friends_router)
+app.include_router(messages_router)
 
 
 @app.get("/")

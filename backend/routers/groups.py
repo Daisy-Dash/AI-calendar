@@ -308,6 +308,296 @@ def get_group_stats(
     )
 
 
+# ─── 人齐启动 & 任务确认 ───────────────────────────────────
+
+@router.post("/{group_id}/start-workflow")
+def start_workflow(
+    group_id: int,
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """群主点击「人齐了，开始吧」触发AI分解任务"""
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="群组不存在")
+
+    # 只有群主能触发
+    if group.created_by != current_user.id:
+        raise HTTPException(status_code=403, detail="只有群主可以启动工作流程")
+
+    # 更新项目简介（如果提供）
+    if data and data.get("project_brief"):
+        group.project_brief = data["project_brief"]
+
+    # 获取成员信息
+    members = db.query(GroupMember).filter(GroupMember.group_id == group_id).all()
+    member_info = []
+    for m in members:
+        user = db.query(User).filter(User.id == m.user_id).first()
+        if user:
+            member_info.append({
+                "id": user.id,
+                "name": user.username,
+                "skills": user.skills or [],
+                "major": user.major or [],
+                "role": m.role,
+            })
+
+    # AI 分解任务并分配
+    project_desc = group.project_brief or group.description or group.name
+    tasks_data = _ai_decompose_tasks(project_desc, member_info)
+
+    # 创建任务
+    created_tasks = []
+    for t in tasks_data:
+        task = Task(
+            title=t["title"],
+            description=t.get("description", ""),
+            user_id=t.get("assigned_to") or current_user.id,
+            group_id=group_id,
+            assigned_to=t.get("assigned_to"),
+            status="待确认",
+            priority=t.get("priority", "中"),
+            deadline=None,
+        )
+        db.add(task)
+        db.flush()
+        created_tasks.append({
+            "id": task.id,
+            "title": task.title,
+            "description": task.description,
+            "assigned_to": task.assigned_to,
+            "assigned_name": t.get("assigned_name", ""),
+            "priority": task.priority,
+            "reason": t.get("reason", ""),
+        })
+
+    # 更新群组状态
+    group.status = "confirming"
+    db.commit()
+
+    # 发送系统消息到群聊
+    from models.message import GroupMessage
+    task_summary = "📋 AI已完成任务分解和分配：\n\n"
+    for ct in created_tasks:
+        task_summary += f"• {ct['title']} → {ct['assigned_name']}\n"
+        if ct.get('reason'):
+            task_summary += f"  理由: {ct['reason']}\n"
+    task_summary += "\n⚡ 请各位组员确认自己的任务，如有异议可以打回重新分配。"
+
+    ai_msg = GroupMessage(
+        group_id=group_id,
+        sender_id=None,
+        content=task_summary,
+        msg_type="ai",
+    )
+    db.add(ai_msg)
+    db.commit()
+
+    return {
+        "message": "AI已完成任务分解和分配",
+        "tasks": created_tasks,
+        "status": "confirming",
+    }
+
+
+@router.post("/{group_id}/tasks/{task_id}/confirm")
+def confirm_task(
+    group_id: int,
+    task_id: int,
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """成员确认或拒绝任务分配"""
+    accept = data.get("accept", True)
+    reason = data.get("reason", "")
+
+    task = db.query(Task).filter(
+        Task.id == task_id,
+        Task.group_id == group_id,
+    ).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="任务不存在")
+
+    if task.assigned_to != current_user.id:
+        raise HTTPException(status_code=403, detail="这不是你的任务")
+
+    if accept:
+        task.status = "待处理"
+        db.commit()
+
+        # 检查所有任务是否都已确认
+        pending = db.query(Task).filter(
+            Task.group_id == group_id,
+            Task.status == "待确认",
+        ).count()
+
+        if pending == 0:
+            # 所有任务已确认，更新群组状态
+            group = db.query(Group).filter(Group.id == group_id).first()
+            if group:
+                group.status = "in_progress"
+                db.commit()
+
+                # 发送系统消息
+                from models.message import GroupMessage
+                msg = GroupMessage(
+                    group_id=group_id,
+                    sender_id=None,
+                    content="🎉 所有成员已确认任务！项目正式开始，大家加油！\n\n可以在看板中查看和更新你的任务进度。",
+                    msg_type="ai",
+                )
+                db.add(msg)
+                db.commit()
+
+        return {"message": "已确认任务", "status": "待处理"}
+    else:
+        # 打回任务
+        task.status = "已打回"
+        task.assigned_to = None
+        db.commit()
+
+        # 通知群主
+        group = db.query(Group).filter(Group.id == group_id).first()
+        from models.message import GroupMessage
+        msg = GroupMessage(
+            group_id=group_id,
+            sender_id=None,
+            content=f"⚠️ {current_user.username} 对任务「{task.title}」提出异议：{reason or '未说明原因'}\n\n该任务已退回，等待重新分配。群主可以发送 @ai 重新分配 来让AI重新调整。",
+            msg_type="ai",
+        )
+        db.add(msg)
+        db.commit()
+
+        return {"message": "已拒绝任务，等待重新分配", "status": "已打回"}
+
+
+@router.get("/{group_id}/pending-tasks")
+def get_pending_tasks(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """获取当前用户待确认的任务"""
+    tasks = db.query(Task).filter(
+        Task.group_id == group_id,
+        Task.assigned_to == current_user.id,
+        Task.status == "待确认",
+    ).all()
+
+    result = []
+    for t in tasks:
+        result.append({
+            "id": t.id,
+            "title": t.title,
+            "description": t.description or "",
+            "priority": t.priority or "中",
+        })
+    return result
+
+
+def _ai_decompose_tasks(project_desc: str, members: list) -> list:
+    """AI智能分解任务并根据技能分配"""
+    # 简单的任务分解逻辑
+    # 在实际产品中可接入真实的AI API
+    import re
+
+    base_tasks = [
+        {"title": "需求分析与文档整理", "description": "整理项目需求，编写需求文档", "priority": "高"},
+        {"title": "方案设计与架构规划", "description": "设计整体方案和技术架构", "priority": "高"},
+        {"title": "核心功能开发", "description": "实现项目核心功能模块", "priority": "高"},
+        {"title": "UI/UX设计", "description": "设计用户界面和交互体验", "priority": "中"},
+        {"title": "测试与质量保证", "description": "编写测试用例，执行测试", "priority": "中"},
+        {"title": "文档撰写与汇报准备", "description": "准备项目报告和展示材料", "priority": "中"},
+    ]
+
+    # 根据成员数量调整任务数量
+    num_members = len(members)
+    if num_members <= 2:
+        tasks = base_tasks[:4]
+    elif num_members <= 4:
+        tasks = base_tasks[:5]
+    else:
+        tasks = base_tasks
+
+    # 技能关键词匹配分配
+    skill_task_map = {
+        "需求分析": ["产品", "需求", "文档", "管理", "策划"],
+        "方案设计": ["设计", "架构", "规划", "方案"],
+        "核心功能": ["开发", "编程", "代码", "python", "java", "前端", "后端"],
+        "UI/UX": ["UI", "UX", "设计", "美术", "视觉", "交互", "photoshop", "figma"],
+        "测试": ["测试", "QA", "质量"],
+        "文档撰写": ["写作", "文档", "PPT", "报告", "word"],
+    }
+
+    assigned = set()
+    result = []
+
+    for task in tasks:
+        best_member = None
+        best_score = -1
+        best_reason = ""
+
+        # 找出最匹配的成员
+        task_keywords = []
+        for key, keywords in skill_task_map.items():
+            if key in task["title"]:
+                task_keywords = keywords
+                break
+
+        for member in members:
+            if member["id"] in assigned:
+                continue
+
+            score = 0
+            reasons = []
+            member_skills = [s.lower() if isinstance(s, str) else "" for s in (member.get("skills") or [])]
+            member_majors = [m.lower() if isinstance(m, str) else "" for m in (member.get("major") or [])]
+            all_info = member_skills + member_majors
+
+            for keyword in task_keywords:
+                for info in all_info:
+                    if keyword.lower() in info:
+                        score += 1
+                        reasons.append(f"擅长{keyword}")
+                        break
+
+            if score > best_score:
+                best_score = score
+                best_member = member
+                best_reason = "、".join(reasons[:2]) if reasons else "团队协作需要"
+
+        # 如果没找到最佳匹配，分配给第一个未分配的成员
+        if not best_member:
+            for member in members:
+                if member["id"] not in assigned:
+                    best_member = member
+                    best_reason = "均衡分配"
+                    break
+
+        if best_member:
+            assigned.add(best_member["id"])
+            result.append({
+                **task,
+                "assigned_to": best_member["id"],
+                "assigned_name": best_member["name"],
+                "reason": best_reason,
+            })
+        else:
+            # 所有成员都已分配，循环分配
+            member = members[len(result) % len(members)]
+            result.append({
+                **task,
+                "assigned_to": member["id"],
+                "assigned_name": member["name"],
+                "reason": "均衡分配",
+            })
+
+    return result
+
+
 # ─── 邮箱邀请系统 ───────────────────────────────────────
 
 @router.post("/invite-by-email", response_model=dict)

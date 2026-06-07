@@ -5,11 +5,7 @@ from sqlalchemy import func
 from datetime import datetime, timedelta
 from database import get_db
 from models import User, Task, Schedule, GroupMember
-<<<<<<< HEAD
-from schemas import UserResponse, UserProfileUpdate, UserSettingsUpdate, UserSettingsResponse, UserStatsResponse
-=======
-from schemas import UserResponse, UserSettingsUpdate, UserSettingsResponse, UserStatsResponse, AbilityProfileResponse
->>>>>>> 85652a8d7910558fefa90e8ec9562240eff85d5b
+from schemas import UserResponse, UserProfileUpdate, UserSettingsUpdate, UserSettingsResponse, UserStatsResponse, AbilityProfileResponse
 from auth import get_current_user
 from collections import Counter
 
@@ -77,7 +73,6 @@ def get_settings(
 ):
     """获取用户偏好设置"""
     prefs = current_user.preferences or {}
-    # 合并默认值
     settings = {**DEFAULT_PREFERENCES, **prefs}
     return UserSettingsResponse(**settings)
 
@@ -106,7 +101,6 @@ def get_user_stats(
     current_user: User = Depends(get_current_user),
 ):
     """获取用户统计数据"""
-    # 任务统计
     total_tasks = db.query(Task).filter(Task.user_id == current_user.id).count()
     completed_tasks = db.query(Task).filter(
         Task.user_id == current_user.id,
@@ -123,7 +117,6 @@ def get_user_stats(
 
     completion_rate = round((completed_tasks / total_tasks * 100)) if total_tasks > 0 else 0
 
-    # 即将到期的DDL数量
     now = datetime.now()
     urgent_deadline = db.query(Task).filter(
         Task.user_id == current_user.id,
@@ -133,7 +126,6 @@ def get_user_stats(
         Task.deadline >= now,
     ).count()
 
-    # 超期任务
     overdue = db.query(Task).filter(
         Task.user_id == current_user.id,
         Task.status != "已完成",
@@ -141,19 +133,16 @@ def get_user_stats(
         Task.deadline < now,
     ).count()
 
-    # 本月完成的日程数
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
     month_schedules = db.query(Schedule).filter(
         Schedule.user_id == current_user.id,
         Schedule.date >= month_start,
     ).count()
 
-    # 参与的群组数
     group_count = db.query(GroupMember).filter(
         GroupMember.user_id == current_user.id,
     ).count()
 
-    # 连续打卡天数（根据最近任务完成情况估算）
     streak = 0
     check_date = now.date()
     while True:
@@ -190,7 +179,7 @@ def get_ability_profile(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """分析用户能力画像（基于历史任务标签和完成情况）"""
+    """分析用户能力画像"""
     completed = db.query(Task).filter(
         Task.user_id == current_user.id,
         Task.status == "已完成",
@@ -200,7 +189,6 @@ def get_ability_profile(
     if total_completed == 0:
         return AbilityProfileResponse(analysis="还没有完成任务，开始创建任务吧！")
 
-    # 统计技能标签
     tag_counter = Counter()
     type_counter = Counter()
     on_time = 0
@@ -210,7 +198,6 @@ def get_ability_profile(
         for tag in tags:
             tag_counter[tag] += 1
 
-        # 任务类型分类
         title = task.title.lower()
         for kw, category in [("设计", "设计"), ("开发", "开发"), ("写", "写作"), ("ppt", "演示"),
                              ("汇报", "演示"), ("数据", "数据"), ("调研", "调研"), ("学习", "学习")]:
@@ -220,21 +207,15 @@ def get_ability_profile(
         else:
             type_counter["其他"] += 1
 
-        # 准时完成（有DDL且在DDL前完成）
         if task.deadline and task.updated_at:
             if task.updated_at <= task.deadline:
                 on_time += 1
 
-    # Top skills
     top_skills = [{"name": tag, "count": cnt, "level": "expert" if cnt >= 5 else "熟练" if cnt >= 3 else "了解"}
                   for tag, cnt in tag_counter.most_common(10)]
-
-    # Task types
     task_types = [{"type": t, "count": c} for t, c in type_counter.most_common(6)]
-
     on_time_rate = round(on_time / total_completed * 100) if total_completed > 0 else 0
 
-    # AI 分析
     skill_names = [s["name"] for s in top_skills[:5]]
     analysis = f"共完成 {total_completed} 个任务，核心技能: {', '.join(skill_names) if skill_names else '待积累'}。" \
                f"准时率 {on_time_rate}%。" + \
