@@ -124,7 +124,7 @@ def send_group_message(
 
 
 def _generate_group_ai_reply(db: Session, group_id: int, user_message: str, user: User):
-    """生成AI在群聊中的回复"""
+    """生成AI在群聊中的回复 — 优先调用真实AI API"""
     group = db.query(Group).filter(Group.id == group_id).first()
     members = db.query(GroupMember).filter(GroupMember.group_id == group_id).all()
     tasks = db.query(Task).filter(Task.group_id == group_id).all()
@@ -133,43 +133,48 @@ def _generate_group_ai_reply(db: Session, group_id: int, user_message: str, user
     task_count = len(tasks)
     completed = sum(1 for t in tasks if t.status == "已完成")
 
-    # 简单的AI回复逻辑（可接入真实AI API）
-    lower = user_message.lower()
+    # 构建项目上下文
+    context_parts = []
+    context_parts.append(f"当前群组：{group.name if group else '未知'}")
+    context_parts.append(f"团队成员：{member_count} 人")
+    context_parts.append(f"任务总数：{task_count}，已完成：{completed}")
 
-    if "进度" in lower or "状态" in lower:
-        content = f"📊 项目进度报告：\n\n"
-        content += f"👥 团队成员：{member_count} 人\n"
-        content += f"📋 总任务数：{task_count}\n"
-        content += f"✅ 已完成：{completed}\n"
-        content += f"📈 完成率：{(completed/task_count*100) if task_count else 0:.0f}%\n\n"
-        if task_count > completed:
-            pending_tasks = [t for t in tasks if t.status != "已完成"]
-            content += "⏳ 待完成任务：\n"
-            for t in pending_tasks[:5]:
-                assignee = db.query(User).filter(User.id == t.assigned_to).first() if t.assigned_to else None
-                name = assignee.username if assignee else "未分配"
-                content += f"  · {t.title} ({name})\n"
-    elif "分配" in lower or "拆解" in lower or "任务" in lower:
-        content = f"🤖 收到！我来帮大家分析任务。\n\n"
-        content += f"当前团队有 {member_count} 人，"
-        if task_count == 0:
-            content += "还没有创建任务。请先告诉我你们的大作业/项目要求，我会帮你们拆解成具体的子任务并分配。"
+    if tasks:
+        pending = [t for t in tasks if t.status != "已完成"]
+        if pending:
+            task_list = "\n".join([
+                f"  - {t.title}（{t.status}，{'负责人: ' + (db.query(User).filter(User.id == t.assigned_to).first().username if t.assigned_to and db.query(User).filter(User.id == t.assigned_to).first() else '未分配')}）"
+                for t in pending[:8]
+            ])
+            context_parts.append(f"待完成任务：\n{task_list}")
+
+    member_info = []
+    for m in members:
+        u = db.query(User).filter(User.id == m.user_id).first()
+        if u:
+            skills = ", ".join(u.skills[:5]) if u.skills else "未填写"
+            member_info.append(f"  - {u.username}（技能：{skills}）")
+    if member_info:
+        context_parts.append(f"成员信息：\n" + "\n".join(member_info))
+
+    context = "\n".join(context_parts)
+
+    # 去掉 @ai 前缀，提取真正的问题
+    clean_message = user_message.replace("@ai", "").replace("@AI", "").strip()
+    if not clean_message:
+        clean_message = "你好，介绍一下你能做什么"
+
+    # 调用真实AI API
+    try:
+        from services.ai_service import AIService
+        ai = AIService()
+        if ai.is_available:
+            content = ai.chat(message=clean_message, context=context)
         else:
-            content += f"已有 {task_count} 个任务。如果需要重新分配或添加新任务，告诉我具体需求。"
-    elif "建议" in lower or "怎么" in lower or "如何" in lower:
-        content = f"💡 基于团队当前情况，我有以下建议：\n\n"
-        content += "1. 每位成员先确认自己的任务理解无误\n"
-        content += "2. 设置明确的阶段性目标和截止时间\n"
-        content += "3. 遇到问题及时在群里沟通，我会帮忙协调\n"
-        content += "4. 完成的部分可以上传到知识库，方便大家参考\n\n"
-        content += "有具体问题随时 @ai 问我！"
-    else:
-        content = f"收到！关于「{user_message[:30]}{'...' if len(user_message) > 30 else ''}」，"
-        content += "我已记录。如果需要我帮忙分析或分配任务，随时 @ai 告诉我。\n\n"
-        content += "💡 小提示：你可以发送以下指令：\n"
-        content += "· @ai 进度 — 查看项目进度\n"
-        content += "· @ai 分配任务 — AI智能分配\n"
-        content += "· @ai 建议 — 获取AI建议"
+            content = _fallback_group_reply(clean_message, member_count, task_count, completed, tasks, db)
+    except Exception as e:
+        print(f"[AI Reply] Error: {e}")
+        content = _fallback_group_reply(clean_message, member_count, task_count, completed, tasks, db)
 
     # 保存AI消息
     ai_msg = GroupMessage(
@@ -191,6 +196,27 @@ def _generate_group_ai_reply(db: Session, group_id: int, user_message: str, user
         "msg_type": "ai",
         "created_at": ai_msg.created_at.isoformat() if ai_msg.created_at else "",
     }
+
+
+def _fallback_group_reply(message: str, member_count: int, task_count: int, completed: int, tasks, db):
+    """无API Key时的关键词匹配回退"""
+    lower = message.lower()
+    if "进度" in lower or "状态" in lower:
+        content = f"📊 项目进度报告：\n\n"
+        content += f"👥 团队成员：{member_count} 人\n"
+        content += f"📋 总任务数：{task_count}\n"
+        content += f"✅ 已完成：{completed}\n"
+        content += f"📈 完成率：{(completed/task_count*100) if task_count else 0:.0f}%\n"
+    elif "分配" in lower or "拆解" in lower or "任务" in lower:
+        content = f"🤖 当前团队有 {member_count} 人，"
+        if task_count == 0:
+            content += "还没有创建任务。请先告诉我项目要求，我会帮你们拆解并分配。"
+        else:
+            content += f"已有 {task_count} 个任务。告诉我具体需求，我来帮忙调整。"
+    else:
+        content = f"收到！我是AI助手。\n\n💡 配置 DeepSeek/Claude API Key 后可获得智能回复。\n"
+        content += "当前支持的指令：@ai 进度 / @ai 分配任务 / @ai 建议"
+    return content
 
 
 # ─── 私聊AI ───────────────────────────────────────
@@ -280,87 +306,58 @@ def send_private_message(
 
 
 def _generate_private_ai_reply(db: Session, user: User, message: str, group_id: int = None):
-    """生成私聊AI回复"""
-    lower = message.lower()
+    """生成私聊AI回复 — 优先调用真实AI API"""
 
-    # 如果关联了群组，读取任务信息
+    # 构建用户上下文
+    context_parts = [f"用户：{user.username}"]
+
     if group_id:
         group = db.query(Group).filter(Group.id == group_id).first()
         my_tasks = db.query(Task).filter(
             Task.group_id == group_id,
             Task.assigned_to == user.id,
         ).all()
-
         group_name = group.name if group else "未知群组"
-        task_info = ""
+        context_parts.append(f"关联群组：{group_name}")
         if my_tasks:
-            task_info = f"\n\n📋 你在「{group_name}」的任务：\n"
-            for t in my_tasks:
-                status_emoji = "✅" if t.status == "已完成" else "🔄" if t.status == "进行中" else "⏳"
-                task_info += f"  {status_emoji} {t.title} - {t.status}\n"
-
-        if "我的任务" in lower or "任务" in lower:
-            if my_tasks:
-                reply = f"在「{group_name}」中，你有 {len(my_tasks)} 个任务：{task_info}\n"
-                pending = [t for t in my_tasks if t.status != "已完成"]
-                if pending:
-                    reply += f"\n建议优先处理：**{pending[0].title}**"
-                    if pending[0].deadline:
-                        reply += f"（截止：{pending[0].deadline.strftime('%m/%d')}）"
-                return reply
-            else:
-                return f"在「{group_name}」中你暂时没有分配到的任务。可以在群聊里 @ai 请求分配任务。"
-
-        if "怎么做" in lower or "教我" in lower or "指导" in lower:
-            if my_tasks:
-                current = next((t for t in my_tasks if t.status != "已完成"), None)
-                if current:
-                    return (
-                        f"关于「{current.title}」，这是我的建议：\n\n"
-                        f"1️⃣ 先理清任务目标 — {current.description or '参考任务描述'}\n"
-                        f"2️⃣ 拆分成小步骤 — 每次只做一个子任务\n"
-                        f"3️⃣ 设定时间节点 — 避免拖延\n"
-                        f"4️⃣ 有问题及时在群里沟通\n\n"
-                        f"需要更详细的指导可以告诉我具体哪一步不明白。"
-                    )
-            return "告诉我你正在做的具体任务，我来给你详细的指导建议。"
-
-        # 通用回复 + 群组上下文
-        return (
-            f"你好！我是你在「{group_name}」的AI助手。{task_info}\n\n"
-            f"你可以问我：\n"
-            f"· 「我的任务」— 查看任务列表\n"
-            f"· 「怎么做 XX」— 获取任务指导\n"
-            f"· 「帮我总结进度」— 整理进度报告"
-        )
-
-    # 无群组关联的通用对话
-    # 获取用户的所有群组
-    from models import GroupMember
-    memberships = db.query(GroupMember).filter(GroupMember.user_id == user.id).all()
-
-    if "群" in lower or "项目" in lower or "团队" in lower:
+            task_list = "\n".join([
+                f"  - {t.title}（{t.status}{'，截止：' + t.deadline.strftime('%m/%d') if t.deadline else ''}）"
+                for t in my_tasks
+            ])
+            context_parts.append(f"该用户在此群组的任务：\n{task_list}")
+    else:
+        # 获取用户所有群组信息
+        memberships = db.query(GroupMember).filter(GroupMember.user_id == user.id).all()
         if memberships:
-            reply = "你参与的团队项目：\n\n"
+            groups_info = []
             for m in memberships:
-                group = db.query(Group).filter(Group.id == m.group_id).first()
-                if group:
-                    task_count = db.query(Task).filter(
-                        Task.group_id == group.id,
-                        Task.assigned_to == user.id,
-                    ).count()
-                    reply += f"📁 {group.name} — 你有 {task_count} 个任务\n"
-            reply += "\n转发任意群名片给我，我可以帮你查看和管理该群的任务。"
-            return reply
-        return "你还没有加入任何团队项目。可以创建一个新项目或通过邀请码加入现有项目。"
+                g = db.query(Group).filter(Group.id == m.group_id).first()
+                if g:
+                    tc = db.query(Task).filter(Task.group_id == g.id, Task.assigned_to == user.id).count()
+                    groups_info.append(f"  - {g.name}（{tc}个任务）")
+            if groups_info:
+                context_parts.append(f"参与的团队：\n" + "\n".join(groups_info))
 
+    # 用户技能
+    if user.skills:
+        context_parts.append(f"用户技能：{', '.join(user.skills[:8])}")
+
+    context = "\n".join(context_parts)
+
+    # 调用真实AI API
+    try:
+        from services.ai_service import AIService
+        ai = AIService()
+        if ai.is_available:
+            return ai.chat(message=message, context=context)
+    except Exception as e:
+        print(f"[Private AI] Error: {e}")
+
+    # 回退到简单回复
     return (
-        f"你好 {user.username}！我是你的AI统筹助手。\n\n"
-        f"我可以帮你：\n"
-        f"· 查看各个团队项目的任务进度\n"
-        f"· 提供任务执行指导\n"
-        f"· 整理和总结项目资料\n\n"
-        f"把团队群的群名片转发给我，我就能读取你在那个群的任务信息，随时为你提供帮助。"
+        f"你好 {user.username}！我是AI助手。\n\n"
+        f"我可以帮你管理任务、规划时间、提供建议。\n"
+        f"有什么需要帮忙的？"
     )
 
 
