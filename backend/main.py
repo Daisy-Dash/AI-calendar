@@ -77,6 +77,7 @@ from routers.notifications import router as notifications_router
 from routers.ws import router as ws_router
 from routers.friends import router as friends_router
 from routers.messages import router as messages_router
+from routers.upload import router as upload_router
 
 app.include_router(auth_router)
 app.include_router(tasks_router)
@@ -88,6 +89,7 @@ app.include_router(notifications_router)
 app.include_router(ws_router)
 app.include_router(friends_router)
 app.include_router(messages_router)
+app.include_router(upload_router)
 
 
 @app.get("/")
