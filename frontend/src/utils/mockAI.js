@@ -21,28 +21,28 @@ export async function getCompetitorResearch(topic) {
   const researchDB = {
     'app': {
       inspirations: [
-        { title: 'Notion', description: '全能协作工具，模块化页面设计，支持数据库、看板、文档等多种视图', type: 'APP', tags: ['协作', '模块化'] },
-        { title: 'Trello', description: '经典看板工具，以卡片式任务管理著称，简洁直观', type: 'APP', tags: ['看板', '简洁'] },
-        { title: 'Linear', description: '新一代项目管理，极致流畅的交互动画，专注软件开发团队', type: 'APP', tags: ['动画', '效率'] },
-        { title: 'Figma', description: '协同设计工具，实时多人编辑，组件化设计系统', type: 'APP', tags: ['设计', '协同'] },
+        { title: 'Notion', description: '全能协作工具，模块化页面设计，支持数据库、看板、文档等多种视图', type: 'APP', tags: ['协作', '模块化'], url: 'https://www.notion.so', highlight: '模块化设计思路，自定义视图切换，适合参考信息架构' },
+        { title: 'Trello', description: '经典看板工具，以卡片式任务管理著称，简洁直观', type: 'APP', tags: ['看板', '简洁'], url: 'https://trello.com', highlight: '拖拽交互极简，卡片抽象任务单元，适合参考看板模式' },
+        { title: 'Linear', description: '新一代项目管理，极致流畅的交互动画，专注软件开发团队', type: 'APP', tags: ['动画', '效率'], url: 'https://linear.app', highlight: '交互动画丝滑，键盘快捷操作，适合参考高效工作流' },
+        { title: 'Figma', description: '协同设计工具，实时多人编辑，组件化设计系统', type: 'APP', tags: ['设计', '协同'], url: 'https://www.figma.com', highlight: '多人实时协作，组件复用体系，适合参考协同编辑体验' },
       ],
       message: '我搜索了一些相关的产品案例供你参考。这些产品各有特色：Notion 强在灵活性，Trello 强在简洁，Linear 强在交互体验。你们可以讨论一下想往哪个方向靠近，或者结合多个产品的优点。',
     },
     '日程': {
       inspirations: [
-        { title: 'Google Calendar', description: '主流日历工具，多视图切换，智能日程建议', type: 'APP', tags: ['日历', '智能'] },
-        { title: 'TickTick', description: '任务+日历一体化，番茄钟、习惯追踪等多功能集成', type: 'APP', tags: ['任务管理', '习惯'] },
-        { title: 'Fantastical', description: '自然语言输入创建日程，精美的界面设计', type: 'APP', tags: ['自然语言', '设计'] },
-        { title: '飞书日历', description: '企业级日程管理，会议室预定，智能排期', type: 'APP', tags: ['企业', '协作'] },
+        { title: 'Google Calendar', description: '主流日历工具，多视图切换，智能日程建议', type: 'APP', tags: ['日历', '智能'], url: 'https://calendar.google.com', highlight: '周/月/日视图自由切换，智能建议空闲时间段' },
+        { title: 'TickTick', description: '任务+日历一体化，番茄钟、习惯追踪等多功能集成', type: 'APP', tags: ['任务管理', '习惯'], url: 'https://ticktick.com', highlight: '任务与日历深度整合，番茄钟+习惯追踪+打卡一体' },
+        { title: 'Fantastical', description: '自然语言输入创建日程，精美的界面设计', type: 'APP', tags: ['自然语言', '设计'], url: 'https://flexibits.com/fantastical', highlight: '自然语言解析能力强，输入"明天下午3点开会"自动识别' },
+        { title: '飞书日历', description: '企业级日程管理，会议室预定，智能排期', type: 'APP', tags: ['企业', '协作'], url: 'https://www.feishu.cn', highlight: '团队协作日程，自动查找共同空闲时间' },
       ],
       message: '这些是日程管理领域的代表性产品。Google Calendar 是行业标杆，TickTick 做了有趣的功能融合，Fantastical 的自然语言交互很值得借鉴。你们觉得哪些特点值得参考？',
     },
     '设计': {
       inspirations: [
-        { title: 'Dribbble', description: '设计师社区，展示和发现创意作品，是设计灵感的重要来源', type: '网站', tags: ['灵感', '社区'] },
-        { title: 'Behance', description: 'Adobe 旗下创意平台，展示完整项目案例，注重作品集展示', type: '网站', tags: ['作品集', '案例'] },
-        { title: 'Material Design 3', description: 'Google 最新设计系统，动态颜色、自适应布局', type: '设计系统', tags: ['规范', '组件'] },
-        { title: 'Apple HIG', description: 'Apple 人机界面指南，定义了 iOS 生态的交互标准', type: '设计系统', tags: ['规范', '交互'] },
+        { title: 'Dribbble', description: '设计师社区，展示和发现创意作品，是设计灵感的重要来源', type: '网站', tags: ['灵感', '社区'], url: 'https://dribbble.com', highlight: '全球设计师社区，按关键词搜索界面灵感，支持配色筛选' },
+        { title: 'Behance', description: 'Adobe 旗下创意平台，展示完整项目案例，注重作品集展示', type: '网站', tags: ['作品集', '案例'], url: 'https://www.behance.net', highlight: '完整项目展示，从调研到成品全流程，适合学习项目呈现' },
+        { title: 'Material Design 3', description: 'Google 最新设计系统，动态颜色、自适应布局', type: '设计系统', tags: ['规范', '组件'], url: 'https://m3.material.io', highlight: 'Google 官方设计规范，组件库+颜色系统+动效指南齐全' },
+        { title: 'Apple HIG', description: 'Apple 人机界面指南，定义了 iOS 生态的交互标准', type: '设计系统', tags: ['规范', '交互'], url: 'https://developer.apple.com/design/human-interface-guidelines', highlight: 'iOS 设计标准参考，涵盖导航模式、手势规范、视觉层级' },
       ],
       message: '设计类项目可以从这些平台获取灵感。建议先确定你们的设计方向（APP/网页/品牌），我再帮你做更精准的竞品分析。',
     },
@@ -55,10 +55,10 @@ export async function getCompetitorResearch(topic) {
 
   return {
     inspirations: [
-      { title: '相关案例 A', description: `基于"${topic}"的方向，这是一个在功能设计上值得参考的案例，注重用户体验和流程设计`, type: 'APP', tags: ['参考', '用户体验'] },
-      { title: '相关案例 B', description: '另一个相关领域的产品，在视觉风格和交互细节上做得很出色', type: '网站', tags: ['视觉', '交互'] },
-      { title: '学术参考', description: '相关领域的研究论文或设计理论，可以为你们的方案提供理论支撑', type: '论文', tags: ['理论', '支撑'] },
-      { title: '开源项目', description: '类似方向的开源实现，可以参考其技术架构和功能设计', type: '开源项目', tags: ['技术', '架构'] },
+      { title: '相关案例 A', description: `基于"${topic}"的方向，这是一个在功能设计上值得参考的案例，注重用户体验和流程设计`, type: 'APP', tags: ['参考', '用户体验'], url: 'https://www.producthunt.com', highlight: '可在 Product Hunt 搜索相关关键词，发现最新产品趋势' },
+      { title: '相关案例 B', description: '另一个相关领域的产品，在视觉风格和交互细节上做得很出色', type: '网站', tags: ['视觉', '交互'], url: 'https://dribbble.com', highlight: '在 Dribbble 按关键词搜索，获取视觉设计灵感' },
+      { title: '学术参考', description: '相关领域的研究论文或设计理论，可以为你们的方案提供理论支撑', type: '论文', tags: ['理论', '支撑'], url: 'https://scholar.google.com', highlight: '在 Google Scholar 搜索相关论文，为方案提供学术依据' },
+      { title: '开源项目', description: '类似方向的开源实现，可以参考其技术架构和功能设计', type: '开源项目', tags: ['技术', '架构'], url: 'https://github.com', highlight: '在 GitHub 搜索相关项目，参考技术实现和代码结构' },
     ],
     message: `关于"${topic}"，我找到了一些参考资料。这些案例覆盖了产品设计、学术理论和技术实现三个维度。你们可以先浏览一下，讨论后告诉我想往哪个方向深入。`,
   }

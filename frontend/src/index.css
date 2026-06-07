@@ -12,14 +12,39 @@
 
 body {
   font-family: 'LXGW WenKai', 'Noto Sans SC', system-ui, sans-serif;
-  background-color: #FAF6F1;
+  background-color: #E8DDD2;
   color: #7D6B5D;
   -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+
+/* ========== 手机壳容器 ========== */
+.app-container {
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  position: relative;
+  background-color: #FAF6F1;
   background-image:
     radial-gradient(ellipse at 15% 50%, rgba(212,165,165,0.06) 0%, transparent 50%),
     radial-gradient(ellipse at 85% 20%, rgba(184,169,202,0.06) 0%, transparent 50%),
     radial-gradient(ellipse at 50% 80%, rgba(168,191,160,0.04) 0%, transparent 50%);
-  min-height: 100vh;
+  box-shadow: 0 0 40px rgba(125,107,93,0.12);
+  overflow-x: hidden;
+}
+
+@media (min-width: 431px) {
+  .app-container {
+    border-left: 1px solid #E8DDD2;
+    border-right: 1px solid #E8DDD2;
+  }
 }
 
 /* ========== 甜品风卡片 ========== */
@@ -173,9 +198,16 @@ body {
   background: white;
   border-top: 1.5px solid #F2E1E1;
   border-radius: 20px 20px 0 0;
-  padding: 6px 0 8px;
+  padding: 6px 0 env(safe-area-inset-bottom, 8px);
   z-index: 100;
   box-shadow: 0 -4px 20px rgba(212,165,165,0.08);
+}
+
+/* 全屏遮罩层也限制在手机宽度内 */
+.app-container .fixed.inset-0 {
+  max-width: 430px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 /* ========== AI对话气泡 ========== */

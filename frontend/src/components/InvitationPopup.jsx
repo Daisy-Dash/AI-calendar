@@ -12,14 +12,12 @@ export default function InvitationPopup() {
       const data = Array.isArray(res.data) ? res.data : []
       setInvitations(data)
     } catch (err) {
-      // 静默失败，避免刷屏
       console.error('Failed to load invitations:', err)
     }
   }, [])
 
   useEffect(() => {
     loadInvitations()
-    // 每10秒检查一次
     const timer = setInterval(loadInvitations, 10000)
     return () => clearInterval(timer)
   }, [loadInvitations])
@@ -31,11 +29,9 @@ export default function InvitationPopup() {
         accept,
         feedback: accept ? '' : (feedback[invitationId] || ''),
       })
-      // 从列表中移除
       setInvitations(prev => prev.filter(inv => inv.id !== invitationId))
       if (accept) {
         alert('已成功加入团队！')
-        // 刷新页面以更新团队列表
         window.location.reload()
       }
     } catch (err) {
@@ -49,17 +45,20 @@ export default function InvitationPopup() {
   return (
     <>
       {invitations.map(inv => (
-        <div key={inv.id} className="fixed inset-0 bg-black/30 z-[200] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-[#1a1a2e] rounded-2xl w-full max-w-sm max-h-[85vh] overflow-y-auto p-6 shadow-2xl fade-in-up">
+        <div key={inv.id} className="fixed inset-0 bg-black/20 z-[200] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-sm max-h-[85vh] overflow-y-auto p-6 shadow-xl fade-in-up border border-cream-200">
             {/* 头部 */}
-            <div className="text-center mb-4">
-              <div className="text-5xl mb-3">📨</div>
-              <h2 className="text-lg font-hand text-warm-700">团队邀请</h2>
-              <p className="text-sm text-gray-500 mt-1">
-                <strong>{inv.from_user}</strong> 邀请你加入 <strong>{inv.group_name}</strong>
+            <div className="text-center mb-5">
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-rosa-50 border border-rosa-100 flex items-center justify-center text-3xl mb-3">
+                📨
+              </div>
+              <h2 className="text-lg font-medium text-choco-600">团队邀请</h2>
+              <p className="text-sm text-choco-300 mt-1.5">
+                <span className="text-rosa-400 font-medium">{inv.from_user}</span> 邀请你加入
+                <span className="text-rosa-400 font-medium"> {inv.group_name}</span>
               </p>
               {inv.message && (
-                <p className="text-xs text-gray-400 mt-2 bg-warm-50 rounded-lg p-2">
+                <p className="text-xs text-choco-300 mt-2 bg-cream-50 rounded-xl p-2.5 border border-cream-200">
                   "{inv.message}"
                 </p>
               )}
@@ -67,22 +66,22 @@ export default function InvitationPopup() {
 
             {/* 任务分配详情 */}
             {inv.task_assignments && inv.task_assignments.length > 0 && (
-              <div className="hand-card mb-4 bg-gradient-to-r from-blue-50 to-purple-50">
-                <h3 className="text-sm font-medium text-gray-700 mb-3">
-                  🤖 AI 已为你预分配以下任务
+              <div className="hand-card mb-4 bg-gradient-to-r from-lilac-50 to-rosa-50 border-lilac-100">
+                <h3 className="text-sm font-medium text-choco-500 mb-3 flex items-center gap-1.5">
+                  <span>🤖</span> AI 已为你预分配以下任务
                 </h3>
                 <div className="space-y-2">
                   {inv.task_assignments.map((a, i) => (
-                    <div key={i} className="bg-white rounded-xl p-3 border border-purple-100">
+                    <div key={i} className="bg-white rounded-xl p-3 border border-lilac-100">
                       <div className="flex items-start gap-2">
                         <span className="text-lg flex-shrink-0">📋</span>
                         <div>
-                          <h4 className="text-sm font-medium text-gray-800">{a.task_title}</h4>
+                          <h4 className="text-sm font-medium text-choco-600">{a.task_title}</h4>
                           {a.subtask && (
-                            <p className="text-xs text-purple-500 mt-0.5">你的分工: {a.subtask}</p>
+                            <p className="text-xs text-lilac-400 mt-0.5">你的分工: {a.subtask}</p>
                           )}
                           {a.task_deadline && (
-                            <p className="text-xs text-red-400 mt-1">⏰ 截止: {a.task_deadline}</p>
+                            <p className="text-xs text-rosa-400 mt-1">⏰ 截止: {a.task_deadline}</p>
                           )}
                         </div>
                       </div>
@@ -108,14 +107,14 @@ export default function InvitationPopup() {
               <button
                 onClick={() => handleRespond(inv.id, false)}
                 disabled={responding[inv.id]}
-                className="flex-1 py-3 text-sm font-medium text-gray-500 bg-gray-100 rounded-xl hover:bg-gray-200 transition-all"
+                className="flex-1 py-3 text-sm font-medium text-choco-300 bg-cream-100 rounded-2xl border border-cream-200 hover:bg-cream-200 transition-all active:scale-[0.98]"
               >
                 拒绝
               </button>
               <button
                 onClick={() => handleRespond(inv.id, true)}
                 disabled={responding[inv.id]}
-                className="flex-1 py-3 text-sm font-medium text-white bg-gradient-to-r from-warm-400 to-warm-500 rounded-xl hover:shadow-lg transition-all"
+                className="flex-1 py-3 text-sm font-medium text-white rounded-2xl transition-all active:scale-[0.98] hand-btn"
               >
                 {responding[inv.id] ? '处理中...' : '同意加入'}
               </button>

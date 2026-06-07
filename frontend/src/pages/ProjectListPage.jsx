@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getProjects, createProject, deleteProject, getUserProfile } from '../utils/store'
+import { groupAPI } from '../utils/api'
 
 const statusMap = {
   discussing: { label: '讨论中', color: 'text-rosa-400', bg: 'bg-rosa-50' },
@@ -18,6 +19,7 @@ export default function ProjectListPage() {
   const [swipedId, setSwipedId] = useState(null)
   const [touchStartX, setTouchStartX] = useState(0)
   const [greeting, setGreeting] = useState('')
+  const [groups, setGroups] = useState([])
 
   useEffect(() => {
     setProjects(getProjects())
@@ -25,6 +27,8 @@ export default function ProjectListPage() {
     if (hour < 12) setGreeting('早上好')
     else if (hour < 18) setGreeting('下午好')
     else setGreeting('晚上好')
+    // 加载团队项目
+    groupAPI.list().then(res => setGroups(res.data)).catch(() => {})
   }, [])
 
   const profile = getUserProfile()
@@ -160,13 +164,51 @@ export default function ProjectListPage() {
         )}
       </div>
 
-      <button
-        onClick={() => setShowCreate(true)}
-        className="w-full hand-card border-dashed border-cream-400 text-center py-4 text-rosa-300 hover:bg-cream-50 transition-all active:scale-[0.98]"
-      >
-        <span className="text-2xl block mb-1">+</span>
-        <span className="text-sm">新建项目</span>
-      </button>
+      {/* 团队项目 */}
+      {groups.length > 0 && (
+        <div className="mb-6">
+          <p className="text-xs text-choco-400 font-medium mb-2">🎂 团队项目</p>
+          <div className="space-y-3">
+            {groups.map(g => (
+              <div
+                key={g.id}
+                onClick={() => navigate(`/group-chat/${g.id}`)}
+                className="hand-card cursor-pointer transition-all active:scale-[0.98]"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-sage-50 border border-sage-100 flex items-center justify-center text-lg">
+                      🎂
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-choco-600">{g.name}</p>
+                      <p className="text-xs text-choco-200">{g.member_count || 0} 人 · 群号 {g.invite_code}</p>
+                    </div>
+                  </div>
+                  <span className="text-choco-200 text-sm">→</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex gap-3">
+        <button
+          onClick={() => setShowCreate(true)}
+          className="flex-1 hand-card border-dashed border-cream-400 text-center py-4 text-rosa-300 hover:bg-cream-50 transition-all active:scale-[0.98]"
+        >
+          <span className="text-xl block mb-0.5">+</span>
+          <span className="text-xs">个人项目</span>
+        </button>
+        <button
+          onClick={() => navigate('/create-group')}
+          className="flex-1 hand-card border-dashed border-sage-200 text-center py-4 text-sage-400 hover:bg-sage-50 transition-all active:scale-[0.98]"
+        >
+          <span className="text-xl block mb-0.5">🎂</span>
+          <span className="text-xs">团队项目</span>
+        </button>
+      </div>
 
       {showCreate && (
         <div className="fixed inset-0 bg-black/20 z-[200] flex items-end justify-center" onClick={() => setShowCreate(false)}>

@@ -12,6 +12,7 @@ export default function DiscussionPage() {
   const [sending, setSending] = useState(false)
   const [inspirations, setInspirations] = useState([])
   const [showAuthorize, setShowAuthorize] = useState(false)
+  const [selectedInspo, setSelectedInspo] = useState(null)
   const chatEndRef = useRef(null)
   const inputRef = useRef(null)
   const initDone = useRef(false)
@@ -109,25 +110,69 @@ export default function DiscussionPage() {
 
       {inspirations.length > 0 && (
         <div className="px-4 py-3 bg-cream-100 border-b border-cream-300">
-          <p className="text-xs text-choco-400 mb-2 font-medium">🍬 AI 找到的参考案例</p>
+          <p className="text-xs text-choco-400 mb-2 font-medium">🍬 AI 找到的参考案例 <span className="text-choco-200 font-normal">· 点击查看详情</span></p>
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {inspirations.map((item, i) => {
               const c = inspoColors[i % inspoColors.length]
               return (
-                <div key={i} className={`flex-shrink-0 w-44 ${c.bg} border ${c.border} rounded-2xl p-3 text-xs`}>
+                <div
+                  key={i}
+                  onClick={() => setSelectedInspo(item)}
+                  className={`flex-shrink-0 w-44 ${c.bg} border ${c.border} rounded-2xl p-3 text-xs cursor-pointer transition-all active:scale-95 hover:shadow-md`}
+                >
                   <div className="flex items-center gap-1 mb-1">
                     <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${c.badge}`}>{item.type}</span>
                     <span className="font-medium truncate text-choco-500">{item.title}</span>
                   </div>
                   <p className="text-choco-200 line-clamp-2 leading-relaxed">{item.description}</p>
-                  <div className="flex gap-1 mt-2">
-                    {item.tags?.map((tag, j) => (
-                      <span key={j} className="px-1.5 py-0.5 rounded-full bg-cream-200 text-choco-300 text-[10px]">{tag}</span>
-                    ))}
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex gap-1">
+                      {item.tags?.map((tag, j) => (
+                        <span key={j} className="px-1.5 py-0.5 rounded-full bg-cream-200 text-choco-300 text-[10px]">{tag}</span>
+                      ))}
+                    </div>
+                    <span className="text-rosa-300 text-[10px]">详情 →</span>
                   </div>
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {selectedInspo && (
+        <div className="fixed inset-0 bg-black/25 z-[200] flex items-end justify-center" onClick={() => setSelectedInspo(null)}>
+          <div className="bg-white rounded-t-3xl w-full max-w-[430px] p-5 pb-8 fade-in-up" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-cream-300 rounded-full mx-auto mb-4" />
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-full text-xs bg-rosa-50 text-rosa-400 border border-rosa-100">{selectedInspo.type}</span>
+                <h3 className="text-lg font-medium text-choco-600">{selectedInspo.title}</h3>
+              </div>
+              <button onClick={() => setSelectedInspo(null)} className="text-choco-200 hover:text-choco-400 text-xl leading-none">×</button>
+            </div>
+            <p className="text-sm text-choco-400 leading-relaxed mb-3">{selectedInspo.description}</p>
+            {selectedInspo.highlight && (
+              <div className="bg-cream-100 border border-cream-300 rounded-2xl p-3 mb-4">
+                <p className="text-xs text-choco-300 mb-1 font-medium">💡 AI 推荐理由</p>
+                <p className="text-sm text-choco-500 leading-relaxed">{selectedInspo.highlight}</p>
+              </div>
+            )}
+            <div className="flex gap-1.5 mb-4">
+              {selectedInspo.tags?.map((tag, j) => (
+                <span key={j} className="px-2.5 py-1 rounded-full bg-cream-200 text-choco-400 text-xs">{tag}</span>
+              ))}
+            </div>
+            {selectedInspo.url && (
+              <a
+                href={selectedInspo.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hand-btn w-full py-3 text-sm text-center block"
+              >
+                前往网站查看 ↗
+              </a>
+            )}
           </div>
         </div>
       )}
