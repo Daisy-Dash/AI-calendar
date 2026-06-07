@@ -15,9 +15,16 @@ MIGRATIONS = [
     ("groups", "status", "VARCHAR(20)", "'gathering'"),
     ("groups", "project_brief", "VARCHAR(2000)", "''"),
 
-    # 以后新增的字段写在这里，例如：
-    # ("users", "phone", "VARCHAR(20)", "''"),
-    # ("tasks", "checkpoint_date", "DATETIME", "NULL"),
+    # Task 表新增字段
+    ("tasks", "start_time", "DATETIME", "NULL"),
+    ("tasks", "end_time", "DATETIME", "NULL"),
+    ("tasks", "sort_order", "INTEGER", "0"),
+    ("tasks", "group_id", "INTEGER", "NULL"),
+    ("tasks", "parent_id", "INTEGER", "NULL"),
+    ("tasks", "assigned_to", "INTEGER", "NULL"),
+    ("tasks", "is_subtask", "BOOLEAN", "0"),
+    ("tasks", "estimated_hours", "FLOAT", "NULL"),
+    ("tasks", "progress", "INTEGER", "0"),
 ]
 
 
