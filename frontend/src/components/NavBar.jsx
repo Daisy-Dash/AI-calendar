@@ -3,7 +3,7 @@ import { getProjects } from '../utils/store'
 
 export default function NavBar() {
   const location = useLocation()
-  const hideNavPaths = ['/discussion/', '/authorize/']
+  const hideNavPaths = ['/discussion/', '/authorize/', '/group-chat/']
   const shouldHide = hideNavPaths.some(p => location.pathname.startsWith(p))
 
   if (shouldHide) return null
@@ -13,6 +13,8 @@ export default function NavBar() {
 
   const navItems = [
     { path: '/', label: '首页', icon: '🧁' },
+    { path: '/friends', label: '好友', icon: '🍬' },
+    { path: '/ai-chat', label: 'AI', icon: '🤖' },
     ...(activeProject
       ? [{ path: `/kanban/${activeProject.id}`, label: '看板', icon: '🍰' }]
       : []),

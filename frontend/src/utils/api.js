@@ -34,6 +34,10 @@ export const userAPI = {
   getMe: () => api.get('/users/me'),
   updateProfile: (data) => api.put('/users/me', data),
   search: (q) => api.get('/users/search', { params: { q } }),
+  getSettings: () => api.get('/users/me/settings'),
+  updateSettings: (data) => api.put('/users/me/settings', data),
+  getStats: () => api.get('/users/me/stats'),
+  getAbilityProfile: () => api.get('/users/me/ability-profile'),
 }
 
 export const groupAPI = {
@@ -45,6 +49,69 @@ export const groupAPI = {
   leave: (id) => api.delete(`/groups/${id}/leave`),
   removeMember: (groupId, userId) => api.delete(`/groups/${groupId}/members/${userId}`),
   getStats: (id) => api.get(`/groups/${id}/stats`),
+  inviteByEmail: (data) => api.post('/groups/invite-by-email', data),
+  pendingInvitations: () => api.get('/groups/invitations/pending'),
+  respondInvitation: (id, data) => api.put(`/groups/invitations/${id}/respond`, data),
+  startWorkflow: (groupId, data) => api.post(`/groups/${groupId}/start-workflow`, data || {}),
+  confirmTask: (groupId, taskId, data) => api.post(`/groups/${groupId}/tasks/${taskId}/confirm`, data),
+  getPendingTasks: (groupId) => api.get(`/groups/${groupId}/pending-tasks`),
+}
+
+export const taskAPI = {
+  list: (params) => api.get('/tasks', { params }),
+  get: (id) => api.get(`/tasks/${id}`),
+  create: (data) => api.post('/tasks', data),
+  update: (id, data) => api.put(`/tasks/${id}`, data),
+  delete: (id) => api.delete(`/tasks/${id}`),
+  updateProgress: (id, progress) => api.put(`/tasks/${id}/progress`, { progress }),
+}
+
+export const aiAPI = {
+  chat: (data) => api.post('/ai/chat', data),
+  parse: (data) => api.post('/ai/parse', data),
+}
+
+export const notificationAPI = {
+  list: (params) => api.get('/notifications', { params }),
+  unreadCount: () => api.get('/notifications/unread-count'),
+  markRead: (id) => api.put(`/notifications/${id}/read`),
+  markAllRead: () => api.put('/notifications/read-all'),
+}
+
+export const friendAPI = {
+  search: (q) => api.get('/friends/search', { params: { q } }),
+  list: () => api.get('/friends'),
+  sendRequest: (friendId) => api.post('/friends/request', { friend_id: friendId }),
+  getRequests: () => api.get('/friends/requests'),
+  respondRequest: (id, accept) => api.put(`/friends/requests/${id}`, { accept }),
+  remove: (friendId) => api.delete(`/friends/${friendId}`),
+}
+
+export const messageAPI = {
+  getGroupMessages: (groupId, params) => api.get(`/messages/group/${groupId}`, { params }),
+  sendGroupMessage: (groupId, data) => api.post(`/messages/group/${groupId}`, data),
+  getPrivateMessages: (params) => api.get('/messages/private', { params }),
+  sendPrivateMessage: (data) => api.post('/messages/private', data),
+  getKnowledgeFiles: (groupId) => api.get(`/messages/knowledge/${groupId}`),
+}
+
+export const uploadAPI = {
+  uploadFile: (file) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post('/upload/file', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 30000,
+    })
+  },
+  uploadFiles: (files) => {
+    const form = new FormData()
+    files.forEach(f => form.append('files', f))
+    return api.post('/upload/files', form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
+    })
+  },
 }
 
 export default api
