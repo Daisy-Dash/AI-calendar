@@ -1,0 +1,14 @@
+# AI日程协作者 - 后端依赖
+# Python 3.14 兼容：不锁定版本，让 pip 自动选择有 wheel 的最新版
+
+fastapi
+uvicorn
+sqlalchemy
+alembic
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+python-multipart
+httpx
+pydantic
+pydantic-settings

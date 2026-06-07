@@ -1,0 +1,293 @@
+/* ======================================
+   手绘甜品风 × 莫兰迪色系
+   ====================================== */
+@import url('https://cdn.jsdelivr.net/npm/lxgw-wenkai-webfont@1.7.0/style.css');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'LXGW WenKai', 'Noto Sans SC', system-ui, sans-serif;
+  background-color: #FAF6F1;
+  color: #7D6B5D;
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(ellipse at 15% 50%, rgba(212,165,165,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 20%, rgba(184,169,202,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, rgba(168,191,160,0.04) 0%, transparent 50%);
+  min-height: 100vh;
+}
+
+/* ========== 甜品风卡片 ========== */
+.hand-card {
+  background: white;
+  border: 1.5px solid #E8DDD2;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 2px 12px rgba(125,107,93,0.06);
+  transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.hand-card:hover {
+  box-shadow: 0 4px 20px rgba(125,107,93,0.1);
+  transform: translateY(-1px);
+}
+
+/* ========== 马卡龙按钮 ========== */
+.hand-btn {
+  background: linear-gradient(135deg, #D4A5A5, #C48B8B);
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 24px;
+  font-weight: 500;
+  font-family: inherit;
+  box-shadow: 0 3px 0 #B37474, 0 6px 16px rgba(212,165,165,0.25);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.hand-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 0 #B37474, 0 8px 20px rgba(212,165,165,0.3);
+}
+.hand-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #B37474, 0 2px 8px rgba(212,165,165,0.2);
+}
+.hand-btn:disabled {
+  background: linear-gradient(135deg, #D9CCBC, #C4B5A5);
+  box-shadow: 0 3px 0 #A69485;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.hand-btn-outline {
+  background: white;
+  color: #D4A5A5;
+  border: 2px solid #D4A5A5;
+  border-radius: 999px;
+  padding: 10px 24px;
+  font-weight: 500;
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(212,165,165,0.1);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.hand-btn-outline:hover { background: #FAF1F1; }
+
+/* ========== 手绘输入框 ========== */
+.hand-input {
+  border: 1.5px solid #E8DDD2;
+  border-radius: 16px;
+  padding: 10px 16px;
+  outline: none;
+  transition: all 0.25s ease;
+  background: #FDFBF9;
+  width: 100%;
+  font-family: inherit;
+  color: #7D6B5D;
+}
+.hand-input:focus {
+  border-color: #D4A5A5;
+  box-shadow: 0 0 0 3px rgba(212,165,165,0.12);
+  background: white;
+}
+.hand-input::placeholder { color: #C4B5A5; }
+
+/* ========== 奶油进度条 ========== */
+.progress-bar {
+  height: 8px;
+  background: #F3ECE4;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #D4A5A5, #B8A9CA);
+  border-radius: 999px;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ========== 糖果标签 ========== */
+.tag {
+  display: inline-block;
+  padding: 2px 10px;
+  background: #FAF1F1;
+  color: #B37474;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid #EDD5D5;
+}
+
+/* ========== 马卡龙技能标签 ========== */
+.skill-tag {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: #FDFBF9;
+  border: 1.5px solid #E8DDD2;
+  font-size: 13px;
+  color: #8B7A6B;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.skill-tag:hover {
+  background: #F3ECE4;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(125,107,93,0.08);
+}
+.skill-tag:active { transform: scale(0.95); }
+
+.skill-tag-selected,
+.skill-tag-selected-rosa {
+  background: linear-gradient(135deg, #D4A5A5, #C48B8B) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 8px rgba(212,165,165,0.35);
+}
+.skill-tag-selected-dusty {
+  background: linear-gradient(135deg, #9FB5C4, #7A9AB0) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 8px rgba(159,181,196,0.35);
+}
+.skill-tag-selected-lilac {
+  background: linear-gradient(135deg, #B8A9CA, #9A88B5) !important;
+  color: white !important;
+  border-color: transparent !important;
+  box-shadow: 0 2px 8px rgba(184,169,202,0.35);
+}
+
+/* ========== 底部导航 ========== */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  background: white;
+  border-top: 1.5px solid #F2E1E1;
+  border-radius: 20px 20px 0 0;
+  padding: 6px 0 8px;
+  z-index: 100;
+  box-shadow: 0 -4px 20px rgba(212,165,165,0.08);
+}
+
+/* ========== AI对话气泡 ========== */
+.ai-bubble {
+  background: linear-gradient(135deg, #FDFBF9, #F2E1E1);
+  border-radius: 20px 20px 20px 6px;
+  padding: 12px 16px;
+  max-width: 80%;
+  border: 1px solid #EDD5D5;
+}
+.user-bubble {
+  background: linear-gradient(135deg, #B8A9CA, #9A88B5);
+  color: white;
+  border-radius: 20px 20px 6px 20px;
+  padding: 12px 16px;
+  max-width: 80%;
+}
+
+/* ========== 动画 ========== */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in-up { animation: fadeInUp 0.35s ease-out; }
+
+@keyframes bounceIn {
+  0%   { opacity: 0; transform: scale(0.3) translateY(20px); }
+  50%  { opacity: 1; transform: scale(1.05) translateY(-4px); }
+  70%  { transform: scale(0.97) translateY(1px); }
+  100% { transform: scale(1) translateY(0); }
+}
+.task-bounce-in { animation: bounceIn 0.5s ease-out both; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33%      { transform: translateY(-6px) rotate(3deg); }
+  66%      { transform: translateY(-3px) rotate(-2deg); }
+}
+.animate-float { animation: float 3s ease-in-out infinite; }
+
+@keyframes sweetPulse {
+  0%   { box-shadow: 0 3px 0 #6F8F66, 0 4px 16px rgba(168,191,160,0.3); }
+  50%  { box-shadow: 0 3px 0 #6F8F66, 0 4px 28px rgba(168,191,160,0.55); }
+  100% { box-shadow: 0 3px 0 #6F8F66, 0 4px 16px rgba(168,191,160,0.3); }
+}
+.authorize-btn {
+  background: linear-gradient(135deg, #A8BFA0, #8AA880);
+  animation: sweetPulse 2s ease-in-out infinite;
+}
+
+@keyframes confettiFall {
+  0%   { opacity: 1; transform: translateY(-100vh) rotate(0deg); }
+  100% { opacity: 0; transform: translateY(100vh) rotate(720deg); }
+}
+.confetti-piece {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  animation: confettiFall 2s ease-out forwards;
+}
+
+/* ========== 滚动条 ========== */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #E8DDD2; border-radius: 999px; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ========== 工具类 ========== */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ========== 手绘风装饰边框 ========== */
+.hand-border {
+  border: 1.5px solid #E8DDD2;
+  border-radius: 20px 16px 24px 18px;
+  box-shadow: 0 2px 12px rgba(125,107,93,0.06);
+}
+
+/* ========== 甜品装饰背景点 ========== */
+.deco-dots {
+  position: relative;
+}
+.deco-dots::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, #D4A5A5 0.8px, transparent 0.8px),
+    radial-gradient(circle, #B8A9CA 0.6px, transparent 0.6px),
+    radial-gradient(circle, #A8BFA0 0.7px, transparent 0.7px);
+  background-size: 40px 40px, 35px 35px, 45px 45px;
+  background-position: 0 0, 15px 20px, 25px 8px;
+  opacity: 0.15;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 底部弹窗 — 避免被 NavBar (z-100) 遮挡 */
+.fixed.inset-0.z-50,
+.fixed.inset-0.z-\[50\] {
+  z-index: 110 !important;
+}
+
+/* 底部弹窗内容区 — 为 NavBar 留空间 */
+.fixed.inset-0.items-end .bg-white.rounded-t-2xl,
+.fixed.inset-0.items-end .bg-white.dark\:bg-\[\#1a1a2e\].rounded-t-2xl {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 80px) !important;
+}
