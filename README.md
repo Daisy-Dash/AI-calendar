@@ -154,16 +154,16 @@ cd AI-calendar
 cd backend
 
 # 安装依赖
-pip install fastapi uvicorn sqlalchemy pydantic pydantic-settings \
-  "python-jose[cryptography]" "passlib[bcrypt]" "bcrypt<5.0" \
-  python-multipart httpx alembic PyPDF2 python-docx python-pptx
+pip install -r requirements.txt
+pip install PyPDF2 python-docx python-pptx
 
 # 配置 AI（可选但推荐）
-# 创建 .env 文件：
-cat > .env << 'EOF'
-AI_PROVIDER=deepseek
-DEEPSEEK_API_KEY=your-api-key-here
-EOF
+# 在 backend 目录下创建 .env 文件，写入以下内容：
+#   AI_PROVIDER=deepseek
+#   DEEPSEEK_API_KEY=你的API密钥
+# Windows PowerShell 可用：
+echo "AI_PROVIDER=deepseek`nDEEPSEEK_API_KEY=你的API密钥" | Out-File -Encoding utf8 .env
+# 或手动用记事本新建 .env 文件，粘贴上述两行即可
 
 # 启动
 python main.py
