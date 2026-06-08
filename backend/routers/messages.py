@@ -164,12 +164,21 @@ def _generate_group_ai_reply(db: Session, group_id: int, user_message: str, user
     if not clean_message:
         clean_message = "你好，介绍一下你能做什么"
 
-    # 调用真实AI API
+    # 调用真实AI API — 检测是否需要联网搜索
+    _search_keywords = ["竞品", "搜索", "搜一下", "查一下", "找一下", "推荐", "有哪些",
+                        "市场", "调研", "对比", "比较", "最新", "趋势", "热门"]
+    need_search = any(kw in clean_message for kw in _search_keywords)
+
     try:
         from services.ai_service import AIService
         ai = AIService()
         if ai.is_available:
-            content = ai.chat(message=clean_message, context=context)
+            if need_search:
+                # 使用带搜索的对话
+                result = ai.chat_with_search(message=clean_message, context=context)
+                content = result.get("reply", "")
+            else:
+                content = ai.chat(message=clean_message, context=context)
         else:
             content = _fallback_group_reply(clean_message, member_count, task_count, completed, tasks, db)
     except Exception as e:
@@ -344,11 +353,18 @@ def _generate_private_ai_reply(db: Session, user: User, message: str, group_id: 
 
     context = "\n".join(context_parts)
 
-    # 调用真实AI API
+    # 调用真实AI API — 检测是否需要联网搜索
+    _search_keywords = ["竞品", "搜索", "搜一下", "查一下", "找一下", "推荐", "有哪些",
+                        "市场", "调研", "对比", "比较", "最新", "趋势", "热门"]
+    need_search = any(kw in message for kw in _search_keywords)
+
     try:
         from services.ai_service import AIService
         ai = AIService()
         if ai.is_available:
+            if need_search:
+                result = ai.chat_with_search(message=message, context=context)
+                return result.get("reply", "")
             return ai.chat(message=message, context=context)
     except Exception as e:
         print(f"[Private AI] Error: {e}")

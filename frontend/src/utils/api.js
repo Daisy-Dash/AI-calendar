@@ -69,6 +69,7 @@ export const taskAPI = {
 export const aiAPI = {
   chat: (data) => api.post('/ai/chat', data),
   parse: (data) => api.post('/ai/parse', data),
+  searchChat: (data) => api.post('/ai/search-chat', data),
 }
 
 export const notificationAPI = {

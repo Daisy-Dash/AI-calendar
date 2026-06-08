@@ -98,6 +98,154 @@ class AIService:
         else:
             return self._smart_mock_reply(message, context)
 
+    def chat_with_search(self, message: str, context: str = "") -> dict:
+        """带联网搜索能力的对话 — 使用 DeepSeek Function Calling
+
+        Returns:
+            {
+                "reply": "AI 最终回复文本",
+                "search_results": [...],  # 搜索到的结果(如果触发了搜索)
+                "tool_calls": [...]       # 工具调用记录
+            }
+        """
+        from services.web_search import SEARCH_TOOLS, execute_tool_call
+
+        if not self._has_real_api:
+            return {
+                "reply": self._smart_mock_reply(message, context),
+                "search_results": [],
+                "tool_calls": [],
+            }
+
+        # 构建带搜索系统提示
+        system_prompt = self._get_search_system_prompt()
+        messages = [{"role": "system", "content": system_prompt}]
+        if context:
+            messages.append({"role": "user", "content": context})
+            messages.append({"role": "assistant", "content": "好的，我了解了以上背景信息。"})
+        messages.append({"role": "user", "content": message})
+
+        all_search_results = []
+        tool_call_log = []
+
+        # 选择 API — 优先 DeepSeek（function calling 兼容性最好）
+        api_key = self.deepseek_api_key or self.gpt_api_key
+        api_url = (
+            "https://api.deepseek.com/v1/chat/completions"
+            if self.deepseek_api_key
+            else "https://api.openai.com/v1/chat/completions"
+        )
+        model = (
+            settings.DEEPSEEK_API_MODEL
+            if self.deepseek_api_key
+            else settings.GPT_API_MODEL
+        )
+
+        if not api_key:
+            # Claude 不支持 OpenAI 风格 function calling，降级为普通对话
+            return {
+                "reply": self._call_claude(message, context),
+                "search_results": [],
+                "tool_calls": [],
+            }
+
+        # 最多 2 轮：第 1 轮允许调工具，第 2 轮强制出文本
+        for round_idx in range(2):
+            try:
+                request_body = {
+                    "model": model,
+                    "messages": messages,
+                    "max_tokens": 2048,
+                    "temperature": 0.7,
+                }
+
+                # 只在第 1 轮提供工具；第 2 轮不传 tools，强制 AI 直接回复
+                if round_idx == 0:
+                    request_body["tools"] = SEARCH_TOOLS
+                    request_body["tool_choice"] = "auto"
+
+                resp = _http_client.post(
+                    api_url,
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "content-type": "application/json",
+                    },
+                    json=request_body,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+
+                choice = data["choices"][0]
+                msg = choice["message"]
+
+                # 如果 AI 不需要调用工具，直接返回
+                if choice.get("finish_reason") == "stop" or not msg.get("tool_calls"):
+                    return {
+                        "reply": msg.get("content", ""),
+                        "search_results": all_search_results,
+                        "tool_calls": tool_call_log,
+                    }
+
+                # AI 请求调用工具 — 执行搜索
+                messages.append(msg)  # 把 assistant 的 tool_calls 消息加入上下文
+
+                for tool_call in msg["tool_calls"]:
+                    func_name = tool_call["function"]["name"]
+                    func_args = json.loads(tool_call["function"]["arguments"])
+
+                    print(f"[AI Search] 工具调用: {func_name}({func_args})")
+                    tool_call_log.append({"tool": func_name, "args": func_args})
+
+                    # 执行搜索
+                    result_str = execute_tool_call(func_name, func_args)
+                    try:
+                        parsed = json.loads(result_str)
+                        if isinstance(parsed, list):
+                            all_search_results.extend(parsed)
+                        elif isinstance(parsed, dict):
+                            for v in parsed.values():
+                                if isinstance(v, list):
+                                    all_search_results.extend(v)
+                    except Exception:
+                        pass
+
+                    # 把工具结果返回给 AI
+                    messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call["id"],
+                        "content": result_str,
+                    })
+
+            except Exception as e:
+                print(f"[AI Search] 第 {round_idx+1} 轮出错: {e}")
+                # 出错时降级为普通对话
+                fallback = self.chat(message, context)
+                return {
+                    "reply": fallback,
+                    "search_results": all_search_results,
+                    "tool_calls": tool_call_log,
+                }
+
+        # 工具调用循环用尽 — 基于已收集的搜索结果给出简要总结
+        if all_search_results:
+            summary_parts = ["根据搜索结果，我找到了以下相关信息：\n"]
+            for i, r in enumerate(all_search_results[:5], 1):
+                title = r.get("title", "未知")
+                snippet = r.get("snippet", "")[:100]
+                url = r.get("url", "")
+                summary_parts.append(f"{i}. **{title}**\n   {snippet}\n   🔗 {url}\n")
+            return {
+                "reply": "\n".join(summary_parts),
+                "search_results": all_search_results,
+                "tool_calls": tool_call_log,
+            }
+
+        return {
+            "reply": "抱歉，搜索过程中遇到问题，请稍后重试。",
+            "search_results": [],
+            "tool_calls": tool_call_log,
+        }
+
     def split_task(
         self, task_title: str, task_description: str = "", total_days: Optional[int] = None
     ) -> list[dict]:
@@ -313,6 +461,28 @@ class AIService:
 - 给出具体可操作的建议，而非泛泛而谈
 - 使用结构化格式（列表、表格）使信息清晰
 - 了解用户的上下文后提供个性化建议"""
+
+    def _get_search_system_prompt(self) -> str:
+        return """你是 AI 统筹组长，一个面向大学生团队的智能协作助手，具备联网搜索能力。
+
+你的核心能力：
+1. 🔍 联网搜索 — 通过 web_search 工具搜索互联网获取实时信息
+2. 📋 竞品分析 — 搜索并分析同类产品，总结优劣势和可借鉴点
+3. 📊 市场调研 — 了解行业趋势、用户需求、技术方案
+4. 💡 项目建议 — 基于搜索结果给出具体的项目方向和设计建议
+5. 👥 团队协作 — 帮助团队理解项目需求，合理分工
+
+使用搜索工具的策略：
+- 当用户问到竞品、市场、产品推荐、最新技术等需要实时信息的问题时，主动调用 web_search
+- 搜索关键词要具体精确，比如搜 "2024日程管理APP竞品分析" 而非 "APP"
+- 如果需要全面了解，使用 multi_search 同时搜索多个关键词
+- 搜索完成后，整理结果给出结构化的分析报告
+
+回复风格：
+- 温暖友好，使用适当的 emoji
+- 引用搜索结果时标注来源（产品名/网站）
+- 给出结构化分析（表格对比、优劣势列表）
+- 最后给出明确的建议和下一步行动"""
 
     def _build_split_prompt(self, title: str, description: str, total_days: Optional[int]) -> str:
         days_hint = f"，总时长约{total_days}天" if total_days else ""

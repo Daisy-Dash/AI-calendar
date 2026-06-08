@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getProject, addChatMessage, updateProject, getUserProfile } from '../utils/store'
 import { getAIGreeting, getCompetitorResearch, getChatResponse } from '../utils/mockAI'
+import { aiAPI } from '../utils/api'
 
 export default function DiscussionPage() {
   const { projectId } = useParams()
@@ -52,22 +53,71 @@ export default function DiscussionPage() {
     setInput('')
     setSending(true)
 
-    if (messages.length <= 2 && !inspirations.length) {
-      const research = await getCompetitorResearch(userInput)
-      setInspirations(research.inspirations)
-      updateProject(projectId, { inspirations: research.inspirations })
-      const aiMsg = { role: 'ai', content: research.message, type: 'text' }
-      addChatMessage(projectId, aiMsg)
-      setMessages(prev => [...prev, { id: Date.now().toString(), ...aiMsg, timestamp: new Date().toISOString() }])
-    } else {
-      const response = await getChatResponse(userInput, { messages, project })
-      if (response.type === 'authorize') {
-        setShowAuthorize(true)
-        updateProject(projectId, { confirmed_goal: userInput, status: 'confirmed' })
+    try {
+      // 尝试使用真实 AI 联网搜索
+      const token = localStorage.getItem('token')
+
+      if (token) {
+        // 构建上下文：把之前的对话历史拼入
+        const chatHistory = messages.slice(-6).map(m => `${m.role === 'user' ? '用户' : 'AI'}: ${m.content}`).join('\n')
+        const contextStr = project ? `项目名称: ${project.name}\n${chatHistory}` : chatHistory
+
+        const res = await aiAPI.searchChat({
+          message: userInput,
+          context: contextStr,
+        })
+
+        const data = res.data
+
+        // 如果搜索到了结果，转化为灵感卡片
+        if (data.search_results?.length > 0 && !inspirations.length) {
+          const newInspirations = data.search_results.slice(0, 6).map(r => ({
+            title: r.title || '搜索结果',
+            description: r.snippet || r.title || '',
+            type: '网页',
+            tags: [],
+            url: r.url || '',
+            highlight: r.snippet || '',
+          }))
+          setInspirations(newInspirations)
+          updateProject(projectId, { inspirations: newInspirations })
+        }
+
+        const aiMsg = { role: 'ai', content: data.reply, type: 'text' }
+        addChatMessage(projectId, aiMsg)
+        setMessages(prev => [...prev, { id: Date.now().toString(), ...aiMsg, timestamp: new Date().toISOString() }])
+
+        // 检查是否需要授权确认
+        const lower = userInput.toLowerCase()
+        if (lower.includes('确定') || lower.includes('就这个') || lower.includes('开始')) {
+          setShowAuthorize(true)
+          updateProject(projectId, { confirmed_goal: userInput, status: 'confirmed' })
+        }
+      } else {
+        // 未登录 — 降级使用 mockAI
+        throw new Error('no token')
       }
-      const aiMsg = { role: 'ai', content: response.content, type: response.type }
-      addChatMessage(projectId, aiMsg)
-      setMessages(prev => [...prev, { id: Date.now().toString(), ...aiMsg, timestamp: new Date().toISOString() }])
+    } catch (err) {
+      // API 调用失败 — 降级使用 mockAI
+      console.log('[DiscussionPage] AI API 失败，使用本地模拟:', err.message || err)
+
+      if (messages.length <= 2 && !inspirations.length) {
+        const research = await getCompetitorResearch(userInput)
+        setInspirations(research.inspirations)
+        updateProject(projectId, { inspirations: research.inspirations })
+        const aiMsg = { role: 'ai', content: research.message, type: 'text' }
+        addChatMessage(projectId, aiMsg)
+        setMessages(prev => [...prev, { id: Date.now().toString(), ...aiMsg, timestamp: new Date().toISOString() }])
+      } else {
+        const response = await getChatResponse(userInput, { messages, project })
+        if (response.type === 'authorize') {
+          setShowAuthorize(true)
+          updateProject(projectId, { confirmed_goal: userInput, status: 'confirmed' })
+        }
+        const aiMsg = { role: 'ai', content: response.content, type: response.type }
+        addChatMessage(projectId, aiMsg)
+        setMessages(prev => [...prev, { id: Date.now().toString(), ...aiMsg, timestamp: new Date().toISOString() }])
+      }
     }
     setSending(false)
   }
@@ -197,10 +247,13 @@ export default function DiscussionPage() {
               🧁
             </div>
             <div className="ai-bubble">
-              <div className="flex gap-1.5">
-                <span className="w-2 h-2 bg-rosa-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-lilac-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-sage-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1.5">
+                  <span className="w-2 h-2 bg-rosa-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 bg-lilac-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 bg-sage-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+                <span className="text-xs text-choco-200 ml-1">AI 正在联网搜索中...</span>
               </div>
             </div>
           </div>

@@ -77,3 +77,33 @@ def ai_chat(
     ai_service = AIService()
     reply = ai_service.chat(message=data.message, context=data.context)
     return {"reply": reply}
+
+
+@router.post("/ai/search-chat")
+def ai_search_chat(
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """带联网搜索能力的AI对话 — Function Calling + Web Search
+
+    请求体:
+        {"message": "帮我找日程管理APP的竞品", "context": "可选上下文"}
+
+    返回:
+        {"reply": "AI回复", "search_results": [...], "tool_calls": [...]}
+    """
+    import json as _json
+    from services.ai_service import AIService
+
+    message = data.get("message", "")
+    context = data.get("context", "")
+
+    if not message:
+        raise HTTPException(status_code=400, detail="message 不能为空")
+
+    ai_service = AIService()
+    result = ai_service.chat_with_search(message=message, context=context)
+
+    # 安全序列化
+    return _json.loads(_json.dumps(result, ensure_ascii=False, default=str))

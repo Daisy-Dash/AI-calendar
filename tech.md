@@ -1,6 +1,6 @@
 # AI 统筹组长 — 技术文档
 
-> 版本: 3.0 | 日期: 2026-06-08
+> 版本: 3.1 | 日期: 2026-06-08
 
 ---
 
@@ -20,6 +20,7 @@
 │              localhost:8000                       │
 ├─────────────────────────────────────────────────┤
 │                AI Services                       │
+│   DeepSeek Function Calling + DuckDuckGo 联网搜索 │
 │   DeepSeek API (主) / Claude / GPT / 本地回退     │
 ├─────────────────────────────────────────────────┤
 │              SQLite + Auto Backup                │
@@ -54,6 +55,7 @@
 | python-pptx | - | PPT 文本提取 |
 | pydantic | v2 | 数据验证（Schema） |
 | python-dotenv | - | 环境变量管理 |
+| ddgs | - | DuckDuckGo 联网搜索（AI Function Calling） |
 
 ### 2.2 前端
 
@@ -76,7 +78,8 @@
 
 | Provider | 说明 |
 |----------|------|
-| DeepSeek | 主力 — 通过 OpenAI 兼容接口调用 |
+| DeepSeek | 主力 — 通过 OpenAI 兼容接口调用，支持 Function Calling |
+| DuckDuckGo | 联网搜索 — 通过 ddgs 库免费搜索，无需额外 API Key |
 | Claude | 可选 — Anthropic API |
 | GPT | 可选 — OpenAI API |
 | 本地回退 | 无 API Key 时使用关键词匹配引擎 |
@@ -215,7 +218,8 @@ ai calendar/
 │   │   └── ws.py                # WebSocket 实时推送
 │   │
 │   ├── services/
-│   │   ├── ai_service.py        # AI 多 Provider 适配器
+│   │   ├── ai_service.py        # AI 多 Provider 适配器 + Function Calling
+│   │   ├── web_search.py        # DuckDuckGo 联网搜索服务 + 工具定义
 │   │   ├── ai_split.py          # 任务分解引擎
 │   │   ├── ai_parse.py          # 自然语言解析（提取任务/时间/标签）
 │   │   ├── smart_assign.py      # 智能分配引擎
@@ -286,7 +290,7 @@ ai calendar/
 | 认证 | 2 | /api/auth |
 | 用户 | 7 | /api/users |
 | 任务 | 7 | /api/tasks |
-| AI | 4 | /api/ai + /api/tasks |
+| AI | 5 | /api/ai + /api/tasks |
 | 群组 | 10 | /api/groups |
 | 好友 | 5 | /api/friends |
 | 消息 | 5 | /api/messages |
@@ -335,7 +339,52 @@ class AIService:
 6. 成员确认/打回 → 全部确认后群组进入 working 状态
 ```
 
-### 6.3 @AI 群聊处理
+### 6.3 AI 联网搜索（Function Calling）
+
+```
+用户提问（"帮我找竞品"）
+    ↓
+后端检测搜索意图（关键词匹配）
+    ↓
+调用 chat_with_search() → 发送给 DeepSeek（携带 tools 参数）
+    ↓
+DeepSeek 自动决定调用 web_search / multi_search
+    ↓
+后端执行 DuckDuckGo 搜索 → 真实网页结果
+    ↓
+搜索结果返回 DeepSeek → AI 整理成结构化分析报告
+    ↓
+前端展示 AI 回复 + 搜索到的灵感卡片
+```
+
+```python
+# services/web_search.py — 工具定义
+SEARCH_TOOLS = [
+    {"type": "function", "function": {
+        "name": "web_search",
+        "description": "搜索互联网获取最新信息",
+        "parameters": {"type": "object", "properties": {
+            "query": {"type": "string"},
+            "search_type": {"type": "string", "enum": ["general", "news"]}
+        }, "required": ["query"]}
+    }},
+    {"type": "function", "function": {
+        "name": "multi_search",
+        "description": "多关键词并行搜索",
+        "parameters": {"type": "object", "properties": {
+            "queries": {"type": "array", "items": {"type": "string"}}
+        }, "required": ["queries"]}
+    }}
+]
+
+# services/ai_service.py — 两轮对话策略
+# 第1轮：携带 tools，允许 AI 调用搜索工具
+# 第2轮：不传 tools，强制 AI 基于搜索结果生成最终回复
+```
+
+触发搜索的关键词：`竞品、搜索、搜一下、查一下、找一下、推荐、有哪些、市场、调研、对比、比较、最新、趋势、热门`
+
+### 6.4 @AI 群聊处理
 
 ```python
 # routers/messages.py
@@ -349,7 +398,7 @@ def send_group_message(content, ...):
         # 6. 返回 { message, ai_reply }
 ```
 
-### 6.4 文件上传 + 文本提取
+### 6.5 文件上传 + 文本提取
 
 ```python
 # routers/upload.py
@@ -364,7 +413,7 @@ def upload_file(file: UploadFile):
     # 3. 返回 { url, filename, extracted_text }
 ```
 
-### 6.5 安全列迁移
+### 6.6 安全列迁移
 
 ```python
 # safe_migrate.py — 启动时自动运行
@@ -378,7 +427,7 @@ MIGRATIONS = [
 ]
 ```
 
-### 6.6 前端认证管理
+### 6.7 前端认证管理
 
 ```jsx
 // AuthContext.jsx
