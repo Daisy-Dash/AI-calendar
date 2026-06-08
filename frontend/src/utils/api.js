@@ -67,9 +67,9 @@ export const taskAPI = {
 }
 
 export const aiAPI = {
-  chat: (data) => api.post('/ai/chat', data),
+  chat: (data) => api.post('/ai/chat', data, { timeout: 60000 }),
   parse: (data) => api.post('/ai/parse', data),
-  searchChat: (data) => api.post('/ai/search-chat', data),
+  searchChat: (data) => api.post('/ai/search-chat', data, { timeout: 120000 }),
 }
 
 export const notificationAPI = {
@@ -90,9 +90,9 @@ export const friendAPI = {
 
 export const messageAPI = {
   getGroupMessages: (groupId, params) => api.get(`/messages/group/${groupId}`, { params }),
-  sendGroupMessage: (groupId, data) => api.post(`/messages/group/${groupId}`, data),
+  sendGroupMessage: (groupId, data) => api.post(`/messages/group/${groupId}`, data, { timeout: 120000 }),
   getPrivateMessages: (params) => api.get('/messages/private', { params }),
-  sendPrivateMessage: (data) => api.post('/messages/private', data),
+  sendPrivateMessage: (data) => api.post('/messages/private', data, { timeout: 60000 }),
   getKnowledgeFiles: (groupId) => api.get(`/messages/knowledge/${groupId}`),
 }
 
