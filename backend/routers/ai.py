@@ -11,13 +11,14 @@ from services.smart_assign import SmartAssigner
 router = APIRouter(prefix="/api", tags=["AI"])
 
 
-@router.post("/ai/parse", response_model=dict)
+@router.post("/ai/parse")
 def ai_parse_message(
     data: dict,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     """AI 解析用户消息 — 提取任务、时间、标签"""
+    import json
     text = data.get("text", "")
     deep = data.get("deep", False)
 
@@ -33,7 +34,8 @@ def ai_parse_message(
             current_user.skills = merged
             db.commit()
 
-    return result
+    # 确保返回的是可序列化的 dict（防止循环引用）
+    return json.loads(json.dumps(result, ensure_ascii=False, default=str))
 
 
 @router.post("/tasks/split", response_model=AISplitResponse)

@@ -11,6 +11,11 @@ from database import engine
 # 迁移定义：(表名, 列名, SQL类型, 默认值)
 # 程序员新增字段时，在这里加一行就行
 MIGRATIONS = [
+    # User 表新增字段
+    ("users", "major", "JSON", "'[]'"),
+    ("users", "skills", "JSON", "'[]'"),
+    ("users", "tools", "JSON", "'[]'"),
+
     # Group 表新增字段
     ("groups", "status", "VARCHAR(20)", "'gathering'"),
     ("groups", "project_brief", "VARCHAR(2000)", "''"),
@@ -25,6 +30,9 @@ MIGRATIONS = [
     ("tasks", "is_subtask", "BOOLEAN", "0"),
     ("tasks", "estimated_hours", "FLOAT", "NULL"),
     ("tasks", "progress", "INTEGER", "0"),
+
+    # Schedule 表新增字段
+    ("schedules", "repeat_type", "VARCHAR(20)", "NULL"),
 ]
 
 

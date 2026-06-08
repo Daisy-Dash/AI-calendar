@@ -67,9 +67,10 @@ def parse_user_message(text: str, deep: bool = False) -> dict:
         if result:
             # 确保 tasks 字段是列表
             if "tasks" not in result:
-                # 浅层解析：单个任务
+                # 浅层解析：单个任务 — 复制一份避免循环引用
                 if result.get("title"):
-                    result["tasks"] = [result]
+                    task_item = {k: v for k, v in result.items() if k not in ("summary", "skill_tags")}
+                    result["tasks"] = [task_item]
                 else:
                     result["tasks"] = []
             if "summary" not in result:

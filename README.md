@@ -153,9 +153,8 @@ cd AI-calendar
 ```bash
 cd backend
 
-# 安装依赖
+# 安装依赖（已包含 PyPDF2/python-docx/python-pptx）
 pip install -r requirements.txt
-pip install PyPDF2 python-docx python-pptx
 
 # 配置 AI（可选但推荐）
 # 在 backend 目录下创建 .env 文件，写入以下内容：
@@ -244,7 +243,7 @@ AI-calendar/
 │   │
 │   └── src/
 │       ├── main.jsx             # React 入口 + 全局错误捕获
-│       ├── App.jsx              # 路由配置（13 个路由）
+│       ├── App.jsx              # 路由配置（14 个路由）
 │       ├── index.css            # 莫兰迪手绘风全局样式
 │       │
 │       ├── components/

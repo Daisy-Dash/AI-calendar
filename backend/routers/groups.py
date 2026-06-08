@@ -13,6 +13,22 @@ from auth import get_current_user
 router = APIRouter(prefix="/api/groups", tags=["群组"])
 
 
+def _parse_priority(val) -> int:
+    """将中文或字符串优先级转为整数（1低 2中 3高 4紧急）"""
+    if isinstance(val, int):
+        return val
+    mapping = {"低": 1, "中": 2, "高": 3, "紧急": 4}
+    if isinstance(val, str):
+        if val in mapping:
+            return mapping[val]
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            pass
+    return 2  # default 中
+
+
+
 def generate_invite_code():
     """生成6位邀请码"""
     alphabet = string.ascii_uppercase + string.digits
@@ -358,7 +374,7 @@ def start_workflow(
             group_id=group_id,
             assigned_to=t.get("assigned_to"),
             status="待确认",
-            priority=t.get("priority", "中"),
+            priority=_parse_priority(t.get("priority", "中")),
             deadline=None,
         )
         db.add(task)
@@ -493,7 +509,7 @@ def get_pending_tasks(
             "id": t.id,
             "title": t.title,
             "description": t.description or "",
-            "priority": t.priority or "中",
+            "priority": _parse_priority(t.priority) if t.priority else 2,
         })
     return result
 
@@ -505,12 +521,12 @@ def _ai_decompose_tasks(project_desc: str, members: list) -> list:
     import re
 
     base_tasks = [
-        {"title": "需求分析与文档整理", "description": "整理项目需求，编写需求文档", "priority": "高"},
-        {"title": "方案设计与架构规划", "description": "设计整体方案和技术架构", "priority": "高"},
-        {"title": "核心功能开发", "description": "实现项目核心功能模块", "priority": "高"},
-        {"title": "UI/UX设计", "description": "设计用户界面和交互体验", "priority": "中"},
-        {"title": "测试与质量保证", "description": "编写测试用例，执行测试", "priority": "中"},
-        {"title": "文档撰写与汇报准备", "description": "准备项目报告和展示材料", "priority": "中"},
+        {"title": "需求分析与文档整理", "description": "整理项目需求，编写需求文档", "priority": 3},
+        {"title": "方案设计与架构规划", "description": "设计整体方案和技术架构", "priority": 3},
+        {"title": "核心功能开发", "description": "实现项目核心功能模块", "priority": 3},
+        {"title": "UI/UX设计", "description": "设计用户界面和交互体验", "priority": 2},
+        {"title": "测试与质量保证", "description": "编写测试用例，执行测试", "priority": 2},
+        {"title": "文档撰写与汇报准备", "description": "准备项目报告和展示材料", "priority": 2},
     ]
 
     # 根据成员数量调整任务数量
