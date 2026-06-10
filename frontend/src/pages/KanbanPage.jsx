@@ -1,184 +1,185 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getProject, updateTask, deleteTask } from '../utils/store'
-
-const lanes = [
-  { key: 'unclaimed', label: '待认领', color: 'text-rosa-400', accent: 'bg-rosa-300' },
-  { key: 'in_progress', label: '进行中', color: 'text-dusty-400', accent: 'bg-dusty-300' },
-  { key: 'completed', label: '已完成', color: 'text-sage-400', accent: 'bg-sage-300' },
-]
-
-const difficultyLabels = ['', '入门', '简单', '中等', '较难', '困难']
-const difficultyColors = [
-  '',
-  'bg-sage-50 text-sage-500',
-  'bg-sage-50 text-sage-400',
-  'bg-caramel-50 text-caramel-400',
-  'bg-rosa-50 text-rosa-400',
-  'bg-rosa-100 text-rosa-500',
-]
+import { useAuth } from '../contexts/AuthContext'
+import { groupAPI, taskAPI, messageAPI } from '../utils/api'
 
 export default function KanbanPage() {
-  const { projectId } = useParams()
+  // 兼容旧路由参数名（projectId）+ 新参数名（groupId）
+  const params = useParams()
+  const groupId = params.groupId || params.projectId
   const navigate = useNavigate()
-  const [project, setProject] = useState(null)
-  const [activeLane, setActiveLane] = useState('unclaimed')
-  const [swipedTaskId, setSwipedTaskId] = useState(null)
-  const [longPressTask, setLongPressTask] = useState(null)
-  const [editTitle, setEditTitle] = useState('')
-  const [animateIn, setAnimateIn] = useState(true)
-  const touchStartX = useRef(0)
-  const longPressTimer = useRef(null)
+  const { user } = useAuth()
+  const [group, setGroup] = useState(null)
+  const [stats, setStats] = useState(null)
+  const [tasks, setTasks] = useState([])
+  const [proposal, setProposal] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const p = getProject(projectId)
-    if (!p) { navigate('/'); return }
-    setProject(p)
-    setTimeout(() => setAnimateIn(false), 1500)
-  }, [projectId])
+    loadAll()
+  }, [groupId])
 
-  const refreshProject = () => {
-    setProject(getProject(projectId))
-  }
-
-  const tasksInLane = (lane) => {
-    return (project?.tasks || []).filter(t => t.status === lane)
-  }
-
-  const handleTouchStart = (e, taskId) => {
-    touchStartX.current = e.touches[0].clientX
-    longPressTimer.current = setTimeout(() => {
-      const task = project.tasks.find(t => t.id === taskId)
-      if (task) {
-        setLongPressTask(task)
-        setEditTitle(task.title)
+  const loadAll = async () => {
+    setLoading(true)
+    try {
+      const [groupRes, statsRes, tasksRes, msgsRes] = await Promise.all([
+        groupAPI.getDetail(parseInt(groupId)),
+        groupAPI.getStats(parseInt(groupId)).catch(() => ({ data: null })),
+        taskAPI.list({ group_id: parseInt(groupId) }).catch(() => ({ data: [] })),
+        messageAPI.getGroupMessages(parseInt(groupId), { limit: 200 }).catch(() => ({ data: [] })),
+      ])
+      setGroup(groupRes.data)
+      setStats(statsRes.data)
+      // 排序：DDL 升序，无 DDL 排末尾
+      const sorted = [...(tasksRes.data || [])].sort((a, b) => {
+        if (!a.deadline && !b.deadline) return 0
+        if (!a.deadline) return 1
+        if (!b.deadline) return -1
+        return new Date(a.deadline) - new Date(b.deadline)
+      })
+      setTasks(sorted)
+      // 找最近一次组员提交的方案消息
+      const proposals = (msgsRes.data || []).filter(m => m.msg_type === 'proposal')
+      if (proposals.length > 0) {
+        setProposal(proposals[proposals.length - 1])
       }
-    }, 500)
-  }
-
-  const handleTouchMove = (e, taskId) => {
-    clearTimeout(longPressTimer.current)
-    const diff = touchStartX.current - e.touches[0].clientX
-    if (diff > 60) setSwipedTaskId(taskId)
-    else if (diff < -30) setSwipedTaskId(null)
-  }
-
-  const handleTouchEnd = () => {
-    clearTimeout(longPressTimer.current)
-  }
-
-  const handleDeleteTask = (taskId) => {
-    deleteTask(projectId, taskId)
-    setSwipedTaskId(null)
-    refreshProject()
-  }
-
-  const handleSaveEdit = () => {
-    if (longPressTask && editTitle.trim()) {
-      updateTask(projectId, longPressTask.id, { title: editTitle.trim() })
-      setLongPressTask(null)
-      refreshProject()
+    } catch (e) {
+      console.error(e)
+      alert('看板加载失败')
+      navigate(`/group-chat/${groupId}`)
     }
+    setLoading(false)
   }
 
-  if (!project) return null
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-5xl mb-3 animate-float">📋</div>
+          <p className="text-sm text-choco-200">加载中...</p>
+        </div>
+      </div>
+    )
+  }
 
-  const emptyIcons = { unclaimed: '🧁', in_progress: '🍵', completed: '🎉' }
-  const emptyText = { unclaimed: '暂无待认领的任务', in_progress: '暂无进行中的任务', completed: '暂无已完成的任务' }
+  if (!group) return null
+
+  const total = stats?.total_tasks || tasks.length
+  const completed = stats?.completed_tasks || tasks.filter(t => t.status === '已完成').length
+  const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0
 
   return (
-    <div className="flex flex-col h-screen max-h-screen">
-      <div className="flex items-center justify-between px-4 py-3 border-b-[1.5px] border-cream-300 bg-white">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/')} className="text-rosa-400 text-lg">←</button>
-          <div>
-            <h1 className="text-base font-medium text-choco-600">{project.name}</h1>
-            <p className="text-xs text-choco-200">{project.tasks?.length || 0} 个任务</p>
+    <div className="px-4 pt-6 pb-24 fade-in-up">
+      {/* 头部 */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <button onClick={() => navigate(-1)} className="text-rosa-400 text-lg flex-shrink-0">←</button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base font-medium text-choco-600 truncate">{group.name}</h1>
+            <p className="text-xs text-choco-200">📋 团队看板</p>
           </div>
         </div>
-        <span className="text-lg">🍰</span>
+        <button
+          onClick={() => navigate(`/group-chat/${groupId}`)}
+          className="text-xs px-3 py-1.5 rounded-full bg-rosa-50 border border-rosa-100 text-rosa-500 hover:bg-rosa-100 active:scale-95 transition-all flex-shrink-0"
+        >
+          回群聊
+        </button>
       </div>
 
-      <div className="flex border-b-[1.5px] border-cream-200 bg-white">
-        {lanes.map(lane => {
-          const count = tasksInLane(lane.key).length
-          const isActive = activeLane === lane.key
-          return (
-            <button
-              key={lane.key}
-              onClick={() => setActiveLane(lane.key)}
-              className={`flex-1 py-3 text-center text-sm font-medium transition-all relative ${
-                isActive ? lane.color : 'text-choco-200'
-              }`}
-            >
-              {lane.label}({count})
-              {isActive && (
-                <div className={`absolute bottom-0 left-1/4 right-1/4 h-[3px] rounded-full ${lane.accent}`} />
-              )}
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-4 py-4">
-        {tasksInLane(activeLane).length === 0 ? (
-          <div className="text-center py-12 text-choco-200">
-            <div className="text-4xl mb-3">{emptyIcons[activeLane]}</div>
-            <p className="text-sm">{emptyText[activeLane]}</p>
+      {/* 项目综述卡片 */}
+      <div className="hand-card mb-3 bg-gradient-to-br from-rosa-50 to-lilac-50 border-rosa-100">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xl">🎂</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-choco-600">项目综述</p>
+            <p className="text-[10px] text-choco-300">
+              {group.member_count || 0} 位成员 ·{' '}
+              {group.status === 'gathering' && '📢 召集中'}
+              {group.status === 'discussing' && '💭 讨论中'}
+              {group.status === 'confirming' && '✋ 待确认'}
+              {group.status === 'in_progress' && '🚀 进行中'}
+              {group.status === 'completed' && '✅ 已完成'}
+            </p>
           </div>
-        ) : (
-          <div className="space-y-3">
-            {tasksInLane(activeLane).map((task, index) => {
-              const isSwiped = swipedTaskId === task.id
+        </div>
+        {group.description && (
+          <div className="mt-2 px-3 py-2 rounded-xl bg-white/60 border border-rosa-100">
+            <p className="text-xs text-choco-500 leading-relaxed">{group.description}</p>
+          </div>
+        )}
+      </div>
+
+      {/* 组员讨论方案（如果有） */}
+      {proposal && (
+        <div className="hand-card mb-3 bg-gradient-to-br from-sage-50 to-cream-50 border-sage-100">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-xl">📝</span>
+            <div className="flex-1">
+              <p className="text-sm font-medium text-choco-600">小组讨论方案</p>
+              <p className="text-[10px] text-choco-300">
+                {proposal.sender?.username || '组员'} 提交 ·{' '}
+                {proposal.created_at ? new Date(proposal.created_at).toLocaleDateString('zh-CN') : ''}
+              </p>
+            </div>
+          </div>
+          <div className="px-3 py-2 rounded-xl bg-white/70 border border-sage-100">
+            <p className="text-xs text-choco-600 leading-relaxed whitespace-pre-wrap">{proposal.content}</p>
+          </div>
+        </div>
+      )}
+
+      {/* 总进度条 */}
+      <div className="hand-card mb-3 bg-gradient-to-br from-dusty-50 to-cream-50 border-dusty-100">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">📊</span>
+            <p className="text-sm font-medium text-choco-600">团队总进度</p>
+          </div>
+          <span className={`text-lg font-bold ${
+            completionRate >= 80 ? 'text-sage-500' :
+            completionRate >= 40 ? 'text-dusty-500' :
+            'text-rosa-500'
+          }`}>{completionRate}%</span>
+        </div>
+        <div className="w-full h-3 bg-cream-200 rounded-full overflow-hidden mb-2">
+          <div
+            className={`h-full rounded-full transition-all duration-700 ${
+              completionRate >= 80 ? 'bg-gradient-to-r from-sage-300 to-sage-400' :
+              completionRate >= 40 ? 'bg-gradient-to-r from-dusty-300 to-dusty-400' :
+              'bg-gradient-to-r from-rosa-200 to-rosa-300'
+            }`}
+            style={{ width: `${completionRate}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between text-[10px] text-choco-300">
+          <span>📋 {completed}/{total} 任务完成</span>
+          <span>
+            ⚠️ {tasks.filter(t => t.deadline && t.status !== '已完成' && new Date(t.deadline) < new Date()).length} 逾期 ·{' '}
+            ◎ {tasks.filter(t => t.status === '进行中').length} 进行
+          </span>
+        </div>
+        {/* 每位成员的进度 */}
+        {stats?.member_stats && stats.member_stats.length > 0 && (
+          <div className="space-y-1.5 mt-3 pt-3 border-t border-cream-200">
+            <p className="text-[10px] text-choco-400 font-medium mb-1">每位成员的进度</p>
+            {stats.member_stats.map(m => {
+              const rate = m.total_tasks > 0 ? Math.round((m.completed_tasks / m.total_tasks) * 100) : 0
               return (
-                <div
-                  key={task.id}
-                  className={`relative overflow-hidden rounded-2xl ${animateIn ? 'task-bounce-in' : ''}`}
-                  style={animateIn ? { animationDelay: `${index * 0.15}s` } : {}}
-                >
-                  <div
-                    className={`hand-card cursor-pointer transition-all duration-200 active:scale-[0.98] ${isSwiped ? '-translate-x-20' : ''}`}
-                    onClick={() => !isSwiped && navigate(`/task/${projectId}/${task.id}`)}
-                    onTouchStart={(e) => handleTouchStart(e, task.id)}
-                    onTouchMove={(e) => handleTouchMove(e, task.id)}
-                    onTouchEnd={handleTouchEnd}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${difficultyColors[task.difficulty] || difficultyColors[3]}`}>
-                          {difficultyLabels[task.difficulty] || '中等'}
-                        </span>
-                        {task.skills_required?.slice(0, 2).map((skill, j) => (
-                          <span key={j} className="tag text-[10px]">{skill}</span>
-                        ))}
-                      </div>
-                      {task.match_score !== null && task.match_score !== undefined && (
-                        <span className={`text-xs font-medium ${task.match_score >= 60 ? 'text-sage-400' : 'text-choco-200'}`}>
-                          {task.match_score}%匹配
-                        </span>
-                      )}
-                    </div>
-
-                    <h4 className="text-sm font-medium text-choco-600 mb-1">{task.title}</h4>
-                    <p className="text-xs text-choco-200 line-clamp-2 mb-2">{task.description}</p>
-
-                    <div className="flex items-center justify-between text-xs text-choco-200">
-                      <div className="flex items-center gap-2">
-                        {task.assigned_to && <span>🍪 {task.assigned_to}</span>}
-                        <span>📅 预计{task.estimated_days}天</span>
-                      </div>
-                      <span className="text-rosa-300">查看详情 →</span>
-                    </div>
+                <div key={m.user_id} className="flex items-center gap-2">
+                  <span className="text-xs text-choco-500 w-16 truncate flex-shrink-0">{m.username}</span>
+                  <div className="flex-1 h-1.5 bg-cream-200 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${
+                        rate >= 80 ? 'bg-sage-300' :
+                        rate >= 40 ? 'bg-dusty-300' : 'bg-rosa-200'
+                      }`}
+                      style={{ width: `${rate}%` }}
+                    />
                   </div>
-
-                  {isSwiped && (
-                    <button
-                      onClick={() => handleDeleteTask(task.id)}
-                      className="absolute right-0 top-0 bottom-0 w-20 bg-rosa-400 text-white flex items-center justify-center text-sm font-medium rounded-r-2xl active:bg-rosa-500"
-                    >
-                      删除
-                    </button>
-                  )}
+                  <span className="text-[10px] text-choco-300 w-10 text-right flex-shrink-0">
+                    {m.completed_tasks}/{m.total_tasks}
+                  </span>
                 </div>
               )
             })}
@@ -186,23 +187,104 @@ export default function KanbanPage() {
         )}
       </div>
 
-      {longPressTask && (
-        <div className="fixed inset-0 bg-black/20 z-50 flex items-center justify-center px-6" onClick={() => setLongPressTask(null)}>
-          <div className="bg-white rounded-3xl w-full max-w-[360px] p-5 fade-in-up" onClick={e => e.stopPropagation()}>
-            <h3 className="text-base font-medium text-choco-600 mb-3">编辑任务</h3>
-            <input
-              className="hand-input text-sm mb-4"
-              value={editTitle}
-              onChange={e => setEditTitle(e.target.value)}
-              autoFocus
-            />
-            <div className="flex gap-2">
-              <button onClick={() => setLongPressTask(null)} className="hand-btn-outline flex-1 text-sm py-2">取消</button>
-              <button onClick={handleSaveEdit} className="hand-btn flex-1 text-sm py-2">保存</button>
-            </div>
-          </div>
+      {/* 任务分工卡片（DDL 升序） */}
+      <div className="mb-3">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-sm font-medium text-choco-600 flex items-center gap-1.5">
+            <span>🪜</span> 任务分工
+          </p>
+          <span className="text-[10px] text-choco-300">按 DDL 由近到远 · {tasks.length} 个</span>
         </div>
-      )}
+
+        {tasks.length === 0 ? (
+          <div className="hand-card text-center py-8">
+            <div className="text-3xl mb-2">📭</div>
+            <p className="text-sm text-choco-300">还没有任务</p>
+            <p className="text-[10px] text-choco-200 mt-1">回到群聊提交方案后 AI 会自动拆任务</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {tasks.map(task => {
+              const isMine = task.assigned_to === user?.id
+              const isOverdue = task.deadline && task.status !== '已完成' && new Date(task.deadline) < new Date()
+              const isDone = task.status === '已完成' || (task.progress || 0) >= 100
+              const assignee = group.members?.find(m => m.user_id === task.assigned_to)
+              const assigneeName = assignee?.username || (task.assigned_to ? '其他成员' : '未分配')
+              const assigneeAvatar = assignee?.avatar || '👤'
+
+              return (
+                <div
+                  key={task.id}
+                  onClick={isMine ? () => navigate(`/task-chat/${task.id}`) : undefined}
+                  className={`hand-card transition-all ${
+                    isMine ? 'cursor-pointer hover:shadow-md active:scale-[0.98] border-rosa-200 bg-gradient-to-r from-white to-rosa-50' :
+                    isOverdue && !isDone ? 'border-red-200 bg-red-50/40' :
+                    'opacity-85'
+                  }`}
+                >
+                  <div className="flex items-start gap-2.5">
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0 ${
+                      isDone ? 'bg-sage-100' :
+                      isOverdue ? 'bg-red-100' :
+                      isMine ? 'bg-rosa-100' : 'bg-lilac-50'
+                    }`}>
+                      {isDone ? '✅' : isOverdue ? '⚠️' : isMine ? '🤖' : assigneeAvatar}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className={`text-sm font-medium leading-snug ${
+                          isDone ? 'text-choco-300 line-through' :
+                          isOverdue ? 'text-red-600' :
+                          'text-choco-600'
+                        }`}>{task.title}</p>
+                        {task.deadline && (
+                          <span className={`text-[10px] flex-shrink-0 whitespace-nowrap ${
+                            isOverdue && !isDone ? 'text-red-500 font-medium' : 'text-choco-300'
+                          }`}>
+                            {isOverdue && !isDone ? '⚠️ 逾期' : '📅 '}
+                            {new Date(task.deadline).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}
+                          </span>
+                        )}
+                      </div>
+                      {task.description && (
+                        <p className="text-[11px] text-choco-300 mt-1 line-clamp-2 leading-relaxed">{task.description}</p>
+                      )}
+                      {/* 进度条 */}
+                      <div className="flex items-center gap-2 mt-2">
+                        <div className="flex-1 h-1.5 bg-cream-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${
+                              isDone ? 'bg-sage-300' :
+                              isOverdue ? 'bg-red-400' :
+                              (task.progress || 0) >= 50 ? 'bg-dusty-300' :
+                              'bg-rosa-300'
+                            }`}
+                            style={{ width: `${task.progress || 0}%` }}
+                          />
+                        </div>
+                        <span className={`text-[10px] flex-shrink-0 font-medium ${
+                          isOverdue && !isDone ? 'text-red-500' : 'text-choco-400'
+                        }`}>{task.progress || 0}%</span>
+                      </div>
+                      {/* 负责人 + 标记 */}
+                      <div className="flex items-center justify-between mt-1.5">
+                        <p className="text-[10px] text-choco-400 flex items-center gap-1">
+                          {isMine ? (
+                            <><span>🌟</span> <span className="font-medium text-rosa-500">我负责</span></>
+                          ) : (
+                            <><span>{assigneeAvatar}</span> <span>{assigneeName}</span></>
+                          )}
+                        </p>
+                        {isMine && <span className="text-[10px] text-rosa-400">点击进 AI 聊天 →</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

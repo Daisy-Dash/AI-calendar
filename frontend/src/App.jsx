@@ -74,6 +74,7 @@ export default function App() {
           <Route path="/discussion/:projectId" element={<RequireAuth><DiscussionPage /></RequireAuth>} />
           <Route path="/authorize/:projectId" element={<RequireAuth><AuthorizePage /></RequireAuth>} />
           <Route path="/kanban/:projectId" element={<RequireAuth><KanbanPage /></RequireAuth>} />
+          <Route path="/kanban/group/:groupId" element={<RequireAuth><KanbanPage /></RequireAuth>} />
           <Route path="/task/:projectId/:taskId" element={<RequireAuth><TaskDetailPage /></RequireAuth>} />
           <Route path="/ai-chat" element={<RequireAuth><AIChatPage /></RequireAuth>} />
           <Route path="/task-chat/:taskId" element={<RequireAuth><TaskChatPage /></RequireAuth>} />

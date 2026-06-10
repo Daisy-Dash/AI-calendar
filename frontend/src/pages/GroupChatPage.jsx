@@ -464,8 +464,15 @@ export default function GroupChatPage() {
 
       {/* 任务进度面板 */}
       {showProgress && groupStats && (
-        <div className="px-4 py-3 bg-gradient-to-r from-cream-50 to-dusty-50 border-b border-cream-200 fade-in-up">
-          <div className="flex items-center justify-between mb-2">
+        <div className="px-4 py-3 bg-gradient-to-r from-cream-50 to-dusty-50 border-b border-cream-200 fade-in-up relative">
+          <button
+            onClick={() => setShowProgress(false)}
+            className="absolute top-2 right-3 w-6 h-6 rounded-full bg-white/70 border border-cream-200 flex items-center justify-center text-xs text-choco-300 hover:bg-white hover:text-choco-500 transition-all"
+            title="关闭"
+          >
+            ✕
+          </button>
+          <div className="flex items-center justify-between mb-2 pr-8">
             <span className="text-xs text-choco-500 font-medium">📊 团队任务进度</span>
             <span className={`text-sm font-bold ${
               totalCompletion >= 80 ? 'text-sage-400' :
@@ -525,8 +532,15 @@ export default function GroupChatPage() {
 
       {/* 我的任务面板 */}
       {showMyTasks && myGroupTasks.length > 0 && (
-        <div className="px-4 py-3 bg-gradient-to-r from-lilac-50 to-cream-50 border-b border-cream-200 fade-in-up">
-          <div className="flex items-center justify-between mb-2">
+        <div className="px-4 py-3 bg-gradient-to-r from-lilac-50 to-cream-50 border-b border-cream-200 fade-in-up relative">
+          <button
+            onClick={() => setShowMyTasks(false)}
+            className="absolute top-2 right-3 w-6 h-6 rounded-full bg-white/70 border border-cream-200 flex items-center justify-center text-xs text-choco-300 hover:bg-white hover:text-choco-500 transition-all"
+            title="关闭"
+          >
+            ✕
+          </button>
+          <div className="flex items-center justify-between mb-2 pr-8">
             <span className="text-xs text-choco-500 font-medium">📌 我的任务</span>
             <span className="text-[10px] text-choco-200">{myGroupTasks.filter(t => t.status === '已完成').length}/{myGroupTasks.length} 完成</span>
           </div>
@@ -591,8 +605,15 @@ export default function GroupChatPage() {
 
       {/* 团队任务清单面板 */}
       {showTaskList && allGroupTasks.length > 0 && (
-        <div className="px-4 py-3 bg-gradient-to-r from-rosa-50 to-cream-50 border-b border-rosa-100 fade-in-up">
-          <div className="flex items-center justify-between mb-2">
+        <div className="px-4 py-3 bg-gradient-to-r from-rosa-50 to-cream-50 border-b border-rosa-100 fade-in-up relative">
+          <button
+            onClick={() => setShowTaskList(false)}
+            className="absolute top-2 right-3 w-6 h-6 rounded-full bg-white/70 border border-cream-200 flex items-center justify-center text-xs text-choco-300 hover:bg-white hover:text-choco-500 transition-all"
+            title="关闭"
+          >
+            ✕
+          </button>
+          <div className="flex items-center justify-between mb-2 pr-8">
             <span className="text-xs text-choco-500 font-medium">📋 团队任务清单</span>
             <span className="text-[10px] text-choco-200">{allGroupTasks.length} 个任务 · 仅自己的可点击</span>
           </div>
@@ -667,8 +688,15 @@ export default function GroupChatPage() {
 
       {/* 知识库面板 */}
       {showKnowledge && (
-        <div className="px-4 py-3 bg-gradient-to-r from-sage-50 to-cream-50 border-b border-cream-200 fade-in-up">
-          <div className="flex items-center justify-between mb-2">
+        <div className="px-4 py-3 bg-gradient-to-r from-sage-50 to-cream-50 border-b border-cream-200 fade-in-up relative">
+          <button
+            onClick={() => setShowKnowledge(false)}
+            className="absolute top-2 right-3 w-6 h-6 rounded-full bg-white/70 border border-cream-200 flex items-center justify-center text-xs text-choco-300 hover:bg-white hover:text-choco-500 transition-all"
+            title="关闭"
+          >
+            ✕
+          </button>
+          <div className="flex items-center justify-between mb-2 pr-8">
             <span className="text-xs text-choco-500 font-medium">📚 知识库</span>
             <span className="text-[10px] text-choco-200">{knowledgeFiles.length} 个文件</span>
           </div>
@@ -701,8 +729,15 @@ export default function GroupChatPage() {
 
       {/* 群信息面板 */}
       {showInfo && (
-        <div className="px-4 py-3 bg-cream-50 border-b border-cream-200 space-y-2 fade-in-up">
-          <div className="flex items-center justify-between">
+        <div className="px-4 py-3 bg-cream-50 border-b border-cream-200 space-y-2 fade-in-up relative">
+          <button
+            onClick={() => setShowInfo(false)}
+            className="absolute top-2 right-3 w-6 h-6 rounded-full bg-white/70 border border-cream-200 flex items-center justify-center text-xs text-choco-300 hover:bg-white hover:text-choco-500 transition-all"
+            title="关闭"
+          >
+            ✕
+          </button>
+          <div className="flex items-center justify-between pr-8">
             <span className="text-xs text-choco-400 font-medium">群号</span>
             <span className="text-xs text-rosa-400 font-mono">{group.invite_code}</span>
           </div>
