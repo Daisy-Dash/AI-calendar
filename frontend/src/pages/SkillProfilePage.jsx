@@ -4,8 +4,54 @@ import { useAuth } from '../contexts/AuthContext'
 import { userAPI } from '../utils/api'
 
 const MAJOR_OPTIONS = ['设计', '计算机', '商科', '文学', '工程', '理学', '医学', '教育', '艺术', '传媒']
-const TOOL_OPTIONS = ['Figma', 'Photoshop', 'Illustrator', 'Sketch', 'PPT', 'Excel', 'Word', 'Python', 'JavaScript', 'React', 'Vue', 'Premiere', 'After Effects', 'Blender', 'AutoCAD', 'MATLAB', 'SPSS', 'Tableau', 'Notion', 'Markdown']
-const SKILL_OPTIONS = ['UI设计', '视觉设计', '交互设计', '用户研究', '前端开发', '后端开发', '数据分析', '文案撰写', '演讲汇报', '项目管理', '调研分析', '视频剪辑', '3D建模', '产品设计', '市场分析', '统计分析', '算法设计', '测试']
+
+// 专业 → 推荐工具 / 技能 映射
+const MAJOR_MAP = {
+  '设计': {
+    tools: ['Figma', 'Photoshop', 'Illustrator', 'Sketch', 'PPT', 'After Effects', 'Blender', 'XD', 'InDesign'],
+    skills: ['UI设计', '视觉设计', '交互设计', '用户研究', '产品设计', '原型设计', '插画', '海报设计', 'LOGO设计'],
+  },
+  '计算机': {
+    tools: ['Python', 'JavaScript', 'React', 'Vue', 'Git', 'VSCode', 'Docker', 'MySQL', 'MongoDB', 'Linux'],
+    skills: ['前端开发', '后端开发', '算法设计', '测试', '数据库设计', '系统架构', 'DevOps', '机器学习'],
+  },
+  '商科': {
+    tools: ['PPT', 'Excel', 'Word', 'Tableau', 'SPSS', 'Power BI', 'Notion'],
+    skills: ['市场分析', '调研分析', '统计分析', '文案撰写', '项目管理', '演讲汇报', '商业策划', '财务分析'],
+  },
+  '文学': {
+    tools: ['Word', 'Markdown', 'Notion', 'PPT', 'WPS'],
+    skills: ['文案撰写', '演讲汇报', '调研分析', '编辑校对', '内容策划', '翻译'],
+  },
+  '工程': {
+    tools: ['AutoCAD', 'MATLAB', 'SolidWorks', 'Excel', 'Python', 'Origin'],
+    skills: ['产品设计', '统计分析', '项目管理', '算法设计', '3D建模', '工程制图', '机械设计'],
+  },
+  '理学': {
+    tools: ['Python', 'MATLAB', 'SPSS', 'Excel', 'R', 'Origin', 'LaTeX'],
+    skills: ['数据分析', '统计分析', '算法设计', '调研分析', '文献综述', '实验设计'],
+  },
+  '医学': {
+    tools: ['SPSS', 'Excel', 'Word', 'PPT', 'EndNote', 'R'],
+    skills: ['调研分析', '统计分析', '文案撰写', '演讲汇报', '文献综述', '实验设计', '临床研究'],
+  },
+  '教育': {
+    tools: ['PPT', 'Word', 'Notion', 'Excel', 'Canva'],
+    skills: ['演讲汇报', '文案撰写', '调研分析', '项目管理', '课程设计', '教学设计'],
+  },
+  '艺术': {
+    tools: ['Photoshop', 'Illustrator', 'Premiere', 'After Effects', 'Blender', 'Procreate'],
+    skills: ['视觉设计', 'UI设计', '视频剪辑', '3D建模', '插画', '动画设计', '美术创作'],
+  },
+  '传媒': {
+    tools: ['Premiere', 'After Effects', 'Photoshop', 'Word', 'PPT', 'Final Cut', 'OBS'],
+    skills: ['视频剪辑', '文案撰写', '演讲汇报', '视觉设计', '内容策划', '直播运营', '新媒体运营'],
+  },
+}
+
+// 所有工具/技能（去重后排序），供搜索时全量浏览
+const ALL_TOOLS = [...new Set(Object.values(MAJOR_MAP).flatMap(m => m.tools))].sort()
+const ALL_SKILLS = [...new Set(Object.values(MAJOR_MAP).flatMap(m => m.skills))].sort()
 
 // 蛋糕切角头像选项 - 不同颜色/形状
 const AVATAR_OPTIONS = [
@@ -35,6 +81,22 @@ export default function SkillProfilePage() {
   const [saving, setSaving] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [activeTab, setActiveTab] = useState('profile') // profile | skills
+  const [toolSearch, setToolSearch] = useState('')
+  const [skillSearch, setSkillSearch] = useState('')
+  const [showAllTools, setShowAllTools] = useState(false)
+  const [showAllSkills, setShowAllSkills] = useState(false)
+
+  // 根据已选专业计算推荐
+  const recommendedTools = [...new Set(selectedMajors.flatMap(m => MAJOR_MAP[m]?.tools || []))]
+  const recommendedSkills = [...new Set(selectedMajors.flatMap(m => MAJOR_MAP[m]?.skills || []))]
+
+  // 搜索过滤
+  const filteredTools = toolSearch.trim()
+    ? ALL_TOOLS.filter(t => t.toLowerCase().includes(toolSearch.trim().toLowerCase()))
+    : (showAllTools ? ALL_TOOLS : recommendedTools)
+  const filteredSkills = skillSearch.trim()
+    ? ALL_SKILLS.filter(s => s.toLowerCase().includes(skillSearch.trim().toLowerCase()))
+    : (showAllSkills ? ALL_SKILLS : recommendedSkills)
 
   useEffect(() => {
     if (user) {
@@ -253,40 +315,151 @@ export default function SkillProfilePage() {
 
           {/* 工具 */}
           <div className="hand-card mb-4">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-dusty-300" />
-              <h3 className="text-sm font-medium text-choco-500">你熟练的工具</h3>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {TOOL_OPTIONS.map(tool => (
+              <h3 className="text-sm font-medium text-choco-500 flex-1">你熟练的工具</h3>
+              {selectedMajors.length > 0 && !toolSearch && (
                 <button
-                  key={tool}
-                  onClick={() => toggleItem(selectedTools, setSelectedTools, tool)}
-                  className={`skill-tag ${selectedTools.includes(tool) ? 'skill-tag-selected-dusty' : ''}`}
+                  onClick={() => setShowAllTools(!showAllTools)}
+                  className="text-[10px] px-2 py-0.5 rounded-full bg-cream-100 border border-cream-200 text-choco-400 hover:bg-cream-200 transition-all"
                 >
-                  {tool}
+                  {showAllTools ? '看推荐' : '看全部'}
                 </button>
-              ))}
+              )}
             </div>
+            {/* 搜索框 */}
+            <div className="relative mb-3">
+              <input
+                value={toolSearch}
+                onChange={e => setToolSearch(e.target.value)}
+                placeholder="🔍 搜索工具（找不到心仪的 tag？）"
+                className="w-full px-3 py-2 text-xs rounded-xl bg-cream-50 border border-cream-200 focus:outline-none focus:border-dusty-300 transition-all"
+              />
+              {toolSearch && (
+                <button
+                  onClick={() => setToolSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-choco-300 text-xs"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            {/* 已选状态提示 */}
+            {selectedMajors.length === 0 && !toolSearch && (
+              <p className="text-[10px] text-choco-300 mb-2">💡 选择专业后会推荐对口工具，或用搜索框找特定工具</p>
+            )}
+            {selectedMajors.length > 0 && !toolSearch && !showAllTools && recommendedTools.length > 0 && (
+              <p className="text-[10px] text-dusty-500 mb-2">
+                🍡 根据「{selectedMajors.join('、')}」专业推荐 {recommendedTools.length} 个工具
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {filteredTools.length === 0 ? (
+                <p className="text-xs text-choco-200 py-2">
+                  {toolSearch ? `未找到含「${toolSearch}」的工具` : '请先选择专业方向'}
+                </p>
+              ) : (
+                filteredTools.map(tool => (
+                  <button
+                    key={tool}
+                    onClick={() => toggleItem(selectedTools, setSelectedTools, tool)}
+                    className={`skill-tag ${selectedTools.includes(tool) ? 'skill-tag-selected-dusty' : ''}`}
+                  >
+                    {tool}
+                  </button>
+                ))
+              )}
+            </div>
+            {/* 已选工具汇总（如果有不在当前过滤结果里的） */}
+            {selectedTools.some(t => !filteredTools.includes(t)) && (
+              <div className="mt-3 pt-3 border-t border-cream-200">
+                <p className="text-[10px] text-choco-300 mb-1.5">已选其他工具：</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedTools.filter(t => !filteredTools.includes(t)).map(tool => (
+                    <button
+                      key={tool}
+                      onClick={() => toggleItem(selectedTools, setSelectedTools, tool)}
+                      className="skill-tag skill-tag-selected-dusty"
+                    >
+                      {tool}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 技能 */}
           <div className="hand-card mb-6">
-            <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-lilac-300" />
-              <h3 className="text-sm font-medium text-choco-500">你擅长的技能</h3>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {SKILL_OPTIONS.map(skill => (
+              <h3 className="text-sm font-medium text-choco-500 flex-1">你擅长的技能</h3>
+              {selectedMajors.length > 0 && !skillSearch && (
                 <button
-                  key={skill}
-                  onClick={() => toggleItem(selectedSkills, setSelectedSkills, skill)}
-                  className={`skill-tag ${selectedSkills.includes(skill) ? 'skill-tag-selected-lilac' : ''}`}
+                  onClick={() => setShowAllSkills(!showAllSkills)}
+                  className="text-[10px] px-2 py-0.5 rounded-full bg-cream-100 border border-cream-200 text-choco-400 hover:bg-cream-200 transition-all"
                 >
-                  {skill}
+                  {showAllSkills ? '看推荐' : '看全部'}
                 </button>
-              ))}
+              )}
             </div>
+            <div className="relative mb-3">
+              <input
+                value={skillSearch}
+                onChange={e => setSkillSearch(e.target.value)}
+                placeholder="🔍 搜索技能（找不到心仪的 tag？）"
+                className="w-full px-3 py-2 text-xs rounded-xl bg-cream-50 border border-cream-200 focus:outline-none focus:border-lilac-300 transition-all"
+              />
+              {skillSearch && (
+                <button
+                  onClick={() => setSkillSearch('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-choco-300 text-xs"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+            {selectedMajors.length === 0 && !skillSearch && (
+              <p className="text-[10px] text-choco-300 mb-2">💡 选择专业后会推荐对口技能，或用搜索框找特定技能</p>
+            )}
+            {selectedMajors.length > 0 && !skillSearch && !showAllSkills && recommendedSkills.length > 0 && (
+              <p className="text-[10px] text-lilac-500 mb-2">
+                🍡 根据「{selectedMajors.join('、')}」专业推荐 {recommendedSkills.length} 个技能
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              {filteredSkills.length === 0 ? (
+                <p className="text-xs text-choco-200 py-2">
+                  {skillSearch ? `未找到含「${skillSearch}」的技能` : '请先选择专业方向'}
+                </p>
+              ) : (
+                filteredSkills.map(skill => (
+                  <button
+                    key={skill}
+                    onClick={() => toggleItem(selectedSkills, setSelectedSkills, skill)}
+                    className={`skill-tag ${selectedSkills.includes(skill) ? 'skill-tag-selected-lilac' : ''}`}
+                  >
+                    {skill}
+                  </button>
+                ))
+              )}
+            </div>
+            {selectedSkills.some(s => !filteredSkills.includes(s)) && (
+              <div className="mt-3 pt-3 border-t border-cream-200">
+                <p className="text-[10px] text-choco-300 mb-1.5">已选其他技能：</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedSkills.filter(s => !filteredSkills.includes(s)).map(skill => (
+                    <button
+                      key={skill}
+                      onClick={() => toggleItem(selectedSkills, setSelectedSkills, skill)}
+                      className="skill-tag skill-tag-selected-lilac"
+                    >
+                      {skill}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 保存技能 */}

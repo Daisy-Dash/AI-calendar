@@ -598,6 +598,7 @@ def submit_proposal(
                 "id": u.id,
                 "name": u.username,
                 "skills": u.skills or [],
+                "tools": u.tools or [],
                 "major": u.major or [],
                 "role": m.role,
             })
@@ -774,11 +775,16 @@ def ask_ai_about_file(
 
 
 def _ai_decompose_tasks(project_desc: str, members: list) -> list:
-    """AI智能分解任务并根据技能分配 — 优先调用真实AI API分析项目需求"""
+    """AI智能分解任务并根据技能分配 — 优先调用真实AI API分析项目需求
+
+    分配时综合评估每个成员的：专业方向、熟练工具、擅长技能（缺一不可）
+    """
     import json as _json
 
     member_info_str = "\n".join([
-        f"  - {m['name']}（技能：{', '.join(m.get('skills', [])[:5]) or '未填写'}，专业：{', '.join(m.get('major', [])[:3]) or '未填写'}）"
+        f"  - {m['name']}（专业：{', '.join(m.get('major', [])[:3]) or '未填写'}"
+        f"｜工具：{', '.join(m.get('tools', [])[:6]) or '未填写'}"
+        f"｜技能：{', '.join(m.get('skills', [])[:6]) or '未填写'}）"
         for m in members
     ])
     num_members = len(members)
@@ -788,7 +794,7 @@ def _ai_decompose_tasks(project_desc: str, members: list) -> list:
         from services.ai_service import AIService
         ai = AIService()
         if ai.is_available:
-            prompt = f"""你是一个项目管理AI。请仔细阅读以下项目需求和附件内容，然后分解为具体可执行的子任务，并根据每位成员的技能进行智能分配。
+            prompt = f"""你是一个项目管理AI。请仔细阅读以下项目需求和附件内容，分解为具体可执行的子任务，并根据每位成员的**专业方向、熟练工具、擅长技能**三项综合智能分配。
 
 【项目需求与附件内容】
 {project_desc[:3000]}
@@ -803,17 +809,23 @@ def _ai_decompose_tasks(project_desc: str, members: list) -> list:
     "description": "任务详细描述（具体说明做什么、怎么做、交付物是什么）",
     "priority": "高/中/低",
     "assigned_name": "成员姓名",
-    "reason": "分配理由（一句话说明为什么这个成员适合这个任务）",
+    "reason": "分配理由（必须明确指出该成员的「专业/工具/技能」中哪些与任务匹配，例如：『TA 的设计专业 + Figma 工具 + UI设计技能 完全对口』）",
     "days_from_now": "提交节点天数（从今天起算的整数天数，根据任务复杂度和优先级合理设置3-30天）"
   }}
 ]
 
-要求：
-1. 根据项目需求的实际内容来分解任务，不要用通用模板
-2. 任务数量控制在{max(3, num_members)}到{num_members + 2}个之间
-3. 尽量让每个成员都有任务，根据技能匹配分配
-4. 任务描述要具体，包含明确的交付物
-5. 务必为每个任务设置合理的提交节点(days_from_now)，高优先级任务排前面，简单任务3-7天，复杂任务10-30天"""
+分配核心原则：
+1. 综合评估成员的「专业 + 工具 + 技能」三项，不要只看技能或专业其中一项
+2. 任务描述里如果涉及特定工具（如「用 Figma 画原型」「用 Python 分析数据」），优先分配给掌握该工具的成员
+3. 任务的专业领域（设计/开发/调研/文案等）要匹配成员的专业方向
+4. 同一类型任务可以由专业最对口的成员承担多个，不必强行平均分配
+5. 如果成员技能/工具空缺，分配相对通用的任务（如调研、文案、汇报）
+
+其他要求：
+- 根据项目需求的实际内容分解任务，不要用通用模板
+- 任务数量控制在{max(3, num_members)}到{num_members + 2}个之间
+- 任务描述要具体，包含明确的交付物
+- 务必为每个任务设置合理的提交节点(days_from_now)：简单任务3-7天，复杂任务10-30天，高优先级任务排前面"""
 
             reply = ai.chat(message=prompt, context="你是项目任务分解专家，请直接返回JSON数组")
 
