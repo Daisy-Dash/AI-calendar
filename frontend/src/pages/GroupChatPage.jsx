@@ -35,6 +35,7 @@ export default function GroupChatPage() {
   const [myGroupTasks, setMyGroupTasks] = useState([])
   const [showTaskList, setShowTaskList] = useState(false)
   const [allGroupTasks, setAllGroupTasks] = useState([])
+  const [showMenu, setShowMenu] = useState(false)
   const [inviteError, setInviteError] = useState('')
   const [showProposalInput, setShowProposalInput] = useState(false)
   const [proposalText, setProposalText] = useState('')
@@ -369,15 +370,15 @@ export default function GroupChatPage() {
   return (
     <div className="flex flex-col h-screen max-h-screen">
       {/* 顶部栏 */}
-      <div className="flex items-center justify-between px-4 py-3 border-b-[1.5px] border-cream-300 bg-white">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/')} className="text-rosa-400 text-lg">←</button>
-          <div>
-            <h1 className="text-base font-medium text-choco-600">{group.name}</h1>
-            <p className="text-xs text-choco-200">{group.member_count || 0} 位成员 · AI统筹组长</p>
+      <div className="flex items-center justify-between px-4 py-3 border-b-[1.5px] border-cream-300 bg-white relative">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <button onClick={() => navigate('/')} className="text-rosa-400 text-lg flex-shrink-0">←</button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-base font-medium text-choco-600 truncate">{group.name}</h1>
+            <p className="text-xs text-choco-200 truncate">{group.member_count || 0} 位成员 · AI统筹组长</p>
           </div>
         </div>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 flex-shrink-0">
           {myGroupTasks.length > 0 && (
             <button
               onClick={() => setShowMyTasks(!showMyTasks)}
@@ -389,40 +390,76 @@ export default function GroupChatPage() {
               📌
             </button>
           )}
-          {groupStats && groupStats.total_tasks > 0 && (
-            <button
-              onClick={() => setShowProgress(!showProgress)}
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border transition-all ${
-                showProgress ? 'bg-dusty-100 border-dusty-200' : 'bg-cream-100 border-cream-200'
-              }`}
-              title="任务进度"
-            >
-              📊
-            </button>
-          )}
-          {allGroupTasks.length > 0 && (
-            <button
-              onClick={() => setShowTaskList(!showTaskList)}
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border transition-all ${
-                showTaskList ? 'bg-rosa-100 border-rosa-200' : 'bg-cream-100 border-cream-200'
-              }`}
-              title="任务清单"
-            >
-              📋
-            </button>
-          )}
           <button
-            onClick={() => { setShowKnowledge(!showKnowledge); if (!showKnowledge) loadKnowledgeFiles() }}
+            onClick={() => setShowMenu(!showMenu)}
             className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border transition-all ${
-              showKnowledge ? 'bg-sage-100 border-sage-200' : 'bg-cream-100 border-cream-200'
+              showMenu ? 'bg-rosa-100 border-rosa-200' : 'bg-cream-100 border-cream-200'
             }`}
-            title="知识库"
+            title="更多"
           >
-            📚
+            ⋯
           </button>
-          <button onClick={openInvite} className="w-8 h-8 rounded-full bg-sage-50 border border-sage-100 flex items-center justify-center text-sm">+</button>
-          <button onClick={() => setShowInfo(!showInfo)} className="w-8 h-8 rounded-full bg-cream-100 border border-cream-200 flex items-center justify-center text-sm">⋯</button>
         </div>
+
+        {/* 更多操作下拉菜单 */}
+        {showMenu && (
+          <>
+            {/* 透明点击区，点击外部关闭菜单 */}
+            <div
+              className="fixed inset-0 z-[150]"
+              onClick={() => setShowMenu(false)}
+            />
+            <div className="absolute right-3 top-full mt-1 z-[160] bg-white rounded-2xl border border-cream-200 shadow-lg overflow-hidden min-w-[180px] fade-in-up">
+              {groupStats && groupStats.total_tasks > 0 && (
+                <button
+                  onClick={() => { setShowProgress(!showProgress); setShowMenu(false) }}
+                  className={`w-full px-4 py-2.5 flex items-center gap-2.5 text-sm text-left hover:bg-dusty-50 transition-all ${
+                    showProgress ? 'bg-dusty-50 text-dusty-600' : 'text-choco-500'
+                  }`}
+                >
+                  <span className="text-base">📊</span>
+                  <span>任务进度</span>
+                </button>
+              )}
+              {allGroupTasks.length > 0 && (
+                <button
+                  onClick={() => { setShowTaskList(!showTaskList); setShowMenu(false) }}
+                  className={`w-full px-4 py-2.5 flex items-center gap-2.5 text-sm text-left hover:bg-rosa-50 transition-all border-t border-cream-100 ${
+                    showTaskList ? 'bg-rosa-50 text-rosa-600' : 'text-choco-500'
+                  }`}
+                >
+                  <span className="text-base">📋</span>
+                  <span>任务清单</span>
+                </button>
+              )}
+              <button
+                onClick={() => { setShowKnowledge(!showKnowledge); if (!showKnowledge) loadKnowledgeFiles(); setShowMenu(false) }}
+                className={`w-full px-4 py-2.5 flex items-center gap-2.5 text-sm text-left hover:bg-sage-50 transition-all border-t border-cream-100 ${
+                  showKnowledge ? 'bg-sage-50 text-sage-600' : 'text-choco-500'
+                }`}
+              >
+                <span className="text-base">📚</span>
+                <span>知识库</span>
+              </button>
+              <button
+                onClick={() => { openInvite(); setShowMenu(false) }}
+                className="w-full px-4 py-2.5 flex items-center gap-2.5 text-sm text-left text-choco-500 hover:bg-sage-50 transition-all border-t border-cream-100"
+              >
+                <span className="text-base">＋</span>
+                <span>邀请成员</span>
+              </button>
+              <button
+                onClick={() => { setShowInfo(!showInfo); setShowMenu(false) }}
+                className={`w-full px-4 py-2.5 flex items-center gap-2.5 text-sm text-left hover:bg-cream-50 transition-all border-t border-cream-100 ${
+                  showInfo ? 'bg-cream-50 text-choco-600' : 'text-choco-500'
+                }`}
+              >
+                <span className="text-base">ℹ️</span>
+                <span>群信息</span>
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* 任务进度面板 */}
