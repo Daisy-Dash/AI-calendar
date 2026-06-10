@@ -1,246 +1,468 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { getProjects, createProject, deleteProject, getUserProfile } from '../utils/store'
-import { groupAPI } from '../utils/api'
-
-const statusMap = {
-  discussing: { label: '讨论中', color: 'text-rosa-400', bg: 'bg-rosa-50' },
-  confirmed: { label: '已确认', color: 'text-dusty-400', bg: 'bg-dusty-50' },
-  in_progress: { label: '进行中', color: 'text-dusty-400', bg: 'bg-dusty-50' },
-  completed: { label: '已完成', color: 'text-sage-400', bg: 'bg-sage-50' },
-}
+import { useNavigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { groupAPI, taskAPI } from '../utils/api'
 
 export default function ProjectListPage() {
   const navigate = useNavigate()
-  const [projects, setProjects] = useState([])
-  const [showCreate, setShowCreate] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [newDesc, setNewDesc] = useState('')
-  const [swipedId, setSwipedId] = useState(null)
-  const [touchStartX, setTouchStartX] = useState(0)
-  const [greeting, setGreeting] = useState('')
+  const location = useLocation()
+  const { user } = useAuth()
   const [groups, setGroups] = useState([])
+  const [groupStats, setGroupStats] = useState({})
+  const [myTasks, setMyTasks] = useState({}) // groupId -> [tasks]
+  const [allMyTasks, setAllMyTasks] = useState([]) // 全部任务（用于概览）
+  const [greeting, setGreeting] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [overduePopup, setOverduePopup] = useState(null)
+  const [taskFilter, setTaskFilter] = useState(null) // null | '已完成' | '进行中' | '待处理'
+  const [expandedGroups, setExpandedGroups] = useState(() => {
+    // 从 localStorage 恢复展开状态
+    try {
+      const cached = localStorage.getItem('expanded_groups')
+      return cached ? JSON.parse(cached) : {}
+    } catch { return {} }
+  })
+
+  const toggleGroupExpanded = (groupId) => {
+    setExpandedGroups(prev => {
+      const next = { ...prev, [groupId]: !prev[groupId] }
+      try { localStorage.setItem('expanded_groups', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }
 
   useEffect(() => {
-    setProjects(getProjects())
     const hour = new Date().getHours()
     if (hour < 12) setGreeting('早上好')
     else if (hour < 18) setGreeting('下午好')
     else setGreeting('晚上好')
-    // 加载团队项目
-    groupAPI.list().then(res => setGroups(res.data)).catch(() => {})
-  }, [])
+    loadData()
+  }, [location.key])
 
-  const profile = getUserProfile()
+  const loadData = async () => {
+    setLoading(true)
+    try {
+      const res = await groupAPI.list()
+      const groupList = res.data || []
+      setGroups(groupList)
 
-  const handleCreate = () => {
-    if (!newName.trim()) return
-    if (!profile) {
-      navigate('/skills')
-      return
+      // 加载每个群组的任务统计
+      const statsMap = {}
+      for (const g of groupList) {
+        try {
+          const statsRes = await groupAPI.getStats(g.id)
+          statsMap[g.id] = statsRes.data
+        } catch {
+          statsMap[g.id] = { total_tasks: 0, completed_tasks: 0, completion_rate: 0 }
+        }
+      }
+      setGroupStats(statsMap)
+
+      // 加载我的任务（按群组分组）& 检查逾期
+      try {
+        const tasksRes = await taskAPI.list()
+        const allTasks = tasksRes.data || []
+        setAllMyTasks(allTasks)
+        const now = new Date()
+
+        // 首页项目卡下的任务列表：
+        // 展示当前用户在每个项目中负责的所有任务（包括 AI 拆出的提交节点），按 DDL 升序
+        const tasksByGroup = {}
+        const overdueTasks = []
+        for (const t of allTasks) {
+          if (t.group_id) {
+            if (!tasksByGroup[t.group_id]) tasksByGroup[t.group_id] = []
+            tasksByGroup[t.group_id].push(t)
+          }
+          if (t.deadline && t.status !== '已完成' && new Date(t.deadline) < now) {
+            overdueTasks.push(t)
+          }
+        }
+        // 每个项目内的任务按 DDL 升序排
+        for (const gid of Object.keys(tasksByGroup)) {
+          tasksByGroup[gid].sort((a, b) => {
+            if (!a.deadline && !b.deadline) return 0
+            if (!a.deadline) return 1
+            if (!b.deadline) return -1
+            return new Date(a.deadline) - new Date(b.deadline)
+          })
+        }
+        setMyTasks(tasksByGroup)
+
+        if (overdueTasks.length > 0) {
+          setOverduePopup(overdueTasks)
+        }
+      } catch {}
+    } catch (e) {
+      console.error(e)
     }
-    const project = createProject({ name: newName.trim(), description: newDesc.trim() })
-    setProjects(getProjects())
-    setShowCreate(false)
-    setNewName('')
-    setNewDesc('')
-    navigate(`/discussion/${project.id}`)
+    setLoading(false)
   }
 
-  const handleProjectClick = (project) => {
-    if (project.status === 'discussing') navigate(`/discussion/${project.id}`)
-    else if (project.status === 'confirmed') navigate(`/authorize/${project.id}`)
-    else navigate(`/kanban/${project.id}`)
+  const getGroupDeadline = (groupId) => {
+    // 从stats的member_stats里推断，或者直接返回null
+    // 这里我们简化处理，后续可以扩展
+    return null
   }
 
-  const handleDelete = (id) => {
-    deleteProject(id)
-    setProjects(getProjects())
-    setSwipedId(null)
+  const isOverdue = (deadline) => {
+    if (!deadline) return false
+    return new Date(deadline) < new Date()
   }
 
-  const handleTouchStart = (e, id) => {
-    setTouchStartX(e.touches[0].clientX)
-  }
-
-  const handleTouchMove = (e, id) => {
-    const diff = touchStartX - e.touches[0].clientX
-    if (diff > 60) setSwipedId(id)
-    else if (diff < -30) setSwipedId(null)
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-5xl mb-3 animate-float">🧁</div>
+          <p className="text-sm text-choco-200">加载中...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="px-4 pt-6 pb-24 fade-in-up">
+      {/* 头部问候 */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-hand text-choco-600">{greeting} ~</h1>
           <p className="text-sm text-choco-300 mt-1">
-            {profile ? `${profile.name || profile.major?.[0] || ''}，准备开工了吗？` : '欢迎使用 AI 统筹组长'}
+            {user ? `${user.username}，准备开工了吗？` : '欢迎使用 AI 统筹组长'}
           </p>
         </div>
         <button
           onClick={() => navigate('/skills')}
           className="w-10 h-10 rounded-full bg-rosa-50 flex items-center justify-center text-lg hover:bg-rosa-100 transition-all active:scale-95"
         >
-          {profile ? '🍪' : '🍬'}
+          {user?.avatar || '🍪'}
         </button>
       </div>
 
-      {!profile && (
-        <div className="hand-card mb-4 bg-gradient-to-r from-rosa-50 to-lilac-50 border-rosa-100">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">🍬</span>
-            <span className="text-sm font-medium text-rosa-500">先完善你的技能名片</span>
+      {/* 我的任务概览 */}
+      {allMyTasks.length > 0 && (
+        <div className="mb-4">
+          <div className="hand-card bg-gradient-to-r from-lilac-50 to-rosa-50 border-lilac-100">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-rosa-100 to-lilac-100 border border-rosa-200 flex items-center justify-center text-xl flex-shrink-0">
+                📌
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-choco-600">我的任务</p>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <button
+                    onClick={() => setTaskFilter(taskFilter === '已完成' ? null : '已完成')}
+                    className={`text-[10px] px-2 py-0.5 rounded-full border transition-all active:scale-95 ${
+                      taskFilter === '已完成' ? 'bg-sage-200 border-sage-300 text-sage-600' : 'bg-white/80 border-sage-100 text-sage-500'
+                    }`}
+                  >
+                    {allMyTasks.filter(t => t.status === '已完成').length} 完成
+                  </button>
+                  <button
+                    onClick={() => setTaskFilter(taskFilter === '进行中' ? null : '进行中')}
+                    className={`text-[10px] px-2 py-0.5 rounded-full border transition-all active:scale-95 ${
+                      taskFilter === '进行中' ? 'bg-dusty-200 border-dusty-300 text-dusty-600' : 'bg-white/80 border-dusty-100 text-dusty-500'
+                    }`}
+                  >
+                    {allMyTasks.filter(t => t.status === '进行中').length} 进行中
+                  </button>
+                  <button
+                    onClick={() => setTaskFilter(taskFilter === '待处理' ? null : '待处理')}
+                    className={`text-[10px] px-2 py-0.5 rounded-full border transition-all active:scale-95 ${
+                      taskFilter === '待处理' ? 'bg-cream-200 border-choco-200 text-choco-600' : 'bg-white/80 border-cream-200 text-choco-400'
+                    }`}
+                  >
+                    {allMyTasks.filter(t => !['已完成','进行中'].includes(t.status)).length} 待处理
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-          <p className="text-xs text-choco-300 mb-3">填写你的专业和擅长技能，AI 将根据你的背景提供个性化建议</p>
-          <button onClick={() => navigate('/skills')} className="hand-btn text-sm py-2 px-4">
-            去填写
-          </button>
+
+          {/* 筛选结果：按项目分组展示 */}
+          {taskFilter && (() => {
+            const filtered = taskFilter === '待处理'
+              ? allMyTasks.filter(t => !['已完成','进行中'].includes(t.status))
+              : allMyTasks.filter(t => t.status === taskFilter)
+            if (filtered.length === 0) {
+              return (
+                <div className="mt-2 text-center py-4 text-xs text-choco-200 fade-in-up">
+                  暂无「{taskFilter}」的任务
+                </div>
+              )
+            }
+            // 按所属项目分组（所有任务都是团队任务）
+            const byGroup = {}
+            for (const t of filtered) {
+              const gId = t.group_id
+              if (!gId) continue
+              if (!byGroup[gId]) byGroup[gId] = []
+              byGroup[gId].push(t)
+            }
+            return (
+              <div className="mt-2 space-y-2 fade-in-up">
+                {Object.entries(byGroup).map(([gId, tasks]) => {
+                  const g = groups.find(gr => gr.id === parseInt(gId))
+                  return (
+                    <div
+                      key={gId}
+                      onClick={() => navigate(`/group-chat/${gId}`)}
+                      className="hand-card cursor-pointer hover:shadow-md transition-all active:scale-[0.98] py-3"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rosa-50 to-lilac-50 border border-rosa-100 flex items-center justify-center text-base flex-shrink-0">
+                          🎂
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-choco-600 truncate">{g?.name || '未知项目'}</p>
+                          <p className="text-[10px] text-choco-200 mt-0.5">
+                            {tasks.length} 个{taskFilter === '待处理' ? '待处理' : taskFilter}任务
+                          </p>
+                        </div>
+                        <span className="text-choco-200 text-xs">→</span>
+                      </div>
+                      <div className="mt-1.5 pl-[46px] space-y-0.5">
+                        {tasks.slice(0, 3).map(t => (
+                          <p key={t.id} className="text-[11px] text-choco-300 truncate">· {t.title}</p>
+                        ))}
+                        {tasks.length > 3 && (
+                          <p className="text-[10px] text-choco-200">还有 {tasks.length - 3} 个...</p>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })()}
         </div>
       )}
 
-      <div className="space-y-3 mb-6">
-        {projects.length === 0 ? (
+      {/* 团队项目列表 */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm text-choco-500 font-medium flex items-center gap-1.5">
+            <span>🎂</span> 我的团队项目
+          </p>
+          <span className="text-xs text-choco-200">{groups.length} 个项目</span>
+        </div>
+
+        {groups.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-5xl mb-4">🧁</div>
-            <p className="text-choco-300 text-sm mb-1">还没有项目</p>
+            <p className="text-choco-300 text-sm mb-1">还没有团队项目</p>
             <p className="text-choco-200 text-xs">点击下方按钮创建你的第一个团队项目</p>
           </div>
         ) : (
-          projects.map((project, index) => {
-            const status = statusMap[project.status] || statusMap.discussing
-            const taskCount = project.tasks?.length || 0
-            const completedCount = project.tasks?.filter(t => t.status === 'completed').length || 0
-            const isSwiped = swipedId === project.id
+          <div className="space-y-4">
+            {groups.map((g, index) => {
+              const stats = groupStats[g.id] || {}
+              const completionRate = Math.round(stats.completion_rate || 0)
+              const totalTasks = stats.total_tasks || 0
+              const completedTasks = stats.completed_tasks || 0
+              const personalTasks = myTasks[g.id] || []
+              const myCompleted = personalTasks.filter(t => t.status === '已完成').length
+              const myTotal = personalTasks.length
 
-            return (
-              <div
-                key={project.id}
-                className="relative overflow-hidden rounded-2xl"
-                style={{ animationDelay: `${index * 0.08}s` }}
-              >
-                <div
-                  className={`hand-card cursor-pointer transition-all duration-200 ${isSwiped ? '-translate-x-20' : ''}`}
-                  onClick={() => !isSwiped && handleProjectClick(project)}
-                  onTouchStart={(e) => handleTouchStart(e, project.id)}
-                  onTouchMove={(e) => handleTouchMove(e, project.id)}
-                  onTouchEnd={() => {}}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">🧁</span>
-                        <h3 className="text-base font-medium truncate text-choco-600">{project.name}</h3>
-                      </div>
-                      {project.description && (
-                        <p className="text-xs text-choco-200 truncate ml-7 mb-2">{project.description}</p>
-                      )}
-                      <div className="flex items-center gap-3 ml-7">
-                        <span className={`text-xs px-2.5 py-0.5 rounded-full ${status.bg} ${status.color}`}>
-                          {status.label}
-                        </span>
-                        {taskCount > 0 && (
-                          <span className="text-xs text-choco-200">{completedCount}/{taskCount} 任务</span>
-                        )}
-                        <span className="text-xs text-choco-100">
-                          {new Date(project.created_at).toLocaleDateString('zh-CN')}
-                        </span>
-                      </div>
-                    </div>
-                    <span className="text-choco-200 text-sm mt-1">→</span>
-                  </div>
-                </div>
-                {isSwiped && (
-                  <button
-                    onClick={() => handleDelete(project.id)}
-                    className="absolute right-0 top-0 bottom-0 w-20 bg-rosa-400 text-white flex items-center justify-center text-sm font-medium rounded-r-2xl"
+              return (
+                <div key={g.id} style={{ animationDelay: `${index * 0.08}s` }}>
+                  {/* 团队项目卡片 */}
+                  <div
+                    onClick={() => navigate(`/group-chat/${g.id}`)}
+                    className="hand-card cursor-pointer transition-all active:scale-[0.98] hover:shadow-md"
                   >
-                    删除
-                  </button>
-                )}
-              </div>
-            )
-          })
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-3">
+                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-rosa-50 to-lilac-50 border border-rosa-100 flex items-center justify-center text-xl">
+                          🎂
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-choco-600">{g.name}</p>
+                          <p className="text-xs text-choco-200 mt-0.5">
+                            {g.member_count || 0} 人
+                            {g.status === 'in_progress' && ' · 进行中'}
+                            {g.status === 'gathering' && ' · 召集中'}
+                            {g.status === 'discussing' && ' · 讨论中'}
+                            {g.status === 'confirming' && ' · 待确认'}
+                            {g.status === 'completed' && ' · 已完成'}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="text-choco-200 text-sm mt-1">→</span>
+                    </div>
+
+                    {/* 团队总进度 */}
+                    {totalTasks > 0 && (
+                      <div className="mt-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs text-choco-300">
+                            📋 {completedTasks}/{totalTasks} 任务完成
+                          </span>
+                          <span className={`text-xs font-medium ${
+                            completionRate >= 80 ? 'text-sage-400' :
+                            completionRate >= 40 ? 'text-dusty-400' :
+                            'text-choco-300'
+                          }`}>
+                            {completionRate}%
+                          </span>
+                        </div>
+                        <div className="w-full h-2 bg-cream-200 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              completionRate >= 80 ? 'bg-gradient-to-r from-sage-300 to-sage-400' :
+                              completionRate >= 40 ? 'bg-gradient-to-r from-dusty-300 to-dusty-400' :
+                              'bg-gradient-to-r from-rosa-200 to-rosa-300'
+                            }`}
+                            style={{ width: `${completionRate}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 我在这个项目里的任务卡片列表 — 可折叠展开 */}
+                  {personalTasks.length > 0 && (() => {
+                    // 默认：任务 ≤ 2 时展开，> 2 时折叠
+                    const expanded = expandedGroups[g.id] !== undefined ? expandedGroups[g.id] : personalTasks.length <= 2
+                    const overdueCount = personalTasks.filter(t => t.deadline && t.status !== '已完成' && new Date(t.deadline) < new Date()).length
+                    const doneCount = personalTasks.filter(t => t.status === '已完成' || t.progress >= 100).length
+                    return (
+                      <>
+                        {/* 折叠/展开切换按钮 */}
+                        <button
+                          onClick={() => toggleGroupExpanded(g.id)}
+                          className="ml-6 mt-1 w-[calc(100%-1.5rem)] px-3 py-1.5 rounded-lg bg-cream-50 border border-cream-200 hover:bg-cream-100 active:scale-[0.98] transition-all flex items-center justify-between gap-2 text-[11px]"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-choco-300">
+                              {expanded ? '收起任务' : '展开任务'}
+                            </span>
+                            <span className="text-choco-200">·</span>
+                            <span className="text-choco-300">{personalTasks.length} 个</span>
+                            {overdueCount > 0 && (
+                              <>
+                                <span className="text-choco-200">·</span>
+                                <span className="text-red-500 font-medium animate-pulse">⚠️ {overdueCount} 逾期</span>
+                              </>
+                            )}
+                            {doneCount > 0 && overdueCount === 0 && (
+                              <>
+                                <span className="text-choco-200">·</span>
+                                <span className="text-sage-500">✅ {doneCount} 完成</span>
+                              </>
+                            )}
+                          </div>
+                          <span className={`text-choco-300 transition-transform ${expanded ? 'rotate-180' : ''}`}>▼</span>
+                        </button>
+
+                        {/* 任务卡片列表 */}
+                        {expanded && (
+                          <div className="ml-6 mt-1 space-y-1.5 fade-in-up">
+                            {personalTasks.map(t => {
+                        const tOverdue = t.deadline && t.status !== '已完成' && new Date(t.deadline) < new Date()
+                        const tDone = t.status === '已完成' || t.progress >= 100
+                        return (
+                          <div
+                            key={t.id}
+                            onClick={() => navigate(`/task-chat/${t.id}`)}
+                            className={`px-3 py-2.5 rounded-xl border cursor-pointer transition-all active:scale-[0.98] hover:shadow-sm flex items-center gap-2.5 ${
+                              tOverdue
+                                ? 'bg-red-50 border-red-200 animate-pulse'
+                                : tDone
+                                  ? 'bg-sage-50 border-sage-100'
+                                  : 'bg-gradient-to-r from-lilac-50 to-cream-50 border-lilac-100'
+                            }`}
+                          >
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm flex-shrink-0 ${
+                              tOverdue ? 'bg-red-100' : tDone ? 'bg-sage-100' : 'bg-lilac-100'
+                            }`}>
+                              {tOverdue ? '⚠️' : tDone ? '✅' : '🤖'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className={`text-xs font-medium truncate ${tOverdue ? 'text-red-600' : 'text-choco-600'}`}>
+                                  {t.title}
+                                </p>
+                                {t.deadline && (
+                                  <span className={`text-[9px] flex-shrink-0 ${tOverdue ? 'text-red-500 font-medium' : 'text-choco-200'}`}>
+                                    {tOverdue ? '已逾期' : new Date(t.deadline).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 mt-1">
+                                <div className="flex-1 h-1.5 bg-white/70 rounded-full overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full transition-all ${
+                                      tDone ? 'bg-sage-300' :
+                                      tOverdue ? 'bg-red-400' :
+                                      t.progress >= 50 ? 'bg-dusty-300' :
+                                      'bg-lilac-300'
+                                    }`}
+                                    style={{ width: `${t.progress || 0}%` }}
+                                  />
+                                </div>
+                                <span className={`text-[10px] flex-shrink-0 ${tOverdue ? 'text-red-500' : 'text-choco-300'}`}>
+                                  {t.progress || 0}%
+                                </span>
+                              </div>
+                            </div>
+                            <span className="text-choco-200 text-xs">→</span>
+                          </div>
+                        )
+                      })}
+                          </div>
+                        )}
+                      </>
+                    )
+                  })()}
+                </div>
+              )
+            })}
+          </div>
         )}
       </div>
 
-      {/* 团队项目 */}
-      {groups.length > 0 && (
-        <div className="mb-6">
-          <p className="text-xs text-choco-400 font-medium mb-2">🎂 团队项目</p>
-          <div className="space-y-3">
-            {groups.map(g => (
-              <div
-                key={g.id}
-                onClick={() => navigate(`/group-chat/${g.id}`)}
-                className="hand-card cursor-pointer transition-all active:scale-[0.98]"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-sage-50 border border-sage-100 flex items-center justify-center text-lg">
-                      🎂
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-choco-600">{g.name}</p>
-                      <p className="text-xs text-choco-200">{g.member_count || 0} 人 · 群号 {g.invite_code}</p>
-                    </div>
-                  </div>
-                  <span className="text-choco-200 text-sm">→</span>
-                </div>
+      {/* 创建新团队项目按钮 */}
+      <button
+        onClick={() => navigate('/create-group')}
+        className="w-full hand-card border-dashed border-sage-200 text-center py-5 text-sage-400 hover:bg-sage-50 transition-all active:scale-[0.98]"
+      >
+        <span className="text-2xl block mb-1">+</span>
+        <span className="text-sm">创建新团队项目</span>
+      </button>
+
+      {/* 逾期任务弹窗提醒 */}
+      {overduePopup && overduePopup.length > 0 && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center px-3 bg-transparent" onClick={() => setOverduePopup(null)}>
+          <div className="bg-white rounded-3xl w-full max-w-[380px] p-5 fade-in-up" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-2xl">⏰</span>
+              <div>
+                <h3 className="text-base font-medium text-rosa-500">任务逾期提醒</h3>
+                <p className="text-xs text-choco-200">以下任务已超过截止日期</p>
               </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="flex gap-3">
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex-1 hand-card border-dashed border-cream-400 text-center py-4 text-rosa-300 hover:bg-cream-50 transition-all active:scale-[0.98]"
-        >
-          <span className="text-xl block mb-0.5">+</span>
-          <span className="text-xs">个人项目</span>
-        </button>
-        <button
-          onClick={() => navigate('/create-group')}
-          className="flex-1 hand-card border-dashed border-sage-200 text-center py-4 text-sage-400 hover:bg-sage-50 transition-all active:scale-[0.98]"
-        >
-          <span className="text-xl block mb-0.5">🎂</span>
-          <span className="text-xs">团队项目</span>
-        </button>
-      </div>
-
-      {showCreate && (
-        <div className="fixed inset-0 bg-black/20 z-[200] flex items-end justify-center" onClick={() => setShowCreate(false)}>
-          <div className="bg-white rounded-t-3xl w-full max-w-[430px] p-6 pb-20 fade-in-up" onClick={e => e.stopPropagation()}>
-            <div className="w-10 h-1 bg-cream-300 rounded-full mx-auto mb-4" />
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-choco-600">新建团队项目</h3>
-              <button onClick={() => setShowCreate(false)} className="text-choco-200 hover:text-choco-400 text-xl">×</button>
             </div>
-            <div className="flex gap-2 mb-3">
-              <input
-                className="hand-input flex-1 text-sm"
-                placeholder="项目名称（如：课程大作业）"
-                value={newName}
-                onChange={e => setNewName(e.target.value)}
-                autoFocus
-              />
-              <button
-                onClick={handleCreate}
-                className="hand-btn text-sm py-2 px-4 flex-shrink-0"
-                disabled={!newName.trim()}
-              >
-                {profile ? '确认' : '填名片'}
-              </button>
+            <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
+              {overduePopup.map(task => (
+                <div key={task.id} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rosa-50 border border-rosa-100">
+                  <span className="text-red-400 text-sm">🔴</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-choco-600 truncate">{task.title}</p>
+                    <p className="text-[10px] text-rosa-400">
+                      截止: {new Date(task.deadline).toLocaleDateString('zh-CN')}
+                      {' · '}已逾期 {Math.ceil((new Date() - new Date(task.deadline)) / 86400000)} 天
+                    </p>
+                  </div>
+                </div>
+              ))}
             </div>
-            <textarea
-              className="hand-input mb-2 text-sm resize-none"
-              rows={2}
-              placeholder="简要描述（选填）"
-              value={newDesc}
-              onChange={e => setNewDesc(e.target.value)}
-            />
+            <button
+              onClick={() => setOverduePopup(null)}
+              className="w-full py-2.5 rounded-xl text-sm text-white bg-rosa-400 active:scale-[0.98]"
+              style={{ boxShadow: '0 2px 0 #B37474' }}
+            >
+              我知道了
+            </button>
           </div>
         </div>
       )}

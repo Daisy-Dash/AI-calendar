@@ -1,5 +1,7 @@
 """消息路由 - 群聊 + 私聊AI"""
-from fastapi import APIRouter, Depends, HTTPException, Query
+import os
+from datetime import datetime
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from database import get_db
 from models import User, Group, GroupMember, Task
@@ -412,3 +414,89 @@ def get_knowledge_files(
             "created_at": f.created_at.isoformat() if f.created_at else "",
         })
     return result
+
+
+@router.post("/knowledge/{group_id}/upload")
+async def upload_knowledge_file(
+    group_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """上传文件到群组知识库，同时在群聊中发送文件消息"""
+    member = db.query(GroupMember).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.user_id == current_user.id,
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="您不是该群组成员")
+
+    from routers.upload import ALLOWED_TYPES, ALLOWED_EXTENSIONS, MAX_FILE_SIZE
+    from routers.upload import _detect_file_type, extract_text_from_file
+
+    ext = os.path.splitext(file.filename or "")[1].lower()
+    real_type = _detect_file_type(file.filename or "", file.content_type)
+
+    if real_type not in ALLOWED_TYPES and ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"不支持的文件类型: {ext}")
+
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="文件过大，最大10MB")
+
+    # 保存文件
+    upload_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    safe_name = f"{timestamp}_{file.filename}"
+    filepath = os.path.join(upload_dir, safe_name)
+
+    with open(filepath, "wb") as f_out:
+        f_out.write(contents)
+
+    # 提取文本摘要
+    extracted_text = extract_text_from_file(filepath, real_type, file.filename)
+    summary = extracted_text[:500] if extracted_text else ""
+
+    # 保存到知识库
+    kf = KnowledgeFile(
+        group_id=group_id,
+        uploaded_by=current_user.id,
+        file_name=file.filename,
+        file_url=f"/uploads/{safe_name}",
+        file_type=ext.lstrip(".") or "unknown",
+        file_size=len(contents),
+        summary=summary,
+    )
+    db.add(kf)
+
+    # 同时在群聊中发送文件消息
+    file_msg = GroupMessage(
+        group_id=group_id,
+        sender_id=current_user.id,
+        content=f"📎 上传了文件：{file.filename}",
+        msg_type="file",
+        file_url=f"/uploads/{safe_name}",
+        file_name=file.filename,
+    )
+    db.add(file_msg)
+
+    # AI自动整理提示
+    ai_msg = GroupMessage(
+        group_id=group_id,
+        sender_id=None,
+        content=f"📚 已收到 {current_user.username} 上传的「{file.filename}」，已自动归档到知识库。" +
+                (f"\n\n📄 内容摘要：{summary[:200]}..." if summary and len(summary) > 10 else ""),
+        msg_type="ai",
+    )
+    db.add(ai_msg)
+    db.commit()
+    db.refresh(file_msg)
+
+    return {
+        "file_id": kf.id,
+        "message_id": file_msg.id,
+        "file_name": file.filename,
+        "file_url": f"/uploads/{safe_name}",
+        "summary": summary[:200],
+    }

@@ -174,6 +174,37 @@ def get_user_stats(
     )
 
 
+@router.delete("/me", response_model=dict)
+def delete_account(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """注销当前账号 - 删除所有关联数据"""
+    from models.message import GroupMessage, PrivateMessage
+    from models.notification import Notification
+    from models.friendship import Friendship
+
+    # 删除用户的任务
+    db.query(Task).filter(Task.user_id == current_user.id).delete()
+    # 删除用户的日程
+    db.query(Schedule).filter(Schedule.user_id == current_user.id).delete()
+    # 删除群组成员身份
+    db.query(GroupMember).filter(GroupMember.user_id == current_user.id).delete()
+    # 删除通知
+    db.query(Notification).filter(Notification.user_id == current_user.id).delete()
+    # 删除好友关系
+    db.query(Friendship).filter(
+        (Friendship.user_id == current_user.id) | (Friendship.friend_id == current_user.id)
+    ).delete(synchronize_session=False)
+    # 删除私聊消息
+    db.query(PrivateMessage).filter(PrivateMessage.user_id == current_user.id).delete()
+    # 删除用户
+    db.delete(current_user)
+    db.commit()
+
+    return {"message": "账号已注销"}
+
+
 @router.get("/me/ability-profile", response_model=AbilityProfileResponse)
 def get_ability_profile(
     db: Session = Depends(get_db),

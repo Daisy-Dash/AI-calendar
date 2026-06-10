@@ -45,7 +45,7 @@ export default function InvitationPopup() {
   return (
     <>
       {invitations.map(inv => (
-        <div key={inv.id} className="fixed inset-0 bg-black/20 z-[200] flex items-center justify-center p-4">
+        <div key={inv.id} className="fixed inset-0 z-[200] flex items-center justify-center p-3 bg-transparent">
           <div className="bg-white rounded-3xl w-full max-w-sm max-h-[85vh] overflow-y-auto p-6 shadow-xl fade-in-up border border-cream-200">
             {/* 头部 */}
             <div className="text-center mb-5">

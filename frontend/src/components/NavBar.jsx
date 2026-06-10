@@ -1,5 +1,4 @@
 import { NavLink, useLocation } from 'react-router-dom'
-import { getProjects } from '../utils/store'
 
 export default function NavBar() {
   const location = useLocation()
@@ -8,16 +7,10 @@ export default function NavBar() {
 
   if (shouldHide) return null
 
-  const projects = getProjects()
-  const activeProject = projects.find(p => p.status === 'in_progress') || projects[0]
-
   const navItems = [
     { path: '/', label: '首页', icon: '🧁' },
     { path: '/friends', label: '好友', icon: '🍬' },
     { path: '/ai-chat', label: 'AI', icon: '🤖' },
-    ...(activeProject
-      ? [{ path: `/kanban/${activeProject.id}`, label: '看板', icon: '🍰' }]
-      : []),
     { path: '/skills', label: '我的', icon: '🍪' },
   ]
 

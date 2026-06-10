@@ -141,3 +141,20 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Backend backups (大量历史数据库快照)
+backend/backups/
+backend/data/
+backend/uploads/
+
+# Test scratch files
+backend/_test_*
+
+# Local notes
+feedback.txt

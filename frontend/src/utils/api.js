@@ -38,6 +38,7 @@ export const userAPI = {
   updateSettings: (data) => api.put('/users/me/settings', data),
   getStats: () => api.get('/users/me/stats'),
   getAbilityProfile: () => api.get('/users/me/ability-profile'),
+  deleteAccount: () => api.delete('/users/me'),
 }
 
 export const groupAPI = {
@@ -52,9 +53,11 @@ export const groupAPI = {
   inviteByEmail: (data) => api.post('/groups/invite-by-email', data),
   pendingInvitations: () => api.get('/groups/invitations/pending'),
   respondInvitation: (id, data) => api.put(`/groups/invitations/${id}/respond`, data),
-  startWorkflow: (groupId, data) => api.post(`/groups/${groupId}/start-workflow`, data || {}),
+  startWorkflow: (groupId, data) => api.post(`/groups/${groupId}/start-workflow`, data || {}, { timeout: 120000 }),
   confirmTask: (groupId, taskId, data) => api.post(`/groups/${groupId}/tasks/${taskId}/confirm`, data),
   getPendingTasks: (groupId) => api.get(`/groups/${groupId}/pending-tasks`),
+  submitProposal: (groupId, data) => api.post(`/groups/${groupId}/submit-proposal`, data, { timeout: 120000 }),
+  askAIAboutFile: (groupId, fileId, data) => api.post(`/groups/${groupId}/knowledge/${fileId}/ask-ai`, data || {}, { timeout: 60000 }),
 }
 
 export const taskAPI = {
@@ -64,6 +67,16 @@ export const taskAPI = {
   update: (id, data) => api.put(`/tasks/${id}`, data),
   delete: (id) => api.delete(`/tasks/${id}`),
   updateProgress: (id, progress) => api.put(`/tasks/${id}/progress`, { progress }),
+  taskChat: (taskId, data) => api.post(`/tasks/${taskId}/chat`, data, { timeout: 120000 }),
+  uploadProof: (taskId, file) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post(`/tasks/${taskId}/upload-proof`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
+    })
+  },
+  splitTask: (taskId, data) => api.post(`/tasks/${taskId}/split`, data || {}, { timeout: 60000 }),
 }
 
 export const aiAPI = {
@@ -94,6 +107,14 @@ export const messageAPI = {
   getPrivateMessages: (params) => api.get('/messages/private', { params }),
   sendPrivateMessage: (data) => api.post('/messages/private', data, { timeout: 60000 }),
   getKnowledgeFiles: (groupId) => api.get(`/messages/knowledge/${groupId}`),
+  uploadKnowledgeFile: (groupId, file) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post(`/messages/knowledge/${groupId}/upload`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
+    })
+  },
 }
 
 export const uploadAPI = {

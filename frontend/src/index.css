@@ -203,10 +203,12 @@ body {
   box-shadow: 0 -4px 20px rgba(212,165,165,0.08);
 }
 
-/* 全屏遮罩层也限制在手机宽度内 */
+/* 全屏遮罩层 — 居中显示，宽度撑满但≤540px，让浮窗可达到500px */
 .app-container .fixed.inset-0 {
-  max-width: 430px;
+  max-width: 540px;
+  width: 100%;
   left: 50%;
+  right: auto;
   transform: translateX(-50%);
 }
 

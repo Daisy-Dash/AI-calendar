@@ -11,6 +11,7 @@ import AuthorizePage from './pages/AuthorizePage'
 import KanbanPage from './pages/KanbanPage'
 import TaskDetailPage from './pages/TaskDetailPage'
 import AIChatPage from './pages/AIChatPage'
+import TaskChatPage from './pages/TaskChatPage'
 import GroupManagePage from './pages/GroupManagePage'
 import StatsPage from './pages/StatsPage'
 import FriendsPage from './pages/FriendsPage'
@@ -75,6 +76,7 @@ export default function App() {
           <Route path="/kanban/:projectId" element={<RequireAuth><KanbanPage /></RequireAuth>} />
           <Route path="/task/:projectId/:taskId" element={<RequireAuth><TaskDetailPage /></RequireAuth>} />
           <Route path="/ai-chat" element={<RequireAuth><AIChatPage /></RequireAuth>} />
+          <Route path="/task-chat/:taskId" element={<RequireAuth><TaskChatPage /></RequireAuth>} />
           <Route path="/friends" element={<RequireAuth><FriendsPage /></RequireAuth>} />
           <Route path="/create-group" element={<RequireAuth><CreateGroupPage /></RequireAuth>} />
           <Route path="/group-chat/:groupId" element={<RequireAuth><GroupChatPage /></RequireAuth>} />

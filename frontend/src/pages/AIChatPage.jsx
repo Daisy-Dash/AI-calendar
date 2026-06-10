@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { aiAPI, taskAPI, messageAPI, groupAPI } from '../utils/api'
 
 export default function AIChatPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const { user } = useAuth()
   const [messages, setMessages] = useState([
     { role: 'ai', content: '你好！我是你的AI私人助手 👋\n\n我可以帮你：\n📋 管理任务和日程\n💡 提供学习和效率建议\n🔨 分解复杂任务\n👥 指导团队协作\n\n💬 试试直接问我问题，或者转发一个群名片给我，我会自动读取你在该群的任务信息，随时为你提供指导！' },
@@ -16,6 +17,7 @@ export default function AIChatPage() {
   const [showGroupPicker, setShowGroupPicker] = useState(false)
   const [extractedTasks, setExtractedTasks] = useState([])
   const messagesEndRef = useRef(null)
+  const autoLinked = useRef(false)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -24,6 +26,18 @@ export default function AIChatPage() {
   useEffect(() => {
     loadMyGroups()
   }, [])
+
+  // 自动关联群组（从首页"我的任务"卡片点进来时）
+  useEffect(() => {
+    const groupId = searchParams.get('group')
+    if (groupId && myGroups.length > 0 && !autoLinked.current) {
+      const group = myGroups.find(g => g.id === parseInt(groupId))
+      if (group) {
+        autoLinked.current = true
+        handleForwardGroup(group)
+      }
+    }
+  }, [myGroups, searchParams])
 
   const loadMyGroups = async () => {
     try {
@@ -278,7 +292,7 @@ export default function AIChatPage() {
 
       {/* 群名片选择弹窗 */}
       {showGroupPicker && (
-        <div className="fixed inset-0 bg-black/25 z-[200] flex items-end justify-center" onClick={() => setShowGroupPicker(false)}>
+        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-transparent" onClick={() => setShowGroupPicker(false)}>
           <div className="bg-white rounded-t-3xl w-full max-w-[430px] p-5 pb-8 fade-in-up" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-cream-300 rounded-full mx-auto mb-4" />
             <div className="flex items-center gap-2 mb-4">

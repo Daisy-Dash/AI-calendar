@@ -191,7 +191,7 @@ export default function DiscussionPage() {
       )}
 
       {selectedInspo && (
-        <div className="fixed inset-0 bg-black/25 z-[200] flex items-end justify-center" onClick={() => setSelectedInspo(null)}>
+        <div className="fixed inset-0 z-[200] flex items-end justify-center bg-transparent" onClick={() => setSelectedInspo(null)}>
           <div className="bg-white rounded-t-3xl w-full max-w-[430px] p-5 pb-8 fade-in-up" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-cream-300 rounded-full mx-auto mb-4" />
             <div className="flex items-start justify-between mb-3">
