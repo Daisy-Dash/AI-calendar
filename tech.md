@@ -1,6 +1,6 @@
 # AI 统筹组长 — 技术文档
 
-> 版本: 4.0 | 日期: 2026-06-10
+> 版本: 4.1 | 日期: 2026-06-10
 
 ---
 
@@ -238,9 +238,9 @@ ai calendar/
 │       │   ├── FriendsPage.jsx
 │       │   ├── AIChatPage.jsx
 │       │   ├── CreateGroupPage.jsx
-│       │   ├── GroupChatPage.jsx       # 6 阶段工作流 + 多面板
-│       │   ├── TaskChatPage.jsx        # ⭐ 新增 — 任务专属 AI 聊天
-│       │   ├── KanbanPage.jsx
+│       │   ├── GroupChatPage.jsx       # 6 阶段工作流 + ⋯ 下拉菜单 + 5 面板带 ✕
+│       │   ├── TaskChatPage.jsx        # ⭐ 任务专属 AI 聊天
+│       │   ├── KanbanPage.jsx          # ⭐ v4.1 重写 — 项目综述+方案+总进度+任务分工
 │       │   ├── TaskDetailPage.jsx
 │       │   ├── SkillProfilePage.jsx
 │       │   ├── StatsPage.jsx

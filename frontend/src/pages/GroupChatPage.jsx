@@ -880,20 +880,79 @@ export default function GroupChatPage() {
         </div>
       )}
 
+      {/* 空状态：让 AI 搜索参考案例 — 仅 in_progress/discussing/confirming 状态显示 */}
+      {searchResults.length === 0 && !searching && (group.status === 'discussing' || group.status === 'confirming' || group.status === 'in_progress') && (
+        <div className="px-4 py-2 bg-gradient-to-r from-rosa-50 to-lilac-50 border-b border-rosa-100 fade-in-up">
+          <button
+            onClick={async () => {
+              setSearching(true)
+              try {
+                const brief = group.project_brief || group.description || group.name
+                const searchRes = await aiAPI.searchChat({
+                  message: `请围绕项目「${group.name}」帮我搜索一些可参考的案例、竞品和最佳实践。项目描述：${brief.slice(0, 200)}`,
+                  context: `项目名称：${group.name}，项目描述：${brief.slice(0, 300)}`,
+                })
+                if (searchRes.data?.search_results?.length > 0) {
+                  setSearchResults(searchRes.data.search_results)
+                }
+              } catch (e) {
+                alert('搜索失败，请稍后再试')
+              }
+              setSearching(false)
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2 rounded-xl bg-white/70 border border-rosa-200 text-xs text-rosa-500 hover:bg-white active:scale-[0.98] transition-all"
+          >
+            <span className="text-base">🍡</span>
+            <span className="font-medium">让 AI 帮你搜索参考案例</span>
+            <span className="text-choco-300">→</span>
+          </button>
+        </div>
+      )}
+
       {/* AI搜索参考案例 — 顶部固定栏，可折叠 */}
       {searchResults.length > 0 && (
         <div className="bg-gradient-to-r from-rosa-50 via-lilac-50 to-cream-50 border-b border-lilac-100 fade-in-up">
-          <button
-            onClick={() => setShowSearchPanel(!showSearchPanel)}
-            className="w-full px-4 py-2 flex items-center justify-between gap-2"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-base">🍡</span>
-              <span className="text-xs font-medium text-choco-500">AI 找到的参考案例</span>
-              <span className="text-[10px] text-choco-300">· {searchResults.length} 个 · 点击查看详情</span>
+          <div className="w-full px-4 py-2 flex items-center justify-between gap-2">
+            <button
+              onClick={() => setShowSearchPanel(!showSearchPanel)}
+              className="flex items-center gap-2 flex-1 min-w-0"
+            >
+              <span className="text-base flex-shrink-0">🍡</span>
+              <span className="text-xs font-medium text-choco-500 flex-shrink-0">AI 找到的参考案例</span>
+              <span className="text-[10px] text-choco-300 truncate">· {searchResults.length} 个 · 点击查看详情</span>
+            </button>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                onClick={async () => {
+                  setSearching(true)
+                  try {
+                    const brief = group.project_brief || group.description || group.name
+                    const searchRes = await aiAPI.searchChat({
+                      message: `请围绕项目「${group.name}」帮我搜索一些可参考的案例、竞品和最佳实践。项目描述：${brief.slice(0, 200)}`,
+                      context: `项目名称：${group.name}，项目描述：${brief.slice(0, 300)}`,
+                    })
+                    if (searchRes.data?.search_results?.length > 0) {
+                      setSearchResults(searchRes.data.search_results)
+                    }
+                  } catch (e) {
+                    alert('搜索失败，请稍后再试')
+                  }
+                  setSearching(false)
+                }}
+                disabled={searching}
+                className="w-6 h-6 rounded-full bg-white/70 border border-cream-200 flex items-center justify-center text-[10px] text-choco-400 hover:bg-white hover:text-rosa-500 transition-all disabled:opacity-50"
+                title="重新搜索"
+              >
+                🔄
+              </button>
+              <button
+                onClick={() => setShowSearchPanel(!showSearchPanel)}
+                className={`text-choco-300 text-xs transition-transform ${showSearchPanel ? 'rotate-180' : ''}`}
+              >
+                ▼
+              </button>
             </div>
-            <span className={`text-choco-300 text-xs transition-transform ${showSearchPanel ? 'rotate-180' : ''}`}>▼</span>
-          </button>
+          </div>
           {showSearchPanel && (
             <div className="px-4 pb-3 overflow-x-auto">
               <div className="flex gap-2 pb-1" style={{ width: 'max-content' }}>
