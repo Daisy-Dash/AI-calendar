@@ -3,6 +3,23 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { aiAPI, taskAPI, messageAPI, groupAPI } from '../utils/api'
 
+function CakieAIAvatar({ className = '' }) {
+  const [failed, setFailed] = useState(false)
+
+  if (failed) {
+    return <span className={`cakie-ai-avatar cakie-ai-avatar-fallback ${className}`}>CAKIE</span>
+  }
+
+  return (
+    <img
+      src="/assets/cakie/AI小蛋糕助手_agent-cake.png"
+      alt="Team CAKIE AI 小蛋糕助手"
+      className={`cakie-ai-avatar ${className}`}
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
 export default function AIChatPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -146,22 +163,23 @@ export default function AIChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-70px)]">
+    <div className="cakie-chat-page cakie-inspiration-page flex flex-col h-[calc(100vh-70px)]">
       {/* 头部 */}
-      <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+      <div className="cakie-chat-header cakie-inspiration-header mx-3 mt-3 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">🤖</span>
+          <CakieAIAvatar className="cakie-ai-avatar-header" />
           <div>
-            <h1 className="text-base font-medium text-choco-600">AI 私人助手</h1>
-            <p className="text-[10px] text-choco-200">
-              {linkedGroup ? `已关联: ${linkedGroup.name}` : '自然语言对话，转发群名片获取指导'}
+            <p className="cakie-inspiration-label">TEAM CAKIE · 今日灵感菜单</p>
+            <h1 className="text-base font-medium text-choco-600">CAKIE 灵感烘焙台</h1>
+            <p className="text-[10px] text-choco-300">
+              {linkedGroup ? `正在烘焙「${linkedGroup.name}」的作业灵感` : '把你的问题交给小蛋糕助手吧～'}
             </p>
           </div>
         </div>
         {linkedGroup && (
           <button
             onClick={() => { setLinkedGroup(null); setMessages(prev => [...prev, { role: 'ai', content: '已取消群组关联，回到通用对话模式。' }]) }}
-            className="text-[10px] px-2 py-1 rounded-full bg-cream-100 border border-cream-200 text-choco-300"
+            className="cakie-inspiration-tag text-[10px] px-2 py-1 text-choco-300"
           >
             取消关联
           </button>
@@ -170,15 +188,15 @@ export default function AIChatPage() {
 
       {/* 群名片转发提示 */}
       {!linkedGroup && myGroups.length > 0 && messages.length <= 2 && (
-        <div className="px-4 mb-2">
+        <div className="px-4 mt-3 mb-2">
           <button
             onClick={() => setShowGroupPicker(true)}
-            className="w-full flex items-center gap-3 p-3 rounded-2xl bg-gradient-to-r from-lilac-50 to-rosa-50 border border-lilac-100 hover:shadow-sm transition-all"
+            className="cakie-inspiration-note w-full flex items-center gap-3 p-3 transition-all"
           >
             <span className="text-xl">💌</span>
             <div className="text-left flex-1">
-              <p className="text-sm font-medium text-choco-500">转发群名片</p>
-              <p className="text-[10px] text-choco-200">选择一个群组，AI会读取你的任务并提供指导</p>
+              <p className="text-sm font-medium text-choco-500">递上一张小组菜单卡</p>
+              <p className="text-[10px] text-choco-300">CAKIE 会读取你的任务，一起调配执行灵感</p>
             </div>
             <span className="text-choco-200">→</span>
           </button>
@@ -186,13 +204,11 @@ export default function AIChatPage() {
       )}
 
       {/* 对话区域 */}
-      <div className="flex-1 overflow-y-auto px-4 pb-4">
+      <div className="cakie-chat-messages cakie-inspiration-messages flex-1 overflow-y-auto px-4 pt-3 pb-4">
         {messages.map((msg, i) => (
           <div key={i} className={`flex mb-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} fade-in-up`}>
             {msg.role === 'ai' && (
-              <div className="w-8 h-8 rounded-full bg-rosa-50 border border-rosa-100 flex items-center justify-center mr-2 flex-shrink-0 mt-1">
-                🤖
-              </div>
+              <CakieAIAvatar className="mr-2 flex-shrink-0 mt-1" />
             )}
             <div className={`max-w-[80%] ${msg.role === 'ai' ? 'ai-bubble' : 'user-bubble'}`}>
               <div className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</div>
@@ -212,11 +228,12 @@ export default function AIChatPage() {
         {/* 加载动画 */}
         {loading && (
           <div className="flex mb-4 fade-in-up">
-            <div className="w-8 h-8 rounded-full bg-rosa-50 border border-rosa-100 flex items-center justify-center mr-2">🤖</div>
+            <CakieAIAvatar className="mr-2 flex-shrink-0" />
             <div className="ai-bubble">
+              <p className="text-[11px] text-choco-300 mb-2">CAKIE 正在调配灵感配方～</p>
               <div className="flex gap-1.5">
                 <span className="w-2 h-2 bg-rosa-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-lilac-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 bg-dusty-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-2 h-2 bg-sage-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
@@ -227,20 +244,20 @@ export default function AIChatPage() {
 
       {/* 快捷操作 + 转发群名片按钮 */}
       {!linkedGroup && (
-        <div className="px-4 pb-1">
+        <div className="cakie-inspiration-shortcuts px-4 pb-1">
           <div className="flex gap-2 overflow-x-auto pb-1">
             <button onClick={() => setShowGroupPicker(true)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-lilac-50 rounded-full text-xs text-lilac-400 border border-lilac-100 whitespace-nowrap"
+              className="cakie-inspiration-tag flex items-center gap-1 px-3 py-1.5 text-xs text-lilac-400 whitespace-nowrap"
               disabled={loading}>
               <span>💌</span> 转发群名片
             </button>
             <button onClick={() => sendMessage('帮我分析一下我最近的任务完成情况')}
-              className="flex items-center gap-1 px-3 py-1.5 bg-cream-50 rounded-full text-xs text-choco-400 border border-cream-200 whitespace-nowrap"
+              className="cakie-inspiration-tag flex items-center gap-1 px-3 py-1.5 text-xs text-choco-400 whitespace-nowrap"
               disabled={loading}>
               <span>📊</span> 分析近况
             </button>
             <button onClick={() => sendMessage('帮我做一个3天的紧急方案')}
-              className="flex items-center gap-1 px-3 py-1.5 bg-cream-50 rounded-full text-xs text-choco-400 border border-cream-200 whitespace-nowrap"
+              className="cakie-inspiration-tag flex items-center gap-1 px-3 py-1.5 text-xs text-choco-400 whitespace-nowrap"
               disabled={loading}>
               <span>⚡</span> 紧急方案
             </button>
@@ -248,20 +265,20 @@ export default function AIChatPage() {
         </div>
       )}
       {linkedGroup && (
-        <div className="px-4 pb-1">
+        <div className="cakie-inspiration-shortcuts px-4 pb-1">
           <div className="flex gap-2 overflow-x-auto pb-1">
             <button onClick={() => sendMessage('我在这个群的任务有哪些？')}
-              className="flex items-center gap-1 px-3 py-1.5 bg-sage-50 rounded-full text-xs text-sage-500 border border-sage-100 whitespace-nowrap"
+              className="cakie-inspiration-tag flex items-center gap-1 px-3 py-1.5 text-xs text-sage-500 whitespace-nowrap"
               disabled={loading}>
               <span>📋</span> 我的任务
             </button>
             <button onClick={() => sendMessage('指导我怎么做当前最紧急的任务')}
-              className="flex items-center gap-1 px-3 py-1.5 bg-cream-50 rounded-full text-xs text-choco-400 border border-cream-200 whitespace-nowrap"
+              className="cakie-inspiration-tag flex items-center gap-1 px-3 py-1.5 text-xs text-choco-400 whitespace-nowrap"
               disabled={loading}>
               <span>🎯</span> 任务指导
             </button>
             <button onClick={() => sendMessage('帮我总结一下项目目前的进度')}
-              className="flex items-center gap-1 px-3 py-1.5 bg-cream-50 rounded-full text-xs text-choco-400 border border-cream-200 whitespace-nowrap"
+              className="cakie-inspiration-tag flex items-center gap-1 px-3 py-1.5 text-xs text-choco-400 whitespace-nowrap"
               disabled={loading}>
               <span>📈</span> 进度总结
             </button>
@@ -270,11 +287,11 @@ export default function AIChatPage() {
       )}
 
       {/* 输入区域 */}
-      <div className="px-4 pb-4 pt-2 border-t border-cream-200">
+      <div className="cakie-chat-composer cakie-inspiration-composer mx-3 mb-2 px-3 pb-3 pt-3">
         <div className="flex gap-2">
           <input
-            className="hand-input flex-1 text-sm"
-            placeholder={linkedGroup ? `关于「${linkedGroup.name}」的问题...` : '输入你的问题...'}
+            className="hand-input cakie-inspiration-input flex-1 text-sm"
+            placeholder={linkedGroup ? `和 CAKIE 说说「${linkedGroup.name}」的难题吧～` : '和 CAKIE 说说你的作业难题吧～'}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) } }}
@@ -282,10 +299,11 @@ export default function AIChatPage() {
           />
           <button
             onClick={() => sendMessage(input)}
-            className="hand-btn px-5 text-sm flex-shrink-0"
+            className="hand-btn cakie-inspiration-send px-4 text-sm flex-shrink-0"
             disabled={loading || !input.trim()}
+            aria-label="送入烤箱"
           >
-            {loading ? '...' : '发送'}
+            {loading ? '烘焙中…' : '送入烤箱'}
           </button>
         </div>
       </div>

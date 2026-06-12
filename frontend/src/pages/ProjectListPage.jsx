@@ -3,6 +3,19 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { groupAPI, taskAPI } from '../utils/api'
 
+const DEFAULT_CAKIE_AVATAR = '/assets/cakie/头像_草莓蛋糕_avatar-strawberry.png'
+
+function CakieAvatar({ src, className = '', alt = '蛋糕头像' }) {
+  const [failed, setFailed] = useState(false)
+  const imageSrc = typeof src === 'string' && src.startsWith('/assets/cakie/') ? src : DEFAULT_CAKIE_AVATAR
+
+  if (failed) {
+    return <span className={`cakie-avatar-image-fallback ${className}`}>蛋糕头像</span>
+  }
+
+  return <img src={imageSrc} alt={alt} className={className} onError={() => setFailed(true)} />
+}
+
 export default function ProjectListPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -114,7 +127,7 @@ export default function ProjectListPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-5xl mb-3 animate-float">🧁</div>
+          <CakieAvatar src={DEFAULT_CAKIE_AVATAR} className="cakie-home-loading-avatar mb-3 animate-float" />
           <p className="text-sm text-choco-200">加载中...</p>
         </div>
       </div>
@@ -133,9 +146,10 @@ export default function ProjectListPage() {
         </div>
         <button
           onClick={() => navigate('/skills')}
-          className="w-10 h-10 rounded-full bg-rosa-50 flex items-center justify-center text-lg hover:bg-rosa-100 transition-all active:scale-95"
+          className="cakie-home-user-avatar transition-all active:scale-95"
+          aria-label="打开我的 CAKIE 菜单卡"
         >
-          {user?.avatar || '🍪'}
+          <CakieAvatar src={user?.avatar} className="cakie-avatar-image" />
         </button>
       </div>
 
@@ -210,8 +224,8 @@ export default function ProjectListPage() {
                       className="hand-card cursor-pointer hover:shadow-md transition-all active:scale-[0.98] py-3"
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-rosa-50 to-lilac-50 border border-rosa-100 flex items-center justify-center text-base flex-shrink-0">
-                          🎂
+                        <div className="cakie-project-avatar is-small flex-shrink-0">
+                          <CakieAvatar src={DEFAULT_CAKIE_AVATAR} className="cakie-avatar-image" alt="项目蛋糕头像" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-choco-600 truncate">{g?.name || '未知项目'}</p>
@@ -242,14 +256,14 @@ export default function ProjectListPage() {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm text-choco-500 font-medium flex items-center gap-1.5">
-            <span>🎂</span> 我的团队项目
+            <CakieAvatar src={DEFAULT_CAKIE_AVATAR} className="cakie-project-title-avatar" alt="项目蛋糕头像" /> 我的团队项目
           </p>
           <span className="text-xs text-choco-200">{groups.length} 个项目</span>
         </div>
 
         {groups.length === 0 ? (
           <div className="text-center py-12">
-            <div className="text-5xl mb-4">🧁</div>
+            <CakieAvatar src={DEFAULT_CAKIE_AVATAR} className="cakie-project-empty-avatar mb-4" alt="项目蛋糕头像" />
             <p className="text-choco-300 text-sm mb-1">还没有团队项目</p>
             <p className="text-choco-200 text-xs">点击下方按钮创建你的第一个团队项目</p>
           </div>
@@ -273,8 +287,8 @@ export default function ProjectListPage() {
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-rosa-50 to-lilac-50 border border-rosa-100 flex items-center justify-center text-xl">
-                          🎂
+                        <div className="cakie-project-avatar">
+                          <CakieAvatar src={DEFAULT_CAKIE_AVATAR} className="cakie-avatar-image" alt="项目蛋糕头像" />
                         </div>
                         <div>
                           <p className="text-sm font-medium text-choco-600">{g.name}</p>

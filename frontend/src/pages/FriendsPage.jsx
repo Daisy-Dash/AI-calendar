@@ -2,6 +2,23 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { friendAPI } from '../utils/api'
 
+function CakieAsset({ src, alt, fallback, className = '' }) {
+  const [failed, setFailed] = useState(false)
+
+  if (failed) {
+    return <span className={`cakie-friends-asset-fallback ${className}`}>{fallback}</span>
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
 export default function FriendsPage() {
   const navigate = useNavigate()
   const [tab, setTab] = useState('friends') // friends / search / requests
@@ -72,36 +89,34 @@ export default function FriendsPage() {
   }
 
   const tabs = [
-    { key: 'friends', label: '好友', icon: '🧁', count: friends.length },
-    { key: 'search', label: '搜索', icon: '🔍' },
-    { key: 'requests', label: '请求', icon: '💌', count: requests.length },
+    { key: 'friends', label: '好友', icon: '/assets/cakie/好友图标_nav-friends.png', fallback: '友', count: friends.length },
+    { key: 'search', label: '搜索', icon: '/assets/cakie/搜索图标_icon-search.png', fallback: '寻' },
+    { key: 'requests', label: '请求', icon: '/assets/cakie/请求图标_icon-request.png', fallback: '请', count: requests.length },
   ]
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="cakie-friends-page min-h-screen pb-28">
       {/* 顶部 */}
-      <div className="px-4 pt-5 pb-3">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-xl font-medium text-choco-600">好友</h1>
-            <p className="text-xs text-choco-200 mt-0.5">找到你的小伙伴</p>
+      <div className="px-4 pt-5 pb-4">
+        <div className="cakie-friends-header">
+          <div className="text-center flex-1">
+            <p className="cakie-friends-kicker">CAKIE PARTNERS</p>
+            <h1 className="text-2xl font-hand font-medium text-choco-600 mt-1">好友</h1>
+            <p className="text-xs text-choco-300 mt-1">找到你的蛋糕小伙伴</p>
           </div>
-          <button onClick={() => navigate(-1)} className="text-rosa-400 text-sm">返回</button>
+          <button onClick={() => navigate(-1)} className="cakie-friends-back">返回</button>
         </div>
 
         {/* Tab 切换 */}
-        <div className="flex gap-2">
+        <div className="cakie-friends-tabs">
           {tabs.map(t => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex-1 py-2 rounded-2xl text-xs font-medium transition-all ${
-                tab === t.key
-                  ? 'bg-rosa-100 text-rosa-400 border border-rosa-200'
-                  : 'bg-cream-100 text-choco-300 border border-cream-200'
-              }`}
+              className={`cakie-friends-tab ${tab === t.key ? 'is-active' : ''}`}
             >
-              {t.icon} {t.label}{t.count ? ` (${t.count})` : ''}
+              <CakieAsset src={t.icon} alt="" fallback={t.fallback} className="cakie-friends-tab-icon" />
+              <span>{t.label}{t.count ? ` (${t.count})` : ''}</span>
             </button>
           ))}
         </div>
@@ -109,7 +124,7 @@ export default function FriendsPage() {
 
       {/* 提示消息 */}
       {message && (
-        <div className="mx-4 mb-3 p-3 bg-sage-50 border border-sage-100 rounded-2xl text-xs text-sage-500 text-center fade-in-up">
+        <div className="cakie-friends-message mx-4 mb-3 text-xs text-sage-500 text-center fade-in-up">
           {message}
         </div>
       )}
@@ -118,19 +133,24 @@ export default function FriendsPage() {
       {tab === 'friends' && (
         <div className="px-4 space-y-3">
           {friends.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-4xl mb-3">🍰</p>
-              <p className="text-choco-300 text-sm">还没有好友</p>
-              <p className="text-choco-200 text-xs mt-1">去搜索页添加小伙伴吧</p>
-              <button onClick={() => setTab('search')} className="hand-btn text-xs py-2 px-5 mt-4">
-                搜索好友
+            <div className="cakie-friends-empty">
+              <CakieAsset
+                src="/assets/cakie/头像_草莓蛋糕_avatar-strawberry.png"
+                alt="等待加入的草莓蛋糕小伙伴"
+                fallback="草莓蛋糕小伙伴"
+                className="cakie-friends-empty-cake"
+              />
+              <p className="text-choco-500 text-sm font-medium mt-4">还没有好友</p>
+              <p className="text-choco-300 text-xs mt-1">去搜索页添加小伙伴吧</p>
+              <button onClick={() => setTab('search')} className="cakie-button text-xs py-2.5 px-6 mt-5">
+                寻找小伙伴
               </button>
             </div>
           ) : (
             friends.map(f => (
-              <div key={f.id} className="hand-card flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-lilac-50 border border-lilac-100 flex items-center justify-center text-lg flex-shrink-0">
-                  {f.avatar || '🧁'}
+              <div key={f.id} className="cakie-friend-card flex items-center gap-3">
+                <div className="cakie-friend-persona">
+                  {f.avatar || f.username?.slice(0, 1) || '友'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-choco-600 truncate">{f.username}</p>
@@ -143,7 +163,7 @@ export default function FriendsPage() {
                     </div>
                   )}
                 </div>
-                <span className="text-xs text-sage-400 bg-sage-50 px-2 py-1 rounded-full border border-sage-100">好友</span>
+                <span className="cakie-friend-status">好友</span>
               </div>
             ))
           )}
@@ -153,24 +173,24 @@ export default function FriendsPage() {
       {/* 搜索 */}
       {tab === 'search' && (
         <div className="px-4">
-          <div className="flex gap-2 mb-4">
+          <div className="cakie-friends-search flex gap-2 mb-4">
             <input
-              className="hand-input flex-1 text-sm"
+              className="cakie-input flex-1 text-sm"
               placeholder="搜索昵称或邮箱..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSearch()}
             />
-            <button onClick={handleSearch} disabled={loading} className="hand-btn text-xs py-2 px-4 flex-shrink-0">
-              {loading ? '...' : '搜索'}
+            <button onClick={handleSearch} disabled={loading} className="cakie-button text-xs py-2 px-4 flex-shrink-0">
+              {loading ? '...' : '寻找'}
             </button>
           </div>
 
           <div className="space-y-3">
             {searchResults.map(u => (
-              <div key={u.id} className="hand-card flex items-center gap-3 fade-in-up">
-                <div className="w-10 h-10 rounded-full bg-dusty-50 border border-dusty-100 flex items-center justify-center text-lg flex-shrink-0">
-                  {u.avatar || '🧁'}
+              <div key={u.id} className="cakie-friend-card flex items-center gap-3 fade-in-up">
+                <div className="cakie-friend-persona cakie-friend-persona-search">
+                  {u.avatar || u.username?.slice(0, 1) || '寻'}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-choco-600 truncate">{u.username}</p>
@@ -188,7 +208,7 @@ export default function FriendsPage() {
                     接受
                   </button>
                 ) : (
-                  <button onClick={() => handleSendRequest(u.id)} className="hand-btn text-xs py-1 px-3">
+                  <button onClick={() => handleSendRequest(u.id)} className="cakie-button text-xs py-1.5 px-3">
                     添加
                   </button>
                 )}
@@ -205,16 +225,21 @@ export default function FriendsPage() {
       {tab === 'requests' && (
         <div className="px-4 space-y-3">
           {requests.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-4xl mb-3">💌</p>
-              <p className="text-choco-300 text-sm">暂无好友请求</p>
+            <div className="cakie-friends-empty">
+              <CakieAsset
+                src="/assets/cakie/请求图标_icon-request.png"
+                alt="好友请求"
+                fallback="等待新请求"
+                className="cakie-friends-request-empty"
+              />
+              <p className="text-choco-400 text-sm mt-4">暂无好友请求</p>
             </div>
           ) : (
             requests.map(r => (
-              <div key={r.id} className="hand-card fade-in-up">
+              <div key={r.id} className="cakie-friend-card fade-in-up">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-rosa-50 border border-rosa-100 flex items-center justify-center text-lg flex-shrink-0">
-                    {r.avatar || '🧁'}
+                  <div className="cakie-friend-persona cakie-friend-persona-request">
+                    {r.avatar || r.username?.slice(0, 1) || '请'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-choco-600">{r.username}</p>

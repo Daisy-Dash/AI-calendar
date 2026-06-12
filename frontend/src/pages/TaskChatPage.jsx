@@ -3,6 +3,23 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { taskAPI } from '../utils/api'
 
+function CakieAIAvatar({ className = '' }) {
+  const [failed, setFailed] = useState(false)
+
+  if (failed) {
+    return <span className={`cakie-ai-avatar cakie-ai-avatar-fallback ${className}`}>CAKIE</span>
+  }
+
+  return (
+    <img
+      src="/assets/cakie/AI小蛋糕助手_agent-cake.png"
+      alt="Team CAKIE AI 小蛋糕助手"
+      className={`cakie-ai-avatar ${className}`}
+      onError={() => setFailed(true)}
+    />
+  )
+}
+
 export default function TaskChatPage() {
   const navigate = useNavigate()
   const { taskId } = useParams()
@@ -150,10 +167,10 @@ export default function TaskChatPage() {
 
   if (pageLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="cakie-chat-page cakie-task-chat-page min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="text-5xl mb-3 animate-float">🤖</div>
-          <p className="text-sm text-choco-200">加载中...</p>
+          <CakieAIAvatar className="cakie-ai-avatar-loading mb-3 animate-float" />
+          <p className="text-sm text-choco-300">CAKIE 正在查看配方～</p>
         </div>
       </div>
     )
@@ -165,11 +182,20 @@ export default function TaskChatPage() {
   const completed = task.progress >= 100
 
   return (
-    <div className="flex flex-col h-[calc(100vh-70px)]">
+    <div className="cakie-chat-page cakie-task-chat-page flex flex-col h-[calc(100vh-70px)]">
       {/* 任务头部 + 进度条 */}
-      <div className={`px-4 pt-3 pb-3 border-b ${isOverdue ? 'bg-rosa-50 border-rosa-200' : 'bg-gradient-to-r from-lilac-50 to-cream-50 border-cream-200'}`}>
+      <div className={`cakie-chat-header cakie-task-order-card mx-3 mt-3 px-4 pt-3 pb-3 border-b ${isOverdue ? 'is-overdue border-rosa-200' : 'border-cream-200'}`}>
+        <div className="cakie-task-order-heading">
+          <div>
+            <p className="cakie-task-order-label">CAKIE ORDER · 工序单</p>
+            <h1 className="text-base font-medium text-choco-600">工序小助手</h1>
+            <p className="text-[10px] text-choco-300">CAKIE 正在陪你完成这道任务～</p>
+          </div>
+          <CakieAIAvatar className="cakie-ai-avatar-header" />
+        </div>
+        <div className="cakie-task-dashed-divider" />
         <div className="flex items-center gap-2 mb-2">
-          <button onClick={() => navigate(-1)} className="text-rosa-400 text-sm">←</button>
+          <button onClick={() => navigate(-1)} className="cakie-task-back text-rosa-400 text-sm">←</button>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-choco-600 truncate">{task.title}</p>
             <div className="flex items-center gap-2 mt-0.5">
@@ -185,7 +211,6 @@ export default function TaskChatPage() {
               )}
             </div>
           </div>
-          <span className="text-2xl">🤖</span>
         </div>
 
         {/* 进度条 — 节点时间戳叠加在进度条上 */}
@@ -320,13 +345,11 @@ export default function TaskChatPage() {
       )}
 
       {/* 对话区域 */}
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div className="cakie-chat-messages cakie-task-chat-messages flex-1 overflow-y-auto px-4 py-3">
         {messages.map((msg, i) => (
           <div key={i} className={`flex mb-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'} fade-in-up`}>
             {msg.role === 'ai' && (
-              <div className="w-8 h-8 rounded-full bg-rosa-50 border border-rosa-100 flex items-center justify-center mr-2 flex-shrink-0 mt-1">
-                🤖
-              </div>
+              <CakieAIAvatar className="mr-2 flex-shrink-0 mt-1" />
             )}
             <div className={`max-w-[80%] ${msg.role === 'ai' ? 'ai-bubble' : 'user-bubble'}`}>
               <div className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</div>
@@ -336,11 +359,12 @@ export default function TaskChatPage() {
 
         {loading && (
           <div className="flex mb-3 fade-in-up">
-            <div className="w-8 h-8 rounded-full bg-rosa-50 border border-rosa-100 flex items-center justify-center mr-2">🤖</div>
+            <CakieAIAvatar className="mr-2 flex-shrink-0" />
             <div className="ai-bubble">
+              <p className="text-[11px] text-choco-300 mb-2">CAKIE 正在查看配方～</p>
               <div className="flex gap-1.5">
                 <span className="w-2 h-2 bg-rosa-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-lilac-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 bg-dusty-300 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                 <span className="w-2 h-2 bg-sage-300 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
               </div>
             </div>
@@ -350,14 +374,14 @@ export default function TaskChatPage() {
       </div>
 
       {/* 快捷操作 */}
-      <div className="px-4 pb-1">
+      <div className="cakie-task-shortcuts px-4 pb-1">
         <div className="flex gap-2 overflow-x-auto pb-1">
           <button
             onClick={() => setUseSearch(!useSearch)}
-            className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs border whitespace-nowrap transition-all ${
+            className={`cakie-task-tag flex items-center gap-1 px-3 py-1.5 text-xs whitespace-nowrap transition-all ${
               useSearch
-                ? 'bg-lilac-200 border-lilac-300 text-lilac-700'
-                : 'bg-cream-50 border-cream-200 text-choco-400'
+                ? 'is-active text-lilac-700'
+                : 'text-choco-400'
             }`}
             disabled={loading}
           >
@@ -365,28 +389,28 @@ export default function TaskChatPage() {
           </button>
           <button
             onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-1 px-3 py-1.5 bg-sage-50 rounded-full text-xs text-sage-500 border border-sage-100 whitespace-nowrap"
+            className="cakie-task-tag flex items-center gap-1 px-3 py-1.5 text-xs text-sage-500 whitespace-nowrap"
             disabled={loading}
           >
             <span>📎</span> 上传凭证
           </button>
           <button
             onClick={handleSplitTask}
-            className="flex items-center gap-1 px-3 py-1.5 bg-rosa-50 rounded-full text-xs text-rosa-500 border border-rosa-100 whitespace-nowrap"
+            className="cakie-task-tag flex items-center gap-1 px-3 py-1.5 text-xs text-rosa-500 whitespace-nowrap"
             disabled={loading}
           >
             <span>📋</span> 拆分任务
           </button>
           <button
             onClick={() => sendMessage('帮我找一些这类任务的优秀案例参考')}
-            className="flex items-center gap-1 px-3 py-1.5 bg-cream-50 rounded-full text-xs text-choco-400 border border-cream-200 whitespace-nowrap"
+            className="cakie-task-tag flex items-center gap-1 px-3 py-1.5 text-xs text-choco-400 whitespace-nowrap"
             disabled={loading}
           >
             <span>💡</span> 找案例
           </button>
           <button
             onClick={() => sendMessage('给我一份完成这个任务的详细执行计划')}
-            className="flex items-center gap-1 px-3 py-1.5 bg-cream-50 rounded-full text-xs text-choco-400 border border-cream-200 whitespace-nowrap"
+            className="cakie-task-tag flex items-center gap-1 px-3 py-1.5 text-xs text-choco-400 whitespace-nowrap"
             disabled={loading}
           >
             <span>📅</span> 执行计划
@@ -409,11 +433,11 @@ export default function TaskChatPage() {
       </div>
 
       {/* 输入区域 */}
-      <div className="px-4 pb-4 pt-2 border-t border-cream-200">
+      <div className="cakie-chat-composer cakie-task-composer mx-3 mb-2 px-3 pb-3 pt-3">
         <div className="flex gap-2">
           <input
-            className="hand-input flex-1 text-sm"
-            placeholder={useSearch ? '联网搜索模式，问我任何问题...' : '问我关于这个任务的任何问题...'}
+            className="hand-input cakie-task-input flex-1 text-sm"
+            placeholder={useSearch ? '向 CAKIE 联网询问这道工序吧～' : '向 CAKIE 询问这道工序吧～'}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) } }}
@@ -421,10 +445,11 @@ export default function TaskChatPage() {
           />
           <button
             onClick={() => sendMessage(input)}
-            className="hand-btn px-5 text-sm flex-shrink-0"
+            className="hand-btn cakie-task-send px-4 text-sm flex-shrink-0"
             disabled={loading || !input.trim()}
+            aria-label="送入烤箱"
           >
-            {loading ? '...' : '发送'}
+            {loading ? '烘焙中…' : '送入烤箱'}
           </button>
         </div>
       </div>

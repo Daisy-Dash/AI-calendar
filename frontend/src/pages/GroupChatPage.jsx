@@ -3,6 +3,16 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { groupAPI, messageAPI, friendAPI, uploadAPI, aiAPI, taskAPI } from '../utils/api'
 
+function CakieChatAsset({ src, alt, fallback, className = '' }) {
+  const [failed, setFailed] = useState(false)
+
+  if (failed) {
+    return <span className={`cakie-chat-asset-fallback ${className}`}>{fallback}</span>
+  }
+
+  return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />
+}
+
 export default function GroupChatPage() {
   const { groupId } = useParams()
   const navigate = useNavigate()
@@ -41,6 +51,7 @@ export default function GroupChatPage() {
   const [proposalText, setProposalText] = useState('')
   const [submittingProposal, setSubmittingProposal] = useState(false)
   const [proofUploadingTaskId, setProofUploadingTaskId] = useState(null)
+  const [showCakeGathering, setShowCakeGathering] = useState(false)
   const fileInputRef = useRef(null)
   const chatFileRef = useRef(null)
   const proofFileRef = useRef(null)
@@ -307,6 +318,12 @@ export default function GroupChatPage() {
     setStartingWorkflow(false)
   }
 
+  const handleStartWorkflowWithCakeAnimation = () => {
+    setShowCakeGathering(true)
+    setTimeout(() => setShowCakeGathering(false), 2200)
+    handleStartWorkflow()
+  }
+
   const handleSubmitProposal = async () => {
     if (!proposalText.trim() || submittingProposal) return
     setSubmittingProposal(true)
@@ -368,14 +385,14 @@ export default function GroupChatPage() {
   const totalCompletion = groupStats ? Math.round(groupStats.completion_rate || 0) : 0
 
   return (
-    <div className="flex flex-col h-screen max-h-screen">
+    <div className="cakie-group-room flex flex-col h-screen max-h-screen">
       {/* 顶部栏 */}
-      <div className="flex items-center justify-between px-4 py-3 border-b-[1.5px] border-cream-300 bg-white relative">
+      <div className="cakie-group-header flex items-center justify-between px-4 py-3 relative">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <button onClick={() => navigate('/')} className="text-rosa-400 text-lg flex-shrink-0">←</button>
+          <button onClick={() => navigate('/')} className="cakie-group-back flex-shrink-0">←</button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-medium text-choco-600 truncate">{group.name}</h1>
-            <p className="text-xs text-choco-200 truncate">{group.member_count || 0} 位成员 · AI统筹组长</p>
+            <p className="text-xs text-choco-300 truncate">{group.member_count || 0} 块成员 · CAKIE 正在店内</p>
           </div>
         </div>
         <div className="flex gap-1.5 flex-shrink-0">
@@ -390,12 +407,12 @@ export default function GroupChatPage() {
               📌
             </button>
           )}
-          <button
-            onClick={() => setShowMenu(!showMenu)}
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm border transition-all ${
-              showMenu ? 'bg-rosa-100 border-rosa-200' : 'bg-cream-100 border-cream-200'
-            }`}
-            title="更多"
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className={`cakie-group-more w-8 h-8 flex items-center justify-center text-sm transition-all ${
+                showMenu ? 'is-active' : ''
+              }`}
+              title="更多"
           >
             ⋯
           </button>
@@ -438,8 +455,8 @@ export default function GroupChatPage() {
                   showKnowledge ? 'bg-sage-50 text-sage-600' : 'text-choco-500'
                 }`}
               >
-                <span className="text-base">📚</span>
-                <span>知识库</span>
+                <CakieChatAsset src="/assets/cakie/资料库图标_icon-knowledge.png" alt="" fallback="料" className="cakie-chat-menu-icon" />
+                <span>配方资料库</span>
               </button>
               <button
                 onClick={() => { openInvite(); setShowMenu(false) }}
@@ -688,7 +705,7 @@ export default function GroupChatPage() {
 
       {/* 知识库面板 */}
       {showKnowledge && (
-        <div className="px-4 py-3 bg-gradient-to-r from-sage-50 to-cream-50 border-b border-cream-200 fade-in-up relative">
+        <div className="cakie-knowledge-panel px-4 py-3 fade-in-up relative">
           <button
             onClick={() => setShowKnowledge(false)}
             className="absolute top-2 right-3 w-6 h-6 rounded-full bg-white/70 border border-cream-200 flex items-center justify-center text-xs text-choco-300 hover:bg-white hover:text-choco-500 transition-all"
@@ -697,11 +714,14 @@ export default function GroupChatPage() {
             ✕
           </button>
           <div className="flex items-center justify-between mb-2 pr-8">
-            <span className="text-xs text-choco-500 font-medium">📚 知识库</span>
+            <span className="flex items-center gap-2 text-xs text-choco-500 font-medium">
+              <CakieChatAsset src="/assets/cakie/资料库图标_icon-knowledge.png" alt="" fallback="料" className="cakie-chat-section-icon" />
+              配方资料库
+            </span>
             <span className="text-[10px] text-choco-200">{knowledgeFiles.length} 个文件</span>
           </div>
           {knowledgeFiles.length === 0 ? (
-            <p className="text-xs text-choco-200 text-center py-3">暂无文件，通过下方 📎 按钮上传</p>
+            <p className="cakie-knowledge-empty text-xs text-choco-300 text-center py-3">还没有资料，点击回形针上传参考材料～</p>
           ) : (
             <div className="space-y-1.5 max-h-40 overflow-y-auto">
               {knowledgeFiles.map(f => (
@@ -771,21 +791,21 @@ export default function GroupChatPage() {
 
       {/* 人齐启动横幅 */}
       {isOwner && isGathering && (
-        <div className="px-4 py-3 bg-gradient-to-r from-rosa-50 to-lilac-50 border-b border-cream-200 fade-in-up">
+        <div className="cakie-ready-panel px-4 py-3 fade-in-up">
           {!showBriefInput ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🎯</span>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <CakieChatAsset src="/assets/cakie/人齐了吗图标_icon-ready.png" alt="" fallback="齐" className="cakie-ready-icon" />
                 <div>
-                  <p className="text-sm font-medium text-choco-600">人齐了吗？</p>
-                  <p className="text-[10px] text-choco-200">点击启动AI分解任务流程</p>
+                  <p className="text-sm font-medium text-choco-600">蛋糕切角集齐了吗？</p>
+                  <p className="text-[10px] text-choco-300">集齐后，CAKIE 会开始烘焙分工～</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowBriefInput(true)}
-                className="hand-btn text-xs py-2 px-4"
+                className="cakie-ready-button text-xs py-2 px-3 flex-shrink-0"
               >
-                人齐了，开始吧！
+                蛋糕入盘，开始烘焙！
               </button>
             </div>
           ) : (
@@ -856,7 +876,7 @@ export default function GroupChatPage() {
                   返回
                 </button>
                 <button
-                  onClick={handleStartWorkflow}
+                  onClick={handleStartWorkflowWithCakeAnimation}
                   disabled={startingWorkflow || uploading}
                   className="flex-1 hand-btn text-xs py-2"
                 >
@@ -1029,16 +1049,16 @@ export default function GroupChatPage() {
       )}
 
       {/* 消息列表 */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      <div className="cakie-group-messages flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 && (
-          <div className="text-center py-8 fade-in-up">
-            <p className="text-4xl mb-3">🎉</p>
-            <p className="text-sm text-choco-400 font-medium">欢迎来到「{group.name}」</p>
-            <p className="text-xs text-choco-200 mt-1">输入 @ai + 任意问题，自然语言交流</p>
+          <div className="cakie-group-empty text-center py-8 fade-in-up">
+            <CakieChatAsset src="/assets/cakie/AI小蛋糕助手_agent-cake.png" alt="Team CAKIE AI 小蛋糕助手" fallback="CAKIE 小蛋糕助手" className="cakie-group-empty-agent" />
+            <p className="text-sm text-choco-500 font-medium mt-3">欢迎来到「{group.name}」蛋糕房</p>
+            <p className="text-xs text-choco-300 mt-1">输入 @ai，和 CAKIE 一起讨论分工吧～</p>
             <div className="mt-3 flex flex-wrap justify-center gap-2">
               {['@ai 帮我们分析一下项目怎么分工', '@ai 目前进度如何？', '@ai 给我们一些建议'].map(hint => (
                 <button key={hint} onClick={() => { setInput(hint) }}
-                  className="text-[11px] px-2.5 py-1 rounded-full bg-cream-100 border border-cream-200 text-choco-300 hover:bg-rosa-50 transition-all">
+                  className="cakie-group-hint text-[11px] px-2.5 py-1 transition-all">
                   {hint}
                 </button>
               ))}
@@ -1083,9 +1103,12 @@ export default function GroupChatPage() {
             return (
               <div key={msg.id} className="fade-in-up mb-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-full bg-rosa-50 border border-rosa-100 flex items-center justify-center text-sm flex-shrink-0">
-                    🤖
-                  </div>
+                  <CakieChatAsset
+                    src="/assets/cakie/AI小蛋糕助手_agent-cake.png"
+                    alt="Team CAKIE AI 小蛋糕助手"
+                    fallback="CAKIE"
+                    className="cakie-ai-avatar flex-shrink-0"
+                  />
                   <p className="text-[10px] text-choco-200">AI 统筹组长 · 任务分配</p>
                 </div>
                 <div className="ml-10">
@@ -1206,10 +1229,12 @@ export default function GroupChatPage() {
           return (
           <div key={msg.id} className={`flex ${!msg.is_ai && msg.sender?.id === user?.id ? 'justify-end' : 'justify-start'} fade-in-up`}>
             {msg.is_ai && (
-              <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-rosa-100 to-lilac-100 border-2 border-rosa-200 flex items-center justify-center text-sm mr-2 flex-shrink-0 mt-1">
-                🤖
-                <span className="absolute -bottom-0.5 -right-0.5 text-[7px] bg-rosa-400 text-white px-1 rounded-full leading-tight">AI</span>
-              </div>
+              <CakieChatAsset
+                src="/assets/cakie/AI小蛋糕助手_agent-cake.png"
+                alt="Team CAKIE AI 小蛋糕助手"
+                fallback="CAKIE"
+                className="cakie-ai-avatar mr-2 flex-shrink-0 mt-1"
+              />
             )}
             {!msg.is_ai && msg.sender?.id !== user?.id && (
               <div className="w-8 h-8 rounded-full bg-lilac-50 border border-lilac-100 flex items-center justify-center text-sm mr-2 flex-shrink-0 mt-1">
@@ -1243,9 +1268,12 @@ export default function GroupChatPage() {
 
         {sending && (
           <div className="flex justify-start fade-in-up">
-            <div className="w-8 h-8 rounded-full bg-rosa-50 border border-rosa-100 flex items-center justify-center text-sm mr-2 flex-shrink-0">
-              🤖
-            </div>
+            <CakieChatAsset
+              src="/assets/cakie/AI小蛋糕助手_agent-cake.png"
+              alt="Team CAKIE AI 小蛋糕助手"
+              fallback="CAKIE"
+              className="cakie-ai-avatar mr-2 flex-shrink-0"
+            />
             <div className="ai-bubble">
               <div className="flex gap-1.5">
                 <span className="w-2 h-2 bg-rosa-300 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -1259,7 +1287,7 @@ export default function GroupChatPage() {
       </div>
 
       {/* 输入栏 */}
-      <div className="px-4 py-3 bg-white border-t-[1.5px] border-cream-300">
+      <div className="cakie-group-composer px-4 py-3">
         <input
           ref={chatFileRef}
           type="file"
@@ -1277,23 +1305,21 @@ export default function GroupChatPage() {
         <div className="flex gap-1.5 items-center">
           <button
             onClick={() => setInput(prev => prev.startsWith('@ai ') ? prev : '@ai ' + prev)}
-            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs flex-shrink-0 border transition-all ${
-              input.toLowerCase().startsWith('@ai') ? 'bg-rosa-100 border-rosa-200 text-rosa-500' : 'bg-cream-50 border-cream-200 text-choco-300'
-            }`}
+            className={`cakie-composer-icon w-8 h-8 flex items-center justify-center text-xs flex-shrink-0 transition-all ${input.toLowerCase().startsWith('@ai') ? 'is-active' : ''}`}
             title="点击召唤AI"
           >
-            🤖
+            <CakieChatAsset src="/assets/cakie/AI小蛋糕助手_agent-cake.png" alt="" fallback="AI" className="cakie-composer-icon-image" />
           </button>
           <button
             onClick={() => chatFileRef.current?.click()}
             disabled={chatUploading}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-xs flex-shrink-0 border bg-cream-50 border-cream-200 text-choco-300 transition-all hover:bg-sage-50"
-            title="上传文件到知识库"
+            className="cakie-composer-icon w-8 h-8 flex items-center justify-center text-xs flex-shrink-0 transition-all"
+            title="上传文件到配方资料库"
           >
-            {chatUploading ? '⏳' : '📎'}
+            {chatUploading ? '...' : <CakieChatAsset src="/assets/cakie/上传图标_icon-upload.png" alt="" fallback="传" className="cakie-composer-icon-image" />}
           </button>
           <input
-            className="hand-input flex-1 text-sm"
+            className="cakie-group-input flex-1 text-sm"
             placeholder="输入消息，@ai 可自然语言提问..."
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -1302,7 +1328,7 @@ export default function GroupChatPage() {
           />
           <button
             onClick={handleSend}
-            className="hand-btn text-sm py-2 px-4 flex-shrink-0"
+            className="cakie-send-cookie text-sm py-2 px-4 flex-shrink-0"
             disabled={!input.trim() || sending}
           >
             {sending ? '...' : '发送'}
@@ -1502,6 +1528,43 @@ export default function GroupChatPage() {
                 {submittingProposal ? '🤖 AI重新拆解中...' : '提交方案给AI'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {showCakeGathering && (
+        <div className="cakie-cake-gathering-overlay fixed inset-0 z-[300]" aria-hidden="true">
+          <div className="cakie-cake-gathering-card">
+            <div className="cakie-cake-stage">
+              <div className="cakie-cake-slices">
+                {[
+                  '/assets/cakie/切角1_草莓_cake-slice-1.png',
+                  '/assets/cakie/切角2_猕猴桃_cake-slice-2.png',
+                  '/assets/cakie/切角3_柠檬_cake-slice-3.png',
+                  '/assets/cakie/切角4_葡萄_cake-slice-4.png',
+                  '/assets/cakie/切角5_蓝莓_cake-slice-5.png',
+                  '/assets/cakie/切角6_蜜桃_cake-slice-6.png',
+                  '/assets/cakie/切角7_巧克力_cake-slice-7.png',
+                  '/assets/cakie/切角8_抹茶_cake-slice-8.png',
+                ].map((src, index) => (
+                  <CakieChatAsset
+                    key={src}
+                    src={src}
+                    alt=""
+                    fallback={`切角${index + 1}`}
+                    className="cakie-cake-slice"
+                  />
+                ))}
+              </div>
+              <CakieChatAsset
+                src="/assets/cakie/完整蛋糕_cake-complete.png"
+                alt="Team CAKIE 完整蛋糕"
+                fallback="完整蛋糕"
+                className="cakie-cake-complete"
+              />
+            </div>
+            <p className="cakie-cake-complete-title">蛋糕完成！</p>
+            <p className="cakie-cake-complete-copy">CAKIE 正在为大家分工————</p>
           </div>
         </div>
       )}

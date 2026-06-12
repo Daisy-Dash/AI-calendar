@@ -53,34 +53,60 @@ const MAJOR_MAP = {
 const ALL_TOOLS = [...new Set(Object.values(MAJOR_MAP).flatMap(m => m.tools))].sort()
 const ALL_SKILLS = [...new Set(Object.values(MAJOR_MAP).flatMap(m => m.skills))].sort()
 
-// 蛋糕切角头像选项 - 不同颜色/形状
+const DEFAULT_CAKIE_AVATAR = '/assets/cakie/头像_草莓蛋糕_avatar-strawberry.png'
+
+// 蛋糕切角头像选项 - 不同口味
 const AVATAR_OPTIONS = [
-  { emoji: '🍰', label: '草莓蛋糕' },
-  { emoji: '🧁', label: '杯子蛋糕' },
-  { emoji: '🎂', label: '生日蛋糕' },
-  { emoji: '🍩', label: '甜甜圈' },
-  { emoji: '🍪', label: '曲奇饼' },
-  { emoji: '🍫', label: '巧克力' },
-  { emoji: '🍬', label: '糖果' },
-  { emoji: '🍭', label: '棒棒糖' },
-  { emoji: '🧇', label: '华夫饼' },
-  { emoji: '🍮', label: '布丁' },
-  { emoji: '🍡', label: '团子' },
-  { emoji: '🥐', label: '可颂' },
+  { src: '/assets/cakie/头像_草莓蛋糕_avatar-strawberry.png', label: '草莓蛋糕' },
+  { src: '/assets/cakie/头像_猕猴桃蛋糕_avatar-kiwi.png', label: '猕猴桃蛋糕' },
+  { src: '/assets/cakie/头像_柠檬蛋糕_avatar-lemon.png', label: '柠檬蛋糕' },
+  { src: '/assets/cakie/头像_葡萄蛋糕_avatar-grape.png', label: '葡萄蛋糕' },
+  { src: '/assets/cakie/头像_蓝莓蛋糕_avatar-blueberry.png', label: '蓝莓蛋糕' },
+  { src: '/assets/cakie/头像_蜜桃蛋糕_avatar-peach.png', label: '蜜桃蛋糕' },
+  { src: '/assets/cakie/头像_巧克力蛋糕_avatar-chocolate.png', label: '巧克力蛋糕' },
+  { src: '/assets/cakie/头像_抹茶蛋糕_avatar-matcha.png', label: '抹茶蛋糕' },
 ]
+
+function CakieProfileAvatar({ src, className = '', alt = '蛋糕头像' }) {
+  const [failed, setFailed] = useState(false)
+  const imageSrc = typeof src === 'string' && src.startsWith('/assets/cakie/') ? src : DEFAULT_CAKIE_AVATAR
+
+  if (failed) {
+    return <span className={`cakie-avatar-image-fallback ${className}`}>蛋糕头像</span>
+  }
+
+  return <img src={imageSrc} alt={alt} className={className} onError={() => setFailed(true)} />
+}
+
+function CakieMenuAssistant() {
+  const [failed, setFailed] = useState(false)
+
+  if (failed) {
+    return <span className="cakie-skill-agent cakie-placeholder">CAKIE 小蛋糕助手</span>
+  }
+
+  return (
+    <img
+      src="/assets/cakie/AI小蛋糕助手_agent-cake.png"
+      alt="Team CAKIE AI 小蛋糕助手"
+      className="cakie-skill-agent"
+      onError={() => setFailed(true)}
+    />
+  )
+}
 
 export default function SkillProfilePage() {
   const navigate = useNavigate()
   const { user, logout, updateUser } = useAuth()
   const [username, setUsername] = useState('')
-  const [selectedAvatar, setSelectedAvatar] = useState('🍪')
+  const [selectedAvatar, setSelectedAvatar] = useState(DEFAULT_CAKIE_AVATAR)
   const [selectedMajors, setSelectedMajors] = useState([])
   const [selectedTools, setSelectedTools] = useState([])
   const [selectedSkills, setSelectedSkills] = useState([])
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [activeTab, setActiveTab] = useState('profile') // profile | skills
+  const [activeTab, setActiveTab] = useState('skills') // profile | skills
   const [toolSearch, setToolSearch] = useState('')
   const [skillSearch, setSkillSearch] = useState('')
   const [showAllTools, setShowAllTools] = useState(false)
@@ -101,7 +127,7 @@ export default function SkillProfilePage() {
   useEffect(() => {
     if (user) {
       setUsername(user.username || '')
-      setSelectedAvatar(user.avatar || '🍪')
+      setSelectedAvatar(typeof user.avatar === 'string' && user.avatar.startsWith('/assets/cakie/') ? user.avatar : DEFAULT_CAKIE_AVATAR)
       setSelectedMajors(user.major || [])
       setSelectedTools(user.tools || [])
       setSelectedSkills(user.skills || [])
@@ -149,18 +175,21 @@ export default function SkillProfilePage() {
   }
 
   return (
-    <div className="px-4 pt-6 pb-24 fade-in-up">
+    <div className="cakie-skill-page px-4 pt-6 pb-24 fade-in-up">
       {/* 头部 */}
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate(-1)} className="text-rosa-400 text-lg">←</button>
-        <h1 className="text-xl font-hand text-choco-600">我的</h1>
+      <div className="cakie-skill-header flex items-center gap-3 mb-5">
+        <button onClick={() => navigate(-1)} className="cakie-skill-back text-rosa-400 text-lg">←</button>
+        <div>
+          <p className="cakie-skill-kicker">TEAM CAKIE · MENU CARD</p>
+          <h1 className="text-xl font-hand text-choco-600">来完善你的 CAKIE 菜单卡</h1>
+        </div>
       </div>
 
       {/* 个人信息卡片 */}
       <div className="hand-card mb-4 bg-gradient-to-r from-rosa-50 to-lilac-50 border-rosa-100">
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 rounded-2xl bg-white border-2 border-rosa-200 flex items-center justify-center text-3xl shadow-sm">
-            {selectedAvatar}
+          <div className="cakie-profile-avatar">
+            <CakieProfileAvatar src={selectedAvatar} className="cakie-avatar-image" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-lg font-medium text-choco-600 truncate">{user?.username || '未设置昵称'}</p>
@@ -177,11 +206,11 @@ export default function SkillProfilePage() {
       </div>
 
       {/* 标签切换 */}
-      <div className="flex mb-4 bg-cream-100 rounded-xl p-1">
+      <div className="cakie-skill-tabs flex mb-4 p-1">
         <button
           onClick={() => setActiveTab('profile')}
           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-            activeTab === 'profile' ? 'bg-white text-rosa-400 shadow-sm' : 'text-choco-300'
+            activeTab === 'profile' ? 'is-active text-rosa-400' : 'text-choco-300'
           }`}
         >
           个人资料
@@ -189,7 +218,7 @@ export default function SkillProfilePage() {
         <button
           onClick={() => setActiveTab('skills')}
           className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-            activeTab === 'skills' ? 'bg-white text-rosa-400 shadow-sm' : 'text-choco-300'
+            activeTab === 'skills' ? 'is-active text-rosa-400' : 'text-choco-300'
           }`}
         >
           技能名片
@@ -204,19 +233,17 @@ export default function SkillProfilePage() {
               <span className="w-2 h-2 rounded-full bg-rosa-300" />
               选择头像
             </h3>
-            <div className="grid grid-cols-6 gap-2">
+            <div className="grid grid-cols-4 gap-3">
               {AVATAR_OPTIONS.map(opt => (
                 <button
-                  key={opt.emoji}
-                  onClick={() => { setSelectedAvatar(opt.emoji); setSaved(false) }}
-                  className={`w-full aspect-square rounded-xl flex items-center justify-center text-2xl transition-all ${
-                    selectedAvatar === opt.emoji
-                      ? 'bg-gradient-to-br from-rosa-200 to-rosa-300 border-2 border-rosa-400 scale-105 shadow-sm'
-                      : 'bg-cream-50 border border-cream-200 hover:bg-rosa-50'
+                  key={opt.src}
+                  onClick={() => { setSelectedAvatar(opt.src); setSaved(false) }}
+                  className={`cakie-avatar-option transition-all ${
+                    selectedAvatar === opt.src ? 'is-selected' : ''
                   }`}
                   title={opt.label}
                 >
-                  {opt.emoji}
+                  <CakieProfileAvatar src={opt.src} className="cakie-avatar-image" alt={opt.label} />
                 </button>
               ))}
             </div>
@@ -285,43 +312,57 @@ export default function SkillProfilePage() {
       ) : (
         <>
           {/* 技能名片提示 */}
-          <div className="hand-card mb-4 bg-gradient-to-r from-rosa-50 to-cream-200">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🍬</span>
-              <span className="text-sm text-rosa-500">AI 会根据你的技能为你匹配最合适的任务</span>
+          <div className="cakie-skill-intro mb-5">
+            <CakieMenuAssistant />
+            <div className="cakie-skill-intro-bubble">
+              <p className="text-sm font-medium text-choco-600">先抽出你的专业菜单牌吧～</p>
+              <p className="text-[11px] text-choco-300 mt-1">选好后，我会为你摊开合适的工具与技能配料。</p>
             </div>
           </div>
 
           {/* 专业方向 */}
-          <div className="hand-card mb-4">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-2 h-2 rounded-full bg-rosa-300" />
-              <h3 className="text-sm font-medium text-choco-500">
-                你的专业方向 <span className="text-rosa-400">*</span>
+          <div className="cakie-major-section mb-5">
+            <div className="text-center mb-4">
+              <p className="cakie-skill-step">MENU STEP 01</p>
+              <h3 className="text-lg font-hand text-choco-600">
+                你的专业？ <span className="text-rosa-400">*</span>
               </h3>
+              <p className="text-[10px] text-choco-300 mt-1">点击菜单牌，把你的方向抽出来</p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {MAJOR_OPTIONS.map(major => (
+            <div className="cakie-major-deck">
+              {MAJOR_OPTIONS.map((major, index) => (
                 <button
                   key={major}
                   onClick={() => toggleItem(selectedMajors, setSelectedMajors, major)}
-                  className={`skill-tag ${selectedMajors.includes(major) ? 'skill-tag-selected-rosa' : ''}`}
+                  className={`cakie-major-card ${selectedMajors.includes(major) ? 'is-selected' : ''}`}
+                  style={{ '--card-tilt': `${[-4, -2, 1, 3, -3, 2, 4, -1, 2, -2][index]}deg`, '--card-delay': `${index * 35}ms` }}
                 >
+                  <span className="cakie-major-card-number">{String(index + 1).padStart(2, '0')}</span>
                   {major}
+                  <span className="cakie-major-card-mark">CAKIE</span>
                 </button>
               ))}
             </div>
           </div>
 
+          {selectedMajors.length > 0 && (
+          <div className="cakie-ingredients-stage">
+          <div className="cakie-dashed-divider mb-5" />
+          <div className="text-center mb-4">
+            <p className="cakie-skill-step">MENU STEP 02</p>
+            <h3 className="text-lg font-hand text-choco-600">你的拿手配料？</h3>
+            <p className="text-[10px] text-choco-300 mt-1">挑选工具和技能贴纸，组合你的专属菜单</p>
+          </div>
+
           {/* 工具 */}
-          <div className="hand-card mb-4">
+          <div className="cakie-ingredient-card mb-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-dusty-300" />
-              <h3 className="text-sm font-medium text-choco-500 flex-1">你熟练的工具</h3>
+              <h3 className="text-sm font-medium text-choco-500 flex-1">工具配料</h3>
               {selectedMajors.length > 0 && !toolSearch && (
                 <button
                   onClick={() => setShowAllTools(!showAllTools)}
-                  className="text-[10px] px-2 py-0.5 rounded-full bg-cream-100 border border-cream-200 text-choco-400 hover:bg-cream-200 transition-all"
+                  className="cakie-ingredient-toggle text-[10px] px-2 py-0.5 text-choco-400 transition-all"
                 >
                   {showAllTools ? '看推荐' : '看全部'}
                 </button>
@@ -333,7 +374,7 @@ export default function SkillProfilePage() {
                 value={toolSearch}
                 onChange={e => setToolSearch(e.target.value)}
                 placeholder="🔍 搜索工具（找不到心仪的 tag？）"
-                className="w-full px-3 py-2 text-xs rounded-xl bg-cream-50 border border-cream-200 focus:outline-none focus:border-dusty-300 transition-all"
+                className="cakie-ingredient-search w-full px-3 py-2 text-xs focus:outline-none transition-all"
               />
               {toolSearch && (
                 <button
@@ -353,7 +394,7 @@ export default function SkillProfilePage() {
                 🍡 根据「{selectedMajors.join('、')}」专业推荐 {recommendedTools.length} 个工具
               </p>
             )}
-            <div className="flex flex-wrap gap-2">
+            <div className="cakie-sticker-flow">
               {filteredTools.length === 0 ? (
                 <p className="text-xs text-choco-200 py-2">
                   {toolSearch ? `未找到含「${toolSearch}」的工具` : '请先选择专业方向'}
@@ -363,7 +404,7 @@ export default function SkillProfilePage() {
                   <button
                     key={tool}
                     onClick={() => toggleItem(selectedTools, setSelectedTools, tool)}
-                    className={`skill-tag ${selectedTools.includes(tool) ? 'skill-tag-selected-dusty' : ''}`}
+                    className={`cakie-ingredient-sticker is-tool ${selectedTools.includes(tool) ? 'is-selected' : ''}`}
                   >
                     {tool}
                   </button>
@@ -390,14 +431,14 @@ export default function SkillProfilePage() {
           </div>
 
           {/* 技能 */}
-          <div className="hand-card mb-6">
+          <div className="cakie-ingredient-card mb-6">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 rounded-full bg-lilac-300" />
-              <h3 className="text-sm font-medium text-choco-500 flex-1">你擅长的技能</h3>
+              <h3 className="text-sm font-medium text-choco-500 flex-1">技能配料</h3>
               {selectedMajors.length > 0 && !skillSearch && (
                 <button
                   onClick={() => setShowAllSkills(!showAllSkills)}
-                  className="text-[10px] px-2 py-0.5 rounded-full bg-cream-100 border border-cream-200 text-choco-400 hover:bg-cream-200 transition-all"
+                  className="cakie-ingredient-toggle text-[10px] px-2 py-0.5 text-choco-400 transition-all"
                 >
                   {showAllSkills ? '看推荐' : '看全部'}
                 </button>
@@ -408,7 +449,7 @@ export default function SkillProfilePage() {
                 value={skillSearch}
                 onChange={e => setSkillSearch(e.target.value)}
                 placeholder="🔍 搜索技能（找不到心仪的 tag？）"
-                className="w-full px-3 py-2 text-xs rounded-xl bg-cream-50 border border-cream-200 focus:outline-none focus:border-lilac-300 transition-all"
+                className="cakie-ingredient-search w-full px-3 py-2 text-xs focus:outline-none transition-all"
               />
               {skillSearch && (
                 <button
@@ -427,7 +468,7 @@ export default function SkillProfilePage() {
                 🍡 根据「{selectedMajors.join('、')}」专业推荐 {recommendedSkills.length} 个技能
               </p>
             )}
-            <div className="flex flex-wrap gap-2">
+            <div className="cakie-sticker-flow">
               {filteredSkills.length === 0 ? (
                 <p className="text-xs text-choco-200 py-2">
                   {skillSearch ? `未找到含「${skillSearch}」的技能` : '请先选择专业方向'}
@@ -437,7 +478,7 @@ export default function SkillProfilePage() {
                   <button
                     key={skill}
                     onClick={() => toggleItem(selectedSkills, setSelectedSkills, skill)}
-                    className={`skill-tag ${selectedSkills.includes(skill) ? 'skill-tag-selected-lilac' : ''}`}
+                    className={`cakie-ingredient-sticker is-skill ${selectedSkills.includes(skill) ? 'is-selected' : ''}`}
                   >
                     {skill}
                   </button>
@@ -465,12 +506,14 @@ export default function SkillProfilePage() {
           {/* 保存技能 */}
           <button
             onClick={handleSave}
-            className="hand-btn w-full text-sm py-3"
+            className="hand-btn cakie-menu-save w-full text-sm py-3"
             disabled={saving || selectedMajors.length === 0}
             style={saved ? { background: 'linear-gradient(135deg, #A8BFA0, #8AA880)', boxShadow: '0 3px 0 #6F8F66' } : {}}
           >
-            {saving ? '保存中...' : saved ? '已保存 ✓' : '保存技能名片'}
+            {saving ? '保存中...' : saved ? '已保存 ✓' : '保存我的菜单'}
           </button>
+          </div>
+          )}
         </>
       )}
 
