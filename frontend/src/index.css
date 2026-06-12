@@ -195,12 +195,580 @@ body {
   transform: translateX(-50%);
   width: 100%;
   max-width: 430px;
-  background: white;
-  border-top: 1.5px solid #F2E1E1;
-  border-radius: 20px 20px 0 0;
-  padding: 6px 0 env(safe-area-inset-bottom, 8px);
+  padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 8px);
   z-index: 100;
-  box-shadow: 0 -4px 20px rgba(212,165,165,0.08);
+  pointer-events: none;
+}
+
+.cakie-nav-tray {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 3px;
+  min-height: 68px;
+  padding: 7px 8px 6px;
+  pointer-events: auto;
+  border: 1.5px solid rgba(138, 90, 68, 0.34);
+  border-bottom: none;
+  border-radius: 27px 23px 18px 20px;
+  background-color: #FFFDF8;
+  background-image:
+    radial-gradient(circle at 12% 30%, rgba(247, 167, 166, 0.1) 0 1.2px, transparent 1.7px),
+    radial-gradient(circle at 75% 62%, rgba(154, 101, 72, 0.07) 0 1px, transparent 1.5px),
+    repeating-linear-gradient(0deg, rgba(255, 253, 248, 0.96) 0 21px, rgba(138, 90, 68, 0.035) 21px 22px);
+  background-size: 32px 32px, 38px 38px, auto;
+  box-shadow:
+    0 -4px 0 rgba(138, 90, 68, 0.05),
+    0 -10px 28px rgba(75, 46, 36, 0.09);
+  transform: rotate(-0.12deg);
+}
+
+.cakie-nav-tray::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 11%;
+  right: 12%;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(255, 229, 154, 0.42);
+  filter: blur(0.2px);
+}
+
+.cakie-nav-item {
+  min-width: 62px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 5px 8px 4px;
+  border: 1px solid transparent;
+  border-radius: 18px 15px 19px 16px;
+  color: #8B7A6B;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cakie-nav-item:hover {
+  color: #655549;
+  background: rgba(255, 229, 154, 0.18);
+  transform: translateY(-1px) rotate(-0.5deg);
+}
+
+.cakie-nav-item.is-active {
+  color: #4B2E24;
+  border-color: rgba(196, 139, 139, 0.28);
+  background: linear-gradient(145deg, rgba(247, 167, 166, 0.2), rgba(255, 229, 154, 0.28));
+  box-shadow: 0 3px 0 rgba(138, 90, 68, 0.08);
+  transform: translateY(-2px) rotate(0.6deg);
+}
+
+.cakie-nav-icon-wrap {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 47% 53% 45% 55%;
+}
+
+.cakie-nav-icon {
+  width: 27px;
+  height: 27px;
+  object-fit: contain;
+}
+
+.cakie-nav-icon-fallback {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed rgba(138, 90, 68, 0.34);
+  border-radius: 48% 52% 45% 55%;
+  background: #FFF9EB;
+  color: #9A6548;
+  font-size: 8px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.cakie-nav-label {
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ========== Team CAKIE 好友页 ========== */
+.cakie-friends-page {
+  color: #4D4038;
+  background-color: #FFF7EC;
+  background-image:
+    radial-gradient(circle at 14% 20%, rgba(247, 167, 166, 0.1) 0 1.4px, transparent 1.9px),
+    radial-gradient(circle at 82% 42%, rgba(255, 229, 154, 0.18) 0 1.2px, transparent 1.8px),
+    radial-gradient(circle at 32% 78%, rgba(154, 101, 72, 0.06) 0 1px, transparent 1.5px);
+  background-size: 40px 40px, 48px 48px, 34px 34px;
+}
+
+.cakie-friends-header {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  min-height: 94px;
+  padding: 15px 54px 15px;
+  border: 1.5px solid rgba(138, 90, 68, 0.35);
+  border-radius: 25px 20px 27px 22px;
+  background: rgba(255, 253, 248, 0.82);
+  box-shadow: 3px 5px 0 rgba(138, 90, 68, 0.06);
+  transform: rotate(-0.25deg);
+}
+
+.cakie-friends-header::after {
+  content: '';
+  position: absolute;
+  left: 17%;
+  right: 17%;
+  bottom: 10px;
+  border-bottom: 1px dashed rgba(138, 90, 68, 0.24);
+  transform: rotate(0.5deg);
+}
+
+.cakie-friends-kicker {
+  color: #B37474;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+}
+
+.cakie-friends-back {
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  padding: 4px 9px;
+  border: 1px dashed rgba(138, 90, 68, 0.34);
+  border-radius: 12px 9px 13px 10px;
+  background: #FFF9EB;
+  color: #B37474;
+  font-size: 11px;
+  transform: rotate(1deg);
+}
+
+.cakie-friends-tabs {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.cakie-friends-tab {
+  flex: 1;
+  min-width: 0;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 5px;
+  border: 1.5px solid rgba(138, 90, 68, 0.28);
+  border-radius: 17px 13px 18px 15px;
+  background: #FFFDF8;
+  color: #8B7A6B;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 3px 0 rgba(138, 90, 68, 0.06);
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cakie-friends-tab:nth-child(2) {
+  transform: rotate(-0.6deg);
+}
+
+.cakie-friends-tab:nth-child(3) {
+  transform: rotate(0.5deg);
+}
+
+.cakie-friends-tab.is-active {
+  border-color: rgba(196, 139, 139, 0.42);
+  background: #FAE9E5;
+  color: #655549;
+  box-shadow: 2px 4px 0 rgba(179, 116, 116, 0.12);
+  transform: translateY(-2px) rotate(0.7deg);
+}
+
+.cakie-friends-tab-icon {
+  width: 25px;
+  height: 25px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.cakie-friends-asset-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px dashed rgba(138, 90, 68, 0.34);
+  border-radius: 48% 52% 46% 54%;
+  background: #FFF9EB;
+  color: #9A6548;
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+}
+
+.cakie-friends-tab-icon.cakie-friends-asset-fallback {
+  font-size: 9px;
+}
+
+.cakie-friends-message {
+  padding: 11px 14px;
+  border: 1.5px dashed rgba(111, 143, 102, 0.3);
+  border-radius: 17px 14px 19px 15px;
+  background: rgba(242, 245, 240, 0.88);
+  box-shadow: 2px 3px 0 rgba(111, 143, 102, 0.07);
+}
+
+.cakie-friends-empty {
+  width: calc(100% - 18px);
+  min-height: 310px;
+  margin: 8px auto 0;
+  padding: 38px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1.5px dashed rgba(138, 90, 68, 0.32);
+  border-radius: 31px 24px 34px 27px;
+  background:
+    radial-gradient(circle at 22% 20%, rgba(247, 167, 166, 0.13) 0 2px, transparent 2.5px),
+    radial-gradient(circle at 78% 74%, rgba(191, 215, 138, 0.15) 0 1.5px, transparent 2px),
+    rgba(255, 253, 248, 0.74);
+  box-shadow: 4px 7px 0 rgba(138, 90, 68, 0.05);
+  transform: rotate(-0.2deg);
+}
+
+.cakie-friends-empty-cake {
+  width: 130px;
+  height: 130px;
+  object-fit: contain;
+}
+
+.cakie-friends-empty-cake.cakie-friends-asset-fallback {
+  padding: 18px;
+  font-size: 13px;
+}
+
+.cakie-friends-request-empty {
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+}
+
+.cakie-friends-request-empty.cakie-friends-asset-fallback {
+  padding: 14px;
+  font-size: 11px;
+}
+
+.cakie-friend-card {
+  position: relative;
+  padding: 14px;
+  border: 1.5px solid rgba(138, 90, 68, 0.3);
+  border-radius: 21px 17px 23px 18px;
+  background: rgba(255, 253, 248, 0.9);
+  box-shadow: 3px 4px 0 rgba(138, 90, 68, 0.055), 0 9px 20px rgba(75, 46, 36, 0.045);
+}
+
+.cakie-friend-card:nth-child(even) {
+  border-radius: 17px 23px 18px 21px;
+  transform: rotate(0.18deg);
+}
+
+.cakie-friend-card::after {
+  content: '';
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 5px;
+  border-bottom: 1px dashed rgba(138, 90, 68, 0.12);
+}
+
+.cakie-friend-persona {
+  width: 43px;
+  height: 43px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1.5px solid rgba(138, 90, 68, 0.3);
+  border-radius: 46% 54% 49% 51%;
+  background: #FAF1F1;
+  color: #9A6548;
+  font-size: 18px;
+  box-shadow: 2px 3px 0 rgba(138, 90, 68, 0.06);
+}
+
+.cakie-friend-persona-search {
+  background: #FFF9EB;
+}
+
+.cakie-friend-persona-request {
+  background: #FAE9E5;
+}
+
+.cakie-friend-status {
+  padding: 4px 9px;
+  border: 1px dashed rgba(111, 143, 102, 0.3);
+  border-radius: 999px 850px 999px 920px;
+  background: #F2F5F0;
+  color: #6F8F66;
+  font-size: 11px;
+  transform: rotate(-1deg);
+}
+
+.cakie-friends-search {
+  padding: 11px;
+  border: 1.5px dashed rgba(138, 90, 68, 0.25);
+  border-radius: 20px 16px 22px 18px;
+  background: rgba(255, 253, 248, 0.72);
+}
+
+/* ========== Team CAKIE 蛋糕小组房间 ========== */
+.cakie-group-room {
+  color: #4D4038;
+  background-color: #FFF7EC;
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(247, 167, 166, 0.09) 0 1.3px, transparent 1.8px),
+    radial-gradient(circle at 84% 48%, rgba(255, 229, 154, 0.16) 0 1.2px, transparent 1.7px);
+  background-size: 42px 42px, 49px 49px;
+}
+
+.cakie-group-header {
+  border-bottom: 1.5px solid rgba(138, 90, 68, 0.28);
+  border-radius: 0 0 23px 18px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 253, 248, 0.98) 0 22px, rgba(138, 90, 68, 0.035) 22px 23px);
+  box-shadow: 0 4px 0 rgba(138, 90, 68, 0.045), 0 8px 22px rgba(75, 46, 36, 0.055);
+  z-index: 20;
+}
+
+.cakie-group-back,
+.cakie-group-more {
+  border: 1.5px dashed rgba(138, 90, 68, 0.34);
+  border-radius: 45% 55% 48% 52%;
+  background: #FFF9EB;
+  color: #B37474;
+  box-shadow: 2px 2px 0 rgba(138, 90, 68, 0.06);
+}
+
+.cakie-group-back {
+  width: 31px;
+  height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  transform: rotate(-2deg);
+}
+
+.cakie-group-more.is-active {
+  background: #FAE9E5;
+  border-color: rgba(196, 139, 139, 0.5);
+  transform: rotate(5deg);
+}
+
+.cakie-chat-asset-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed rgba(138, 90, 68, 0.36);
+  border-radius: 47% 53% 45% 55%;
+  background: #FFF9EB;
+  color: #9A6548;
+  font-size: 8px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.cakie-chat-menu-icon,
+.cakie-chat-section-icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.cakie-chat-section-icon.cakie-chat-asset-fallback,
+.cakie-chat-menu-icon.cakie-chat-asset-fallback {
+  font-size: 8px;
+}
+
+.cakie-knowledge-panel {
+  border-bottom: 1.5px dashed rgba(138, 90, 68, 0.26);
+  background:
+    radial-gradient(circle at 18% 30%, rgba(191, 215, 138, 0.15) 0 1.5px, transparent 2px),
+    rgba(255, 253, 248, 0.94);
+  box-shadow: inset 0 -4px 0 rgba(138, 90, 68, 0.025);
+}
+
+.cakie-knowledge-empty {
+  margin: 3px 0 1px;
+  border: 1px dashed rgba(138, 90, 68, 0.22);
+  border-radius: 16px 13px 18px 14px;
+  background: rgba(242, 245, 240, 0.62);
+}
+
+.cakie-ready-panel {
+  position: relative;
+  margin: 7px 10px 4px;
+  border: 1.5px solid rgba(138, 90, 68, 0.38);
+  border-radius: 24px 18px 27px 20px;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(247, 167, 166, 0.18) 0 2px, transparent 2.5px),
+    linear-gradient(145deg, #FFF9EB, #FAE9E5);
+  box-shadow: 3px 5px 0 rgba(138, 90, 68, 0.07), 0 12px 24px rgba(75, 46, 36, 0.06);
+  transform: rotate(-0.2deg);
+}
+
+.cakie-ready-panel::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 28%;
+  width: 44%;
+  height: 9px;
+  border: 1px solid rgba(138, 90, 68, 0.1);
+  background: rgba(255, 229, 154, 0.58);
+  transform: rotate(1.5deg);
+}
+
+.cakie-ready-icon {
+  width: 43px;
+  height: 43px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.cakie-ready-icon.cakie-chat-asset-fallback {
+  font-size: 11px;
+}
+
+.cakie-ready-button {
+  max-width: 126px;
+  border: 1.5px solid rgba(138, 90, 68, 0.42);
+  border-radius: 15px 12px 17px 13px;
+  background: #F7A7A6;
+  color: #FFFDF8;
+  font-family: inherit;
+  font-weight: 600;
+  line-height: 1.35;
+  box-shadow: 0 3px 0 #B37474, 0 7px 14px rgba(179, 116, 116, 0.17);
+  transform: rotate(0.8deg);
+}
+
+.cakie-group-messages {
+  background-image:
+    linear-gradient(rgba(255, 247, 236, 0.7), rgba(255, 247, 236, 0.7)),
+    repeating-linear-gradient(0deg, transparent 0 30px, rgba(138, 90, 68, 0.025) 30px 31px);
+}
+
+.cakie-group-empty {
+  width: calc(100% - 18px);
+  margin: 4px auto 0;
+  padding: 28px 18px;
+  border: 1.5px dashed rgba(138, 90, 68, 0.28);
+  border-radius: 30px 22px 32px 25px;
+  background: rgba(255, 253, 248, 0.72);
+  box-shadow: 3px 5px 0 rgba(138, 90, 68, 0.045);
+}
+
+.cakie-group-empty-agent {
+  width: 112px;
+  height: 112px;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+.cakie-group-empty-agent.cakie-chat-asset-fallback {
+  padding: 18px;
+  font-size: 11px;
+}
+
+.cakie-group-hint {
+  border: 1px dashed rgba(138, 90, 68, 0.3);
+  border-radius: 999px 850px 999px 920px;
+  background: #FFF9EB;
+  color: #8B7A6B;
+  box-shadow: 1px 2px 0 rgba(138, 90, 68, 0.05);
+}
+
+.cakie-group-hint:nth-child(even) {
+  transform: rotate(-0.7deg);
+}
+
+.cakie-group-composer {
+  border-top: 1.5px solid rgba(138, 90, 68, 0.3);
+  border-radius: 22px 18px 0 0;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 253, 248, 0.98) 0 22px, rgba(138, 90, 68, 0.035) 22px 23px);
+  box-shadow: 0 -6px 22px rgba(75, 46, 36, 0.07);
+}
+
+.cakie-composer-icon {
+  overflow: hidden;
+  border: 1.5px dashed rgba(138, 90, 68, 0.34);
+  border-radius: 45% 55% 48% 52%;
+  background: #FFF9EB;
+  color: #9A6548;
+}
+
+.cakie-composer-icon.is-active {
+  background: #FAE9E5;
+  border-color: rgba(196, 139, 139, 0.5);
+}
+
+.cakie-composer-icon-image {
+  width: 23px;
+  height: 23px;
+  object-fit: contain;
+}
+
+.cakie-composer-icon-image.cakie-chat-asset-fallback {
+  font-size: 8px;
+}
+
+.cakie-group-input {
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1.5px solid rgba(138, 90, 68, 0.3);
+  border-radius: 17px 14px 19px 15px;
+  outline: none;
+  background: rgba(255, 249, 235, 0.82);
+  color: #4D4038;
+  font-family: inherit;
+}
+
+.cakie-group-input:focus {
+  border-color: #C48B8B;
+  box-shadow: 0 0 0 3px rgba(247, 167, 166, 0.13);
+}
+
+.cakie-send-cookie {
+  border: 1.5px solid rgba(138, 90, 68, 0.45);
+  border-radius: 14px 17px 13px 16px;
+  background: #FFE59A;
+  color: #4B2E24;
+  font-family: inherit;
+  font-weight: 600;
+  box-shadow: 0 3px 0 rgba(138, 90, 68, 0.28);
+  transform: rotate(-0.6deg);
+}
+
+.cakie-send-cookie:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* 全屏遮罩层 — 居中显示，宽度撑满但≤540px，让浮窗可达到500px */
@@ -213,19 +781,818 @@ body {
 }
 
 /* ========== AI对话气泡 ========== */
+.cakie-chat-page {
+  max-width: 100%;
+  overflow-x: hidden;
+  color: #4D4038;
+  background-color: #FFF7EC;
+  background-image:
+    radial-gradient(circle at 14% 18%, rgba(247, 167, 166, 0.09) 0 1.3px, transparent 1.8px),
+    radial-gradient(circle at 82% 46%, rgba(255, 229, 154, 0.15) 0 1.2px, transparent 1.7px);
+  background-size: 43px 43px, 51px 51px;
+}
+
+.cakie-chat-header {
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 253, 248, 0.96) 0 23px, rgba(138, 90, 68, 0.035) 23px 24px);
+  border-bottom: 1.5px solid rgba(138, 90, 68, 0.27);
+  border-radius: 0 0 22px 18px;
+  box-shadow: 0 5px 18px rgba(75, 46, 36, 0.055);
+}
+
+.cakie-chat-messages {
+  background-image:
+    linear-gradient(rgba(255, 247, 236, 0.58), rgba(255, 247, 236, 0.58)),
+    repeating-linear-gradient(0deg, transparent 0 30px, rgba(138, 90, 68, 0.025) 30px 31px);
+}
+
+.cakie-chat-composer {
+  border-top: 1.5px solid rgba(138, 90, 68, 0.27);
+  border-radius: 21px 17px 0 0;
+  background: rgba(255, 253, 248, 0.95);
+  box-shadow: 0 -5px 18px rgba(75, 46, 36, 0.055);
+}
+
+.cakie-ai-avatar {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  object-fit: contain;
+  padding: 2px;
+  border: 1.5px solid rgba(138, 90, 68, 0.38);
+  border-radius: 46% 54% 48% 52%;
+  background: #FFF9EB;
+  box-shadow: 2px 3px 0 rgba(138, 90, 68, 0.08), 0 6px 14px rgba(75, 46, 36, 0.07);
+  transform: rotate(-1.2deg);
+}
+
+.cakie-ai-avatar-header {
+  width: 42px;
+  height: 42px;
+}
+
+.cakie-ai-avatar-loading {
+  width: 74px;
+  height: 74px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.cakie-ai-avatar-fallback,
+.cakie-ai-avatar.cakie-chat-asset-fallback {
+  padding: 4px;
+  border-style: dashed;
+  color: #9A6548;
+  font-size: 7px;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+
 .ai-bubble {
-  background: linear-gradient(135deg, #FDFBF9, #F2E1E1);
-  border-radius: 20px 20px 20px 6px;
+  background:
+    radial-gradient(circle at 88% 20%, rgba(255, 229, 154, 0.14) 0 1.2px, transparent 1.7px),
+    #FFFDF8;
+  border-radius: 22px 18px 21px 7px;
   padding: 12px 16px;
   max-width: 80%;
-  border: 1px solid #EDD5D5;
+  border: 1.5px solid rgba(138, 90, 68, 0.28);
+  box-shadow: 2px 3px 0 rgba(138, 90, 68, 0.045);
 }
 .user-bubble {
-  background: linear-gradient(135deg, #B8A9CA, #9A88B5);
-  color: white;
-  border-radius: 20px 20px 6px 20px;
+  background: linear-gradient(145deg, #F7C4C0, #EFB3AF);
+  color: #4B2E24;
+  border-radius: 19px 23px 7px 21px;
   padding: 12px 16px;
   max-width: 80%;
+  border: 1.5px solid rgba(138, 90, 68, 0.3);
+  box-shadow: 2px 3px 0 rgba(138, 90, 68, 0.07);
+}
+
+/* ========== CAKIE 私人灵感烘焙台 ========== */
+.cakie-inspiration-page {
+  background-image:
+    radial-gradient(circle at 16% 18%, rgba(247, 167, 166, 0.12) 0 1.4px, transparent 1.9px),
+    radial-gradient(circle at 83% 40%, rgba(255, 229, 154, 0.18) 0 1.3px, transparent 1.8px),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(138, 90, 68, 0.022) 31px 32px);
+  background-size: 43px 43px, 51px 51px, auto;
+}
+
+.cakie-inspiration-header {
+  position: relative;
+  border: 1.5px solid rgba(138, 90, 68, 0.34);
+  border-radius: 25px 19px 27px 21px;
+  box-shadow: 3px 4px 0 rgba(138, 90, 68, 0.065), 0 10px 22px rgba(75, 46, 36, 0.055);
+  transform: rotate(-0.25deg);
+}
+
+.cakie-inspiration-header::before {
+  content: '';
+  position: absolute;
+  width: 34%;
+  height: 9px;
+  top: -5px;
+  left: 33%;
+  border: 1px solid rgba(138, 90, 68, 0.1);
+  background: rgba(255, 229, 154, 0.58);
+  transform: rotate(1.5deg);
+}
+
+.cakie-inspiration-label {
+  margin-bottom: 1px;
+  color: #B37474;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.cakie-inspiration-note {
+  border: 1.5px dashed rgba(138, 90, 68, 0.3);
+  border-radius: 19px 24px 18px 22px;
+  background: linear-gradient(145deg, rgba(255, 249, 235, 0.92), rgba(250, 233, 229, 0.82));
+  box-shadow: 2px 3px 0 rgba(138, 90, 68, 0.05);
+  transform: rotate(0.35deg);
+}
+
+.cakie-inspiration-messages .ai-bubble {
+  border-radius: 23px 17px 21px 7px;
+  transform: rotate(-0.15deg);
+}
+
+.cakie-inspiration-messages .user-bubble {
+  background: linear-gradient(145deg, #F9D4CE, #F5C3BD);
+  border-radius: 18px 24px 7px 21px;
+  transform: rotate(0.2deg);
+}
+
+.cakie-inspiration-shortcuts {
+  background: rgba(255, 247, 236, 0.82);
+}
+
+.cakie-inspiration-tag {
+  border: 1.5px dashed rgba(138, 90, 68, 0.28);
+  border-radius: 999px 880px 999px 920px;
+  background: #FFF9EB;
+  box-shadow: 1px 2px 0 rgba(138, 90, 68, 0.05);
+}
+
+.cakie-inspiration-tag:nth-child(even) {
+  transform: rotate(-0.7deg);
+}
+
+.cakie-inspiration-composer {
+  border: 1.5px solid rgba(138, 90, 68, 0.34);
+  border-radius: 23px 18px 25px 20px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 253, 248, 0.97) 0 22px, rgba(138, 90, 68, 0.032) 22px 23px);
+  box-shadow: 3px 4px 0 rgba(138, 90, 68, 0.06), 0 8px 20px rgba(75, 46, 36, 0.06);
+  transform: rotate(-0.2deg);
+}
+
+.cakie-inspiration-input {
+  min-width: 0;
+  border: 1.5px dashed rgba(138, 90, 68, 0.42);
+  border-radius: 17px 13px 19px 15px;
+  background: rgba(255, 249, 235, 0.84);
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+.cakie-inspiration-send {
+  border-radius: 15px 18px 14px 17px;
+  background: #FFE59A;
+  color: #4B2E24;
+  box-shadow: 0 3px 0 rgba(138, 90, 68, 0.28);
+  transform: rotate(0.8deg);
+}
+
+/* ========== CAKIE 单任务工序烘焙讨论页 ========== */
+.cakie-task-chat-page {
+  background-image:
+    radial-gradient(circle at 17% 16%, rgba(247, 167, 166, 0.11) 0 1.4px, transparent 1.9px),
+    radial-gradient(circle at 82% 44%, rgba(191, 215, 138, 0.14) 0 1.3px, transparent 1.8px),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(138, 90, 68, 0.022) 31px 32px);
+  background-size: 45px 45px, 53px 53px, auto;
+}
+
+.cakie-task-order-card {
+  position: relative;
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
+  border: 1.5px solid rgba(138, 90, 68, 0.36);
+  border-radius: 23px 18px 27px 20px;
+  background:
+    radial-gradient(circle at 88% 18%, rgba(255, 229, 154, 0.17) 0 1.5px, transparent 2px),
+    repeating-linear-gradient(0deg, rgba(255, 253, 248, 0.97) 0 23px, rgba(138, 90, 68, 0.035) 23px 24px);
+  box-shadow: 3px 5px 0 rgba(138, 90, 68, 0.065), 0 11px 22px rgba(75, 46, 36, 0.055);
+  transform: rotate(0.2deg);
+}
+
+.cakie-task-order-card::before {
+  content: '';
+  position: absolute;
+  width: 36%;
+  height: 9px;
+  top: -5px;
+  left: 32%;
+  border: 1px solid rgba(138, 90, 68, 0.1);
+  background: rgba(255, 229, 154, 0.6);
+  transform: rotate(-1.5deg);
+}
+
+.cakie-task-order-card.is-overdue {
+  background-color: #FFF1EC;
+}
+
+.cakie-task-order-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cakie-task-order-label {
+  margin-bottom: 1px;
+  color: #B37474;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.cakie-task-dashed-divider {
+  margin: 8px 1px 9px;
+  border-top: 1.5px dashed rgba(138, 90, 68, 0.29);
+  transform: rotate(-0.3deg);
+}
+
+.cakie-task-back {
+  width: 27px;
+  height: 27px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1.5px dashed rgba(138, 90, 68, 0.33);
+  border-radius: 46% 54% 48% 52%;
+  background: #FFF9EB;
+  transform: rotate(-2deg);
+}
+
+.cakie-task-chat-messages .ai-bubble {
+  border-radius: 23px 18px 22px 7px;
+  transform: rotate(-0.15deg);
+}
+
+.cakie-task-chat-messages .user-bubble {
+  background: linear-gradient(145deg, #F9D4CE, #F3C4BC);
+  border-radius: 18px 24px 7px 21px;
+  transform: rotate(0.18deg);
+}
+
+.cakie-task-shortcuts {
+  background: rgba(255, 247, 236, 0.82);
+}
+
+.cakie-task-tag {
+  border: 1.5px dashed rgba(138, 90, 68, 0.29);
+  border-radius: 999px 875px 999px 920px;
+  background: #FFF9EB;
+  box-shadow: 1px 2px 0 rgba(138, 90, 68, 0.05);
+}
+
+.cakie-task-tag:nth-child(even) {
+  transform: rotate(-0.7deg);
+}
+
+.cakie-task-tag.is-active {
+  border-color: rgba(154, 136, 181, 0.48);
+  background: #EEE8F2;
+  transform: rotate(0.8deg);
+}
+
+.cakie-task-composer {
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
+  border: 1.5px solid rgba(138, 90, 68, 0.35);
+  border-radius: 23px 18px 25px 20px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 253, 248, 0.97) 0 22px, rgba(138, 90, 68, 0.032) 22px 23px);
+  box-shadow: 3px 4px 0 rgba(138, 90, 68, 0.06), 0 8px 20px rgba(75, 46, 36, 0.06);
+  transform: rotate(-0.2deg);
+}
+
+.cakie-task-input {
+  min-width: 0;
+  border: 1.5px dashed rgba(138, 90, 68, 0.42);
+  border-radius: 17px 13px 19px 15px;
+  background: rgba(255, 249, 235, 0.84);
+}
+
+.cakie-task-send {
+  border-radius: 15px 18px 14px 17px;
+  background: #FFE59A;
+  color: #4B2E24;
+  box-shadow: 0 3px 0 rgba(138, 90, 68, 0.28);
+  transform: rotate(0.8deg);
+}
+
+/* ========== CAKIE 菜单发牌技能名片 ========== */
+.cakie-skill-page {
+  min-height: 100vh;
+  color: #4D4038;
+  background-color: #FFF7EC;
+  background-image:
+    radial-gradient(circle at 15% 18%, rgba(247, 167, 166, 0.1) 0 1.4px, transparent 1.9px),
+    radial-gradient(circle at 84% 45%, rgba(255, 229, 154, 0.16) 0 1.3px, transparent 1.8px);
+  background-size: 44px 44px, 52px 52px;
+}
+
+.cakie-skill-header {
+  align-items: flex-start;
+}
+
+.cakie-skill-kicker,
+.cakie-skill-step {
+  color: #B37474;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.cakie-skill-back {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1.5px dashed rgba(138, 90, 68, 0.34);
+  border-radius: 46% 54% 48% 52%;
+  background: #FFF9EB;
+  transform: rotate(-2deg);
+}
+
+.cakie-skill-tabs {
+  border: 1.5px dashed rgba(138, 90, 68, 0.26);
+  border-radius: 18px 15px 20px 16px;
+  background: rgba(255, 253, 248, 0.76);
+}
+
+.cakie-skill-tabs button {
+  border-radius: 14px 11px 16px 12px;
+}
+
+.cakie-skill-tabs button.is-active {
+  background: #FFF9EB;
+  box-shadow: 2px 3px 0 rgba(138, 90, 68, 0.07);
+  transform: rotate(-0.5deg);
+}
+
+.cakie-skill-intro {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 10px;
+}
+
+.cakie-skill-agent {
+  width: 84px;
+  height: 84px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.cakie-skill-agent.cakie-placeholder {
+  padding: 10px;
+  font-size: 9px;
+}
+
+.cakie-skill-intro-bubble {
+  position: relative;
+  max-width: 235px;
+  padding: 11px 13px;
+  border: 1.5px solid rgba(138, 90, 68, 0.36);
+  border-radius: 20px 22px 19px 8px;
+  background: #FFFDF8;
+  box-shadow: 2px 4px 0 rgba(138, 90, 68, 0.055);
+  transform: rotate(0.4deg);
+}
+
+.cakie-major-section {
+  padding: 18px 6px 20px;
+  border: 1.5px dashed rgba(138, 90, 68, 0.27);
+  border-radius: 29px 22px 31px 24px;
+  background: rgba(255, 253, 248, 0.62);
+}
+
+.cakie-major-deck {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 7px 5px;
+  max-width: 390px;
+  margin: 0 auto;
+  padding: 5px 4px 8px;
+}
+
+.cakie-major-card {
+  --card-tilt: 0deg;
+  --card-delay: 0ms;
+  position: relative;
+  width: 72px;
+  height: 92px;
+  padding: 19px 6px 15px;
+  border: 1.5px solid rgba(138, 90, 68, 0.36);
+  border-radius: 13px 10px 15px 11px;
+  background:
+    repeating-linear-gradient(0deg, #FFFDF8 0 18px, rgba(138, 90, 68, 0.035) 18px 19px);
+  color: #6B4B3E;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: 2px 4px 0 rgba(138, 90, 68, 0.08), 0 8px 15px rgba(75, 46, 36, 0.05);
+  transform: rotate(var(--card-tilt));
+  animation: cakieDealCard 0.42s ease-out both;
+  animation-delay: var(--card-delay);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease;
+}
+
+.cakie-major-card:hover {
+  transform: translateY(-5px) rotate(var(--card-tilt));
+}
+
+.cakie-major-card.is-selected {
+  z-index: 4;
+  border-color: rgba(179, 116, 116, 0.62);
+  background: linear-gradient(150deg, #FFF9EB, #FAE9E5);
+  color: #9A5F56;
+  box-shadow: 3px 7px 0 rgba(179, 116, 116, 0.15), 0 13px 20px rgba(75, 46, 36, 0.08);
+  transform: translateY(-10px) rotate(calc(var(--card-tilt) * 0.35)) scale(1.04);
+}
+
+.cakie-major-card-number,
+.cakie-major-card-mark {
+  position: absolute;
+  color: #B9A89A;
+  font-size: 7px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.cakie-major-card-number {
+  top: 7px;
+  left: 8px;
+}
+
+.cakie-major-card-mark {
+  right: 6px;
+  bottom: 6px;
+}
+
+.cakie-ingredients-stage {
+  animation: cakieIngredientsIn 0.42s ease-out both;
+}
+
+.cakie-ingredient-card {
+  padding: 15px;
+  border: 1.5px solid rgba(138, 90, 68, 0.31);
+  border-radius: 23px 18px 26px 20px;
+  background:
+    repeating-linear-gradient(0deg, rgba(255, 253, 248, 0.96) 0 23px, rgba(138, 90, 68, 0.03) 23px 24px);
+  box-shadow: 3px 4px 0 rgba(138, 90, 68, 0.055);
+}
+
+.cakie-ingredient-toggle,
+.cakie-ingredient-search {
+  border: 1.5px dashed rgba(138, 90, 68, 0.3);
+  border-radius: 999px 880px 999px 920px;
+  background: #FFF9EB;
+}
+
+.cakie-ingredient-search {
+  border-radius: 15px 12px 17px 13px;
+  color: #4D4038;
+}
+
+.cakie-sticker-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 7px;
+}
+
+.cakie-ingredient-sticker {
+  padding: 6px 12px;
+  border: 1.5px dashed rgba(138, 90, 68, 0.31);
+  border-radius: 999px 860px 999px 920px;
+  background: #FFF9EB;
+  color: #6B5A4E;
+  font-family: inherit;
+  font-size: 12px;
+  box-shadow: 1px 2px 0 rgba(138, 90, 68, 0.055);
+  transform: rotate(-0.5deg);
+  transition: transform 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.cakie-ingredient-sticker:nth-child(3n) {
+  transform: rotate(1deg);
+}
+
+.cakie-ingredient-sticker:nth-child(4n) {
+  transform: rotate(-1.3deg);
+}
+
+.cakie-ingredient-sticker.is-selected {
+  transform: translateY(-2px) rotate(0.5deg);
+  box-shadow: 2px 4px 0 rgba(138, 90, 68, 0.09);
+}
+
+.cakie-ingredient-sticker.is-tool.is-selected {
+  border-color: rgba(179, 151, 122, 0.55);
+  background: #F3E8DC;
+  color: #8A684D;
+}
+
+.cakie-ingredient-sticker.is-skill.is-selected {
+  border-color: rgba(154, 136, 181, 0.52);
+  background: #EEE8F2;
+  color: #77668C;
+}
+
+.cakie-menu-save {
+  border-radius: 17px 14px 19px 15px;
+  background: #F7A7A6;
+  box-shadow: 0 4px 0 #B37474, 0 9px 18px rgba(179, 116, 116, 0.15);
+  transform: rotate(-0.3deg);
+}
+
+@keyframes cakieDealCard {
+  from {
+    opacity: 0;
+    transform: translateY(18px) rotate(0deg) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) rotate(var(--card-tilt)) scale(1);
+  }
+}
+
+@keyframes cakieIngredientsIn {
+  from { opacity: 0; transform: translateY(15px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ========== CAKIE 用户与项目蛋糕头像 ========== */
+.cakie-avatar-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+}
+
+.cakie-avatar-image-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 4px;
+  border: 1.5px dashed rgba(138, 90, 68, 0.36);
+  border-radius: 46% 54% 48% 52%;
+  background: #FFF9EB;
+  color: #9A6548;
+  font-size: 7px;
+  font-weight: 700;
+  line-height: 1.05;
+  text-align: center;
+}
+
+.cakie-home-user-avatar,
+.cakie-profile-avatar,
+.cakie-project-avatar,
+.cakie-avatar-option {
+  overflow: hidden;
+  border: 1.5px solid rgba(138, 90, 68, 0.36);
+  border-radius: 46% 54% 48% 52%;
+  background: #FFF9EB;
+  box-shadow: 2px 3px 0 rgba(138, 90, 68, 0.07), 0 6px 14px rgba(75, 46, 36, 0.06);
+}
+
+.cakie-home-user-avatar {
+  width: 44px;
+  height: 44px;
+  padding: 2px;
+  transform: rotate(1.5deg);
+}
+
+.cakie-profile-avatar {
+  width: 68px;
+  height: 68px;
+  flex-shrink: 0;
+  padding: 3px;
+  transform: rotate(-1deg);
+}
+
+.cakie-avatar-option {
+  width: 100%;
+  aspect-ratio: 1;
+  padding: 4px;
+  border-style: dashed;
+  transform: rotate(-1deg);
+}
+
+.cakie-avatar-option:nth-child(even) {
+  transform: rotate(1.5deg);
+}
+
+.cakie-avatar-option.is-selected {
+  z-index: 2;
+  border-style: solid;
+  border-color: rgba(179, 116, 116, 0.65);
+  background: #FAE9E5;
+  box-shadow: 3px 5px 0 rgba(179, 116, 116, 0.13), 0 9px 17px rgba(75, 46, 36, 0.08);
+  transform: translateY(-4px) rotate(0.5deg) scale(1.04);
+}
+
+.cakie-project-avatar {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  padding: 3px;
+  transform: rotate(-1deg);
+}
+
+.cakie-project-avatar.is-small {
+  width: 38px;
+  height: 38px;
+}
+
+.cakie-project-title-avatar {
+  width: 25px;
+  height: 25px;
+  object-fit: contain;
+  transform: rotate(-2deg);
+}
+
+.cakie-project-empty-avatar,
+.cakie-home-loading-avatar {
+  width: 76px;
+  height: 76px;
+  margin-left: auto;
+  margin-right: auto;
+  object-fit: contain;
+}
+
+/* ========== CAKIE 蛋糕切角集齐动画 ========== */
+.cakie-cake-gathering-overlay {
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(255, 247, 236, 0.9);
+  backdrop-filter: blur(2px);
+  animation: cakieCakeOverlay 2.2s ease both;
+}
+
+.cakie-cake-gathering-card {
+  width: min(100%, 310px);
+  padding: 24px 18px 20px;
+  border: 1.5px dashed rgba(138, 90, 68, 0.35);
+  border-radius: 32px 24px 35px 27px;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(247, 167, 166, 0.16) 0 2px, transparent 2.5px),
+    #FFFDF8;
+  color: #4D4038;
+  text-align: center;
+  box-shadow: 4px 7px 0 rgba(138, 90, 68, 0.07), 0 18px 36px rgba(75, 46, 36, 0.1);
+  transform: rotate(-0.35deg);
+  animation: cakieCakeCardPop 2.2s ease both;
+}
+
+.cakie-cake-stage {
+  position: relative;
+  width: 190px;
+  height: 190px;
+  margin: 0 auto 8px;
+}
+
+.cakie-cake-slices,
+.cakie-cake-complete {
+  position: absolute;
+  inset: 0;
+}
+
+.cakie-cake-slice {
+  --slice-x: 0px;
+  --slice-y: -130px;
+  --slice-rotate: 0deg;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 82px;
+  height: 82px;
+  object-fit: contain;
+  opacity: 0;
+  transform: translate(calc(-50% + var(--slice-x)), calc(-50% + var(--slice-y))) rotate(var(--slice-rotate)) scale(0.72);
+  animation: cakieSliceGather 1.18s cubic-bezier(0.2, 0.75, 0.25, 1.15) forwards;
+}
+
+.cakie-cake-slice.cakie-chat-asset-fallback {
+  padding: 8px;
+  font-size: 8px;
+}
+
+.cakie-cake-slice:nth-child(1) { --slice-x: -125px; --slice-y: -105px; --slice-rotate: -38deg; animation-delay: 0.02s; }
+.cakie-cake-slice:nth-child(2) { --slice-x: 0px; --slice-y: -145px; --slice-rotate: -22deg; animation-delay: 0.12s; }
+.cakie-cake-slice:nth-child(3) { --slice-x: 125px; --slice-y: -105px; --slice-rotate: 28deg; animation-delay: 0.22s; }
+.cakie-cake-slice:nth-child(4) { --slice-x: 145px; --slice-y: 0px; --slice-rotate: 48deg; animation-delay: 0.32s; }
+.cakie-cake-slice:nth-child(5) { --slice-x: 110px; --slice-y: 120px; --slice-rotate: 68deg; animation-delay: 0.42s; }
+.cakie-cake-slice:nth-child(6) { --slice-x: 0px; --slice-y: 145px; --slice-rotate: 92deg; animation-delay: 0.52s; }
+.cakie-cake-slice:nth-child(7) { --slice-x: -120px; --slice-y: 110px; --slice-rotate: 118deg; animation-delay: 0.62s; }
+.cakie-cake-slice:nth-child(8) { --slice-x: -145px; --slice-y: 0px; --slice-rotate: 145deg; animation-delay: 0.72s; }
+
+.cakie-cake-complete {
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  object-fit: contain;
+  opacity: 0;
+  transform: scale(0.72) rotate(-4deg);
+  animation: cakieCompleteCake 0.6s 1.18s cubic-bezier(0.2, 0.8, 0.25, 1.15) forwards;
+}
+
+.cakie-cake-complete.cakie-chat-asset-fallback {
+  min-height: 150px;
+  font-size: 12px;
+}
+
+.cakie-cake-complete-title {
+  color: #8F5D48;
+  font-family: 'LXGW WenKai', cursive, sans-serif;
+  font-size: 21px;
+  font-weight: 700;
+  opacity: 0;
+  animation: cakieCakeWords 0.45s 1.32s ease forwards;
+}
+
+.cakie-cake-complete-copy {
+  margin-top: 4px;
+  color: #B37474;
+  font-size: 12px;
+  opacity: 0;
+  animation: cakieCakeWords 0.45s 1.48s ease forwards;
+}
+
+@keyframes cakieSliceGather {
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--slice-x)), calc(-50% + var(--slice-y))) rotate(var(--slice-rotate)) scale(0.72);
+  }
+  68% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(0deg) scale(1.02);
+  }
+  100% {
+    opacity: 0.18;
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.96);
+  }
+}
+
+@keyframes cakieCompleteCake {
+  from { opacity: 0; transform: scale(0.72) rotate(-4deg); }
+  to { opacity: 1; transform: scale(1) rotate(0.8deg); }
+}
+
+@keyframes cakieCakeWords {
+  from { opacity: 0; transform: translateY(7px) rotate(-1deg); }
+  to { opacity: 1; transform: translateY(0) rotate(0deg); }
+}
+
+@keyframes cakieCakeOverlay {
+  0% { opacity: 0; }
+  10%, 88% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes cakieCakeCardPop {
+  0% { opacity: 0; transform: translateY(18px) rotate(-1deg) scale(0.96); }
+  12%, 88% { opacity: 1; transform: translateY(0) rotate(-0.35deg) scale(1); }
+  100% { opacity: 0; transform: translateY(-8px) rotate(0.3deg) scale(0.98); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cakie-cake-gathering-overlay,
+  .cakie-cake-gathering-card,
+  .cakie-cake-slice,
+  .cakie-cake-complete,
+  .cakie-cake-complete-title,
+  .cakie-cake-complete-copy {
+    animation-duration: 0.01ms;
+    animation-delay: 0ms;
+  }
 }
 
 /* ========== 动画 ========== */
@@ -312,6 +1679,374 @@ body {
   border-radius: inherit;
   pointer-events: none;
   z-index: 0;
+}
+
+/* ========== Team CAKIE 主题基础设施 ========== */
+.cakie-page {
+  min-height: 100vh;
+  position: relative;
+  color: #4D4038;
+  background-color: #FFF7EC;
+  background-image:
+    radial-gradient(circle at 12% 18%, rgba(247, 167, 166, 0.12) 0 2px, transparent 2.5px),
+    radial-gradient(circle at 84% 28%, rgba(191, 215, 138, 0.13) 0 1.5px, transparent 2px),
+    radial-gradient(circle at 30% 78%, rgba(199, 177, 232, 0.1) 0 1.5px, transparent 2px);
+  background-size: 46px 46px, 54px 54px, 42px 42px;
+}
+
+.cakie-card,
+.cakie-menu-card {
+  position: relative;
+  background: #FFFDF8;
+  border: 1.5px solid rgba(138, 90, 68, 0.38);
+  border-radius: 26px 22px 28px 24px;
+  box-shadow:
+    0 7px 0 rgba(138, 90, 68, 0.07),
+    0 14px 30px rgba(75, 46, 36, 0.08);
+}
+
+.cakie-card {
+  padding: 18px;
+}
+
+.cakie-menu-card {
+  padding: 22px 18px 20px;
+  background-image:
+    linear-gradient(rgba(255, 253, 248, 0.94), rgba(255, 253, 248, 0.94)),
+    repeating-linear-gradient(0deg, transparent 0 27px, rgba(138, 90, 68, 0.05) 27px 28px);
+}
+
+.cakie-button {
+  border: 1.5px solid rgba(138, 90, 68, 0.5);
+  border-radius: 999px;
+  background: #F7A7A6;
+  color: #FFFDF8;
+  font-family: inherit;
+  font-weight: 600;
+  box-shadow: 0 4px 0 #B37474, 0 9px 20px rgba(154, 101, 72, 0.18);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  cursor: pointer;
+}
+
+.cakie-button:hover {
+  background: #F39B9A;
+  transform: translateY(-1px) rotate(-0.3deg);
+  box-shadow: 0 5px 0 #B37474, 0 11px 24px rgba(154, 101, 72, 0.2);
+}
+
+.cakie-button:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #B37474, 0 4px 10px rgba(154, 101, 72, 0.14);
+}
+
+.cakie-button:disabled {
+  background: #D9CCBC;
+  border-color: rgba(138, 90, 68, 0.25);
+  box-shadow: 0 3px 0 #C4B5A5;
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.cakie-input {
+  width: 100%;
+  border: 1.5px solid rgba(138, 90, 68, 0.35);
+  border-radius: 18px 16px 19px 17px;
+  padding: 11px 15px;
+  outline: none;
+  background: #FFFDF8;
+  color: #4D4038;
+  font-family: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.cakie-input:focus {
+  border-color: #C48B8B;
+  background: #FFFFFF;
+  box-shadow: 0 0 0 4px rgba(247, 167, 166, 0.14);
+}
+
+.cakie-input::placeholder {
+  color: #B9A89A;
+}
+
+.cakie-bubble {
+  position: relative;
+  background: #FFFDF8;
+  color: #4D4038;
+  border: 1.5px solid rgba(138, 90, 68, 0.42);
+  border-radius: 28px 24px 26px 12px;
+  box-shadow: 0 7px 22px rgba(75, 46, 36, 0.08);
+}
+
+.cakie-bubble::after {
+  content: '';
+  position: absolute;
+  left: 28px;
+  bottom: -10px;
+  width: 18px;
+  height: 18px;
+  background: #FFFDF8;
+  border-right: 1.5px solid rgba(138, 90, 68, 0.42);
+  border-bottom: 1.5px solid rgba(138, 90, 68, 0.42);
+  transform: rotate(45deg) skew(-7deg, -7deg);
+  border-radius: 0 0 4px 0;
+}
+
+.cakie-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1.5px solid rgba(138, 90, 68, 0.4);
+  border-radius: 45% 55% 48% 52%;
+  background: #FFFDF8;
+  box-shadow: 0 5px 14px rgba(75, 46, 36, 0.1);
+}
+
+.cakie-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.cakie-sticker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 12px;
+  border: 1.5px solid rgba(138, 90, 68, 0.32);
+  border-radius: 999px 870px 999px 920px;
+  background: #FFFDF8;
+  color: #7D6B5D;
+  box-shadow: 0 3px 0 rgba(138, 90, 68, 0.09);
+  transform: rotate(-1deg);
+}
+
+.cakie-ribbon {
+  position: relative;
+  display: inline-block;
+  padding: 8px 26px;
+  border: 1.5px solid rgba(138, 90, 68, 0.42);
+  border-radius: 8px 10px 7px 9px;
+  background: #FFE59A;
+  color: #4D4038;
+  box-shadow: 0 4px 0 rgba(138, 90, 68, 0.1);
+  transform: rotate(-0.8deg);
+}
+
+.cakie-dashed-divider {
+  width: 100%;
+  height: 1px;
+  border-top: 1.5px dashed rgba(138, 90, 68, 0.34);
+}
+
+.cakie-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  padding: 20px;
+  border: 2px dashed rgba(138, 90, 68, 0.38);
+  border-radius: 32px 27px 34px 29px;
+  background:
+    radial-gradient(circle at 20% 25%, rgba(247, 167, 166, 0.18) 0 4px, transparent 4.5px),
+    radial-gradient(circle at 80% 72%, rgba(191, 215, 138, 0.2) 0 3px, transparent 3.5px),
+    #FFFDF8;
+  color: #9A6548;
+  font-family: 'LXGW WenKai', cursive, sans-serif;
+  text-align: center;
+  box-shadow: 0 7px 22px rgba(75, 46, 36, 0.07);
+}
+
+/* ========== Team CAKIE 两阶段欢迎登录页 ========== */
+.cakie-login-page {
+  width: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+  padding: 26px 22px 30px;
+}
+
+.cakie-welcome-stage,
+.cakie-login-stage {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 380px;
+  min-height: calc(100vh - 56px);
+  margin: 0 auto;
+}
+
+.cakie-welcome-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  animation: cakieWelcomeArrive 0.55s ease-out both;
+}
+
+.cakie-welcome-stage.is-leaving {
+  position: absolute;
+  top: 26px;
+  left: 50%;
+  pointer-events: none;
+  animation: cakieWelcomeLeave 0.52s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.cakie-character-scene {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 24px 0 22px;
+}
+
+.cakie-welcome-bubble {
+  width: min(100%, 350px);
+  margin: 0;
+  padding: 23px 22px 27px;
+  text-align: center;
+  transform: rotate(-0.35deg);
+}
+
+.cakie-welcome-bubble::after {
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%) rotate(45deg) skew(-7deg, -7deg);
+}
+
+.cakie-agent-area {
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 5px;
+  padding-top: 0;
+}
+
+.cakie-agent-image {
+  width: min(58vw, 225px);
+  max-height: 225px;
+  object-fit: contain;
+}
+
+.cakie-agent-placeholder {
+  width: min(58vw, 215px);
+  height: 182px;
+  min-height: 182px;
+}
+
+.cakie-start-button {
+  width: 172px;
+  padding: 13px 26px;
+  margin: 0 0 18px;
+  font-size: 17px;
+  letter-spacing: 0.35em;
+  text-indent: 0.35em;
+  background: #FFE59A;
+  color: #4B2E24;
+  border-radius: 13px 17px 12px 16px;
+  box-shadow: 0 4px 0 rgba(138, 90, 68, 0.32), 0 10px 24px rgba(75, 46, 36, 0.12);
+  transform: rotate(-0.6deg);
+}
+
+.cakie-start-button:hover {
+  background: #FFDF84;
+  transform: translateY(-1px) rotate(0.3deg);
+  box-shadow: 0 5px 0 rgba(138, 90, 68, 0.32), 0 12px 26px rgba(75, 46, 36, 0.14);
+}
+
+.cakie-login-stage {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 342px;
+  padding: 34px 0 24px;
+  animation: cakieMenuRise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: center bottom;
+}
+
+.cakie-login-note {
+  width: calc(100% - 12px);
+  margin: 0 auto;
+  padding: 26px 22px 25px;
+  border-radius: 17px 25px 19px 23px;
+  border-color: rgba(138, 90, 68, 0.46);
+  background-color: #FFF9EB;
+  background-image:
+    radial-gradient(circle at 14% 20%, rgba(154, 101, 72, 0.07) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 78% 68%, rgba(247, 167, 166, 0.08) 0 1px, transparent 1.5px),
+    repeating-linear-gradient(0deg, rgba(255, 249, 235, 0.97) 0 27px, rgba(138, 90, 68, 0.055) 27px 28px);
+  background-size: 29px 29px, 34px 34px, auto;
+  box-shadow:
+    -4px 7px 0 rgba(138, 90, 68, 0.08),
+    4px 13px 0 rgba(138, 90, 68, 0.045),
+    0 22px 38px rgba(75, 46, 36, 0.11);
+  transform: rotate(0.45deg);
+}
+
+.cakie-login-note::before {
+  content: '';
+  position: absolute;
+  top: -7px;
+  left: 22%;
+  width: 56%;
+  height: 15px;
+  border: 1px solid rgba(138, 90, 68, 0.15);
+  background: rgba(255, 229, 154, 0.52);
+  transform: rotate(-1.4deg);
+  box-shadow: 0 2px 4px rgba(75, 46, 36, 0.06);
+}
+
+.cakie-login-note .cakie-input {
+  background: rgba(255, 253, 248, 0.74);
+  border-radius: 16px 19px 15px 18px;
+  box-shadow: inset 0 1px 3px rgba(75, 46, 36, 0.035);
+}
+
+@keyframes cakieWelcomeArrive {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cakieWelcomeLeave {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-85px) scale(0.97); }
+}
+
+@keyframes cakieMenuRise {
+  0% { opacity: 0; transform: translateY(110px) rotateX(18deg) scale(0.96); }
+  65% { opacity: 1; transform: translateY(-5px) rotateX(-1deg) scale(1.005); }
+  100% { opacity: 1; transform: translateY(0) rotateX(0deg) scale(1); }
+}
+
+@media (max-height: 720px) {
+  .cakie-character-scene {
+    margin: 15px 0 14px;
+  }
+
+  .cakie-welcome-bubble {
+    padding: 18px 20px 21px;
+  }
+
+  .cakie-agent-placeholder {
+    height: 145px;
+    min-height: 145px;
+  }
+
+  .cakie-login-stage {
+    justify-content: flex-start;
+    padding-top: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cakie-welcome-stage,
+  .cakie-welcome-stage.is-leaving,
+  .cakie-login-stage {
+    animation-duration: 0.01ms;
+  }
 }
 
 /* 底部弹窗 — 避免被 NavBar (z-100) 遮挡 */

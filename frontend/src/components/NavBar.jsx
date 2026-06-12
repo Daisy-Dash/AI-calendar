@@ -2,8 +2,9 @@ import { NavLink, useLocation } from 'react-router-dom'
 
 export default function NavBar() {
   const location = useLocation()
-  const hideNavPaths = ['/discussion/', '/authorize/', '/group-chat/']
+  const hideNavPaths = ['/discussion/', '/authorize/', '/group-chat/', '/task-chat/']
   const shouldHide = hideNavPaths.some(p => location.pathname.startsWith(p))
+    || /^\/ai-chat\/\d+/.test(location.pathname)
 
   if (shouldHide) return null
 

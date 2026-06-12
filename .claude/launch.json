@@ -4,9 +4,9 @@
     {
       "name": "frontend",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "--port", "5174"],
-      "port": 5174,
-      "cwd": "AI-calendar/AI-calendar/frontend"
+      "runtimeArgs": ["vite"],
+      "autoPort": true,
+      "cwd": "frontend"
     }
   ]
 }

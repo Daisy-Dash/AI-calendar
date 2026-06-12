@@ -287,14 +287,18 @@ def get_group_stats(
     if not member:
         raise HTTPException(status_code=403, detail="您不是该群组成员")
 
-    # 统计
-    total_tasks = db.query(Task).filter(Task.group_id == group_id).count()
+    # 统计（只计父任务，不含子任务）
+    total_tasks = db.query(Task).filter(
+        Task.group_id == group_id,
+        Task.parent_id == None,
+    ).count()
     completed_tasks = db.query(Task).filter(
         Task.group_id == group_id,
+        Task.parent_id == None,
         Task.status == "已完成",
     ).count()
 
-    # 成员统计
+    # 成员统计（只计父任务）
     members = db.query(GroupMember).filter(GroupMember.group_id == group_id).all()
     member_stats = []
     for m in members:
@@ -303,10 +307,12 @@ def get_group_stats(
             user_tasks = db.query(Task).filter(
                 Task.group_id == group_id,
                 Task.assigned_to == user.id,
+                Task.parent_id == None,
             ).count()
             user_completed = db.query(Task).filter(
                 Task.group_id == group_id,
                 Task.assigned_to == user.id,
+                Task.parent_id == None,
                 Task.status == "已完成",
             ).count()
             member_stats.append({

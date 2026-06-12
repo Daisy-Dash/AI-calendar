@@ -1,15 +1,116 @@
-import { useState, useRef, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useState, useRef, useEffect, useCallback } from 'react'
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { aiAPI, taskAPI, messageAPI, groupAPI } from '../utils/api'
+import MarkdownText from '../components/MarkdownText'
 
-export default function AIChatPage() {
-  const navigate = useNavigate()
+const WELCOME_MSG = { role: 'ai', content: '你好！我是你的AI私人助手 👋\n\n我可以帮你：\n📋 管理任务和日程\n💡 提供学习和效率建议\n🔨 分解复杂任务\n👥 指导团队协作\n\n💬 试试直接问我问题，或者转发一个群名片给我，我会自动读取你在该群的任务信息，随时为你提供指导！' }
+
+function loadSessions() {
+  try {
+    const raw = localStorage.getItem('ai_chat_sessions')
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  try {
+    const legacy = localStorage.getItem('ai_chat_messages')
+    if (legacy) {
+      const msgs = JSON.parse(legacy)
+      if (msgs.length > 1) {
+        const id = Date.now().toString()
+        const session = { id, title: '之前的对话', updatedAt: Date.now() }
+        localStorage.setItem(`ai_chat_session_${id}`, JSON.stringify(msgs))
+        localStorage.setItem('ai_chat_sessions', JSON.stringify([session]))
+        localStorage.removeItem('ai_chat_messages')
+        return [session]
+      }
+    }
+  } catch {}
+  return []
+}
+
+function saveSessions(sessions) {
+  try { localStorage.setItem('ai_chat_sessions', JSON.stringify(sessions)) } catch {}
+}
+
+function loadSessionMessages(id) {
+  try {
+    const raw = localStorage.getItem(`ai_chat_session_${id}`)
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return [WELCOME_MSG]
+}
+
+function saveSessionMessages(id, messages) {
+  try { localStorage.setItem(`ai_chat_session_${id}`, JSON.stringify(messages)) } catch {}
+}
+
+// ── Session List View ──
+function SessionListView({ sessions, onSelect, onCreate, onDelete }) {
+  return (
+    <div className="flex flex-col h-[calc(100vh-70px)]">
+      <div className="px-4 pt-4 pb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">🤖</span>
+          <div>
+            <h1 className="text-base font-medium text-choco-600">AI 私人助手</h1>
+            <p className="text-[10px] text-choco-200">我的对话</p>
+          </div>
+        </div>
+        <button onClick={onCreate} className="text-xs px-3 py-1.5 rounded-full bg-rosa-50 border border-rosa-100 text-rosa-400 font-medium">
+          + 新对话
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 pt-2 pb-4">
+        {sessions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-choco-200">
+            <span className="text-4xl mb-4 opacity-50">🤖</span>
+            <p className="text-sm mb-1">还没有对话记录</p>
+            <p className="text-xs">点击右上角开始新对话吧～</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {sessions.map(s => {
+              const msgs = loadSessionMessages(s.id)
+              const lastMsg = msgs.length > 0 ? msgs[msgs.length - 1] : null
+              const preview = lastMsg ? (lastMsg.content.length > 40 ? lastMsg.content.slice(0, 40) + '...' : lastMsg.content) : ''
+              const date = new Date(s.updatedAt)
+              const timeStr = `${date.getMonth()+1}/${date.getDate()} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`
+
+              return (
+                <div
+                  key={s.id}
+                  className="flex items-center gap-3 p-3 rounded-2xl bg-cream-50 border border-cream-100 hover:bg-lilac-50 hover:border-lilac-100 transition-all cursor-pointer"
+                  onClick={() => onSelect(s.id)}
+                >
+                  <div className="w-10 h-10 rounded-full bg-rosa-50 border border-rosa-100 flex items-center justify-center flex-shrink-0">🤖</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <p className="text-sm font-medium text-choco-600 truncate">{s.title}</p>
+                      <span className="text-[10px] text-choco-200 flex-shrink-0 ml-2">{timeStr}</span>
+                    </div>
+                    <p className="text-xs text-choco-300 truncate">{preview}</p>
+                  </div>
+                  <button
+                    onClick={e => { e.stopPropagation(); onDelete(s.id) }}
+                    className="text-choco-200 hover:text-rosa-400 text-sm flex-shrink-0 px-1"
+                    title="删除对话"
+                  >✕</button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Active Chat View ──
+function ActiveChatView({ sessionId, onBack }) {
   const [searchParams] = useSearchParams()
   const { user } = useAuth()
-  const [messages, setMessages] = useState([
-    { role: 'ai', content: '你好！我是你的AI私人助手 👋\n\n我可以帮你：\n📋 管理任务和日程\n💡 提供学习和效率建议\n🔨 分解复杂任务\n👥 指导团队协作\n\n💬 试试直接问我问题，或者转发一个群名片给我，我会自动读取你在该群的任务信息，随时为你提供指导！' },
-  ])
+  const [messages, setMessages] = useState(() => loadSessionMessages(sessionId))
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [linkedGroup, setLinkedGroup] = useState(null)
@@ -21,13 +122,29 @@ export default function AIChatPage() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+    if (messages.length > 0) {
+      saveSessionMessages(sessionId, messages)
+      try {
+        const sessions = loadSessions()
+        const idx = sessions.findIndex(s => s.id === sessionId)
+        if (idx !== -1) {
+          const firstUserMsg = messages.find(m => m.role === 'user')
+          if (firstUserMsg && sessions[idx].title === '新对话') {
+            sessions[idx].title = firstUserMsg.content.length > 20
+              ? firstUserMsg.content.slice(0, 20) + '...'
+              : firstUserMsg.content
+          }
+          sessions[idx].updatedAt = Date.now()
+          saveSessions(sessions)
+        }
+      } catch {}
+    }
+  }, [messages, sessionId])
 
   useEffect(() => {
     loadMyGroups()
   }, [])
 
-  // 自动关联群组（从首页"我的任务"卡片点进来时）
   useEffect(() => {
     const groupId = searchParams.get('group')
     if (groupId && myGroups.length > 0 && !autoLinked.current) {
@@ -51,12 +168,10 @@ export default function AIChatPage() {
     setShowGroupPicker(false)
     setLoading(true)
 
-    // 自动发送一条"转发群名片"的消息
     const forwardMsg = { role: 'user', content: `[转发群名片] ${group.name}` }
     setMessages(prev => [...prev, forwardMsg])
 
     try {
-      // 调用私聊API（带group_id），AI会自动读取任务信息
       const res = await messageAPI.sendPrivateMessage({
         content: `我转发了「${group.name}」的群名片给你，请读取我在这个群的任务信息，告诉我目前的状态和建议。`,
         group_id: group.id,
@@ -81,11 +196,9 @@ export default function AIChatPage() {
     setExtractedTasks([])
 
     try {
-      // 判断是否包含分析关键词
       const isAnalysis = /分析|提炼|最近|近况|任务清单/.test(content)
 
       if (isAnalysis && !linkedGroup) {
-        // 深度分析模式
         const parseRes = await aiAPI.parse({ text: content, deep: true })
         const tasks = parseRes.data.tasks || []
 
@@ -104,14 +217,12 @@ export default function AIChatPage() {
           setMessages([...newMessages, { role: 'ai', content: chatRes.data.reply }])
         }
       } else if (linkedGroup) {
-        // 有关联群组时，走私聊AI（带上下文）
         const res = await messageAPI.sendPrivateMessage({
           content,
           group_id: linkedGroup.id,
         })
         setMessages([...newMessages, { role: 'ai', content: res.data.ai_reply.content }])
       } else {
-        // 普通对话
         const res = await aiAPI.chat({ message: content, context: '' })
         setMessages([...newMessages, { role: 'ai', content: res.data.reply }])
       }
@@ -146,10 +257,11 @@ export default function AIChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-70px)]">
+    <div className="flex flex-col h-screen">
       {/* 头部 */}
       <div className="px-4 pt-4 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
+          <button onClick={onBack} className="text-rosa-400 text-sm mr-1">←</button>
           <span className="text-2xl">🤖</span>
           <div>
             <h1 className="text-base font-medium text-choco-600">AI 私人助手</h1>
@@ -195,12 +307,15 @@ export default function AIChatPage() {
               </div>
             )}
             <div className={`max-w-[80%] ${msg.role === 'ai' ? 'ai-bubble' : 'user-bubble'}`}>
-              <div className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+              {msg.role === 'ai' ? (
+                <MarkdownText content={msg.content} />
+              ) : (
+                <div className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+              )}
             </div>
           </div>
         ))}
 
-        {/* 批量创建按钮 */}
         {extractedTasks.length > 0 && (
           <div className="flex justify-center my-3 fade-in-up">
             <button onClick={handleBatchCreateTasks} className="hand-btn text-sm px-6" disabled={loading}>
@@ -209,7 +324,6 @@ export default function AIChatPage() {
           </div>
         )}
 
-        {/* 加载动画 */}
         {loading && (
           <div className="flex mb-4 fade-in-up">
             <div className="w-8 h-8 rounded-full bg-rosa-50 border border-rosa-100 flex items-center justify-center mr-2">🤖</div>
@@ -225,7 +339,7 @@ export default function AIChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 快捷操作 + 转发群名片按钮 */}
+      {/* 快捷操作 */}
       {!linkedGroup && (
         <div className="px-4 pb-1">
           <div className="flex gap-2 overflow-x-auto pb-1">
@@ -293,7 +407,7 @@ export default function AIChatPage() {
       {/* 群名片选择弹窗 */}
       {showGroupPicker && (
         <div className="fixed inset-0 z-[200] flex items-end justify-center bg-transparent" onClick={() => setShowGroupPicker(false)}>
-          <div className="bg-white rounded-t-3xl w-full max-w-[430px] p-5 pb-8 fade-in-up" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-t-3xl w-full max-w-[380px] p-5 pb-8 fade-in-up" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-cream-300 rounded-full mx-auto mb-4" />
             <div className="flex items-center gap-2 mb-4">
               <span className="text-2xl">💌</span>
@@ -329,5 +443,48 @@ export default function AIChatPage() {
         </div>
       )}
     </div>
+  )
+}
+
+// ── Main Page Component ──
+export default function AIChatPage() {
+  const navigate = useNavigate()
+  const { sessionId } = useParams()
+  const [sessions, setSessions] = useState(loadSessions)
+
+  const handleCreate = useCallback(() => {
+    const id = Date.now().toString()
+    const session = { id, title: '新对话', updatedAt: Date.now() }
+    const updated = [session, ...loadSessions()]
+    saveSessions(updated)
+    setSessions(updated)
+    navigate(`/ai-chat/${id}`)
+  }, [navigate])
+
+  const handleDelete = useCallback((id) => {
+    setSessions(prev => {
+      const updated = prev.filter(s => s.id !== id)
+      saveSessions(updated)
+      return updated
+    })
+    try { localStorage.removeItem(`ai_chat_session_${id}`) } catch {}
+    if (sessionId === id) navigate('/ai-chat')
+  }, [sessionId, navigate])
+
+  const handleBack = useCallback(() => {
+    navigate('/ai-chat')
+  }, [navigate])
+
+  if (sessionId) {
+    return <ActiveChatView sessionId={sessionId} onBack={handleBack} />
+  }
+
+  return (
+    <SessionListView
+      sessions={sessions}
+      onSelect={(id) => navigate(`/ai-chat/${id}`)}
+      onCreate={handleCreate}
+      onDelete={handleDelete}
+    />
   )
 }
