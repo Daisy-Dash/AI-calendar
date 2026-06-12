@@ -24,6 +24,7 @@ export default function ProjectListPage() {
   const [groupStats, setGroupStats] = useState({})
   const [myTasks, setMyTasks] = useState({}) // groupId -> [tasks]
   const [allMyTasks, setAllMyTasks] = useState([]) // 全部任务（用于概览）
+  const [subtasksMap, setSubtasksMap] = useState({}) // parentId -> [subtasks]
   const [greeting, setGreeting] = useState('')
   const [loading, setLoading] = useState(true)
   const [overduePopup, setOverduePopup] = useState(null)
@@ -79,10 +80,16 @@ export default function ProjectListPage() {
         const now = new Date()
 
         // 首页项目卡下的任务列表：
-        // 展示当前用户在每个项目中负责的所有任务（包括 AI 拆出的提交节点），按 DDL 升序
+        // 只展示父任务，子任务在父任务进度条上展示
         const tasksByGroup = {}
+        const subtasksByParent = {}
         const overdueTasks = []
         for (const t of allTasks) {
+          if (t.parent_id || t.is_subtask) {
+            if (!subtasksByParent[t.parent_id]) subtasksByParent[t.parent_id] = []
+            subtasksByParent[t.parent_id].push(t)
+            continue
+          }
           if (t.group_id) {
             if (!tasksByGroup[t.group_id]) tasksByGroup[t.group_id] = []
             tasksByGroup[t.group_id].push(t)
@@ -101,6 +108,7 @@ export default function ProjectListPage() {
           })
         }
         setMyTasks(tasksByGroup)
+        setSubtasksMap(subtasksByParent)
 
         if (overdueTasks.length > 0) {
           setOverduePopup(overdueTasks)
@@ -403,8 +411,9 @@ export default function ProjectListPage() {
                                   </span>
                                 )}
                               </div>
+                              {/* 进度条 — 有子任务时显示节点 */}
                               <div className="flex items-center gap-2 mt-1">
-                                <div className="flex-1 h-1.5 bg-white/70 rounded-full overflow-hidden">
+                                <div className="flex-1 relative h-1.5 bg-white/70 rounded-full overflow-visible">
                                   <div
                                     className={`h-full rounded-full transition-all ${
                                       tDone ? 'bg-sage-300' :
@@ -414,11 +423,42 @@ export default function ProjectListPage() {
                                     }`}
                                     style={{ width: `${t.progress || 0}%` }}
                                   />
+                                  {(subtasksMap[t.id] || []).map((st, si) => {
+                                    const subs = subtasksMap[t.id]
+                                    const pos = ((si + 1) / subs.length) * 100
+                                    const sDone = st.status === '已完成' || (st.progress || 0) >= 100
+                                    const sOverdue = st.deadline && !sDone && new Date(st.deadline) < new Date()
+                                    return (
+                                      <div
+                                        key={st.id}
+                                        className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full border transition-all ${
+                                          sDone ? 'bg-sage-400 border-white' :
+                                          sOverdue ? 'bg-red-400 border-white' :
+                                          'bg-white border-rosa-300'
+                                        }`}
+                                        style={{ left: `${pos}%` }}
+                                        title={`${st.title}${st.deadline ? ' · ' + new Date(st.deadline).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }) : ''}`}
+                                      />
+                                    )
+                                  })}
                                 </div>
                                 <span className={`text-[10px] flex-shrink-0 ${tOverdue ? 'text-red-500' : 'text-choco-300'}`}>
                                   {t.progress || 0}%
                                 </span>
                               </div>
+                              {/* 子任务节点日期标记 */}
+                              {(subtasksMap[t.id] || []).length > 0 && (
+                                <div className="flex items-center justify-between mt-0.5 text-[8px] text-choco-200">
+                                  {subtasksMap[t.id].slice(0, 4).map(st => {
+                                    const sOverdue = st.deadline && st.status !== '已完成' && new Date(st.deadline) < new Date()
+                                    return (
+                                      <span key={st.id} className={sOverdue ? 'text-red-500' : ''}>
+                                        {st.deadline ? new Date(st.deadline).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }) : '—'}
+                                      </span>
+                                    )
+                                  })}
+                                </div>
+                              )}
                             </div>
                             <span className="text-choco-200 text-xs">→</span>
                           </div>

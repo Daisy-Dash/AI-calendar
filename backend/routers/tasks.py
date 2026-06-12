@@ -565,10 +565,15 @@ def ai_split_task(
         print(f"[Split Task] Error: {e}")
         subtasks_data = _default_split(task.title)
 
-    # 创建子任务
-    from datetime import timedelta
+    # 创建子任务 — 日期约束在 start_date ~ deadline 之间
+    from datetime import timedelta, datetime
     created = []
+    start_date = max(task.created_at or datetime.utcnow(), datetime.utcnow())
     total_days = sum(st.get("days", 2) for st in subtasks_data)
+    if task.deadline:
+        available_days = max(1, (task.deadline - start_date).days)
+    else:
+        available_days = total_days
     accumulated = 0
     for st in subtasks_data:
         sub = Task(
@@ -583,7 +588,10 @@ def ai_split_task(
         )
         accumulated += st.get("days", 2)
         if task.deadline and total_days > 0:
-            sub.deadline = task.deadline - timedelta(days=max(0, total_days - accumulated))
+            ratio = accumulated / total_days
+            sub.deadline = start_date + timedelta(days=round(available_days * ratio))
+            if sub.deadline > task.deadline:
+                sub.deadline = task.deadline
         db.add(sub)
         db.commit()
         db.refresh(sub)

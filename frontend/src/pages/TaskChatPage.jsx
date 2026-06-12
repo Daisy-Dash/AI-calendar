@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { taskAPI } from '../utils/api'
+import MarkdownText from '../components/MarkdownText'
 
 function CakieAIAvatar({ className = '' }) {
   const [failed, setFailed] = useState(false)
@@ -44,6 +45,9 @@ export default function TaskChatPage() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messages.length > 0 && taskId) {
+      try { localStorage.setItem(`task_chat_${taskId}`, JSON.stringify(messages)) } catch {}
+    }
   }, [messages])
 
   const loadTask = async () => {
@@ -61,11 +65,23 @@ export default function TaskChatPage() {
       if (res.data.deadline && res.data.status !== '已完成' && new Date(res.data.deadline) < new Date()) {
         setShowOverdue(true)
       }
-      // 初始欢迎语
-      setMessages([{
-        role: 'ai',
-        content: `你好！我是任务「${res.data.title}」的专属AI助手 👋\n\n📊 当前进度：${res.data.progress}%\n${res.data.deadline ? '📅 截止：' + new Date(res.data.deadline).toLocaleDateString('zh-CN') : ''}\n\n我可以帮你：\n📋 拆分任务节点\n🔍 联网搜索资料\n📎 评估上传凭证\n💡 提供执行建议`
-      }])
+      // 从 localStorage 恢复聊天记录，无则显示欢迎语
+      try {
+        const cached = localStorage.getItem(`task_chat_${taskId}`)
+        if (cached) {
+          setMessages(JSON.parse(cached))
+        } else {
+          setMessages([{
+            role: 'ai',
+            content: `你好！我是任务「${res.data.title}」的专属AI助手 👋\n\n📊 当前进度：${res.data.progress}%\n${res.data.deadline ? '📅 截止：' + new Date(res.data.deadline).toLocaleDateString('zh-CN') : ''}\n\n我可以帮你：\n📋 拆分任务节点\n🔍 联网搜索资料\n📎 评估上传凭证\n💡 提供执行建议`
+          }])
+        }
+      } catch {
+        setMessages([{
+          role: 'ai',
+          content: `你好！我是任务「${res.data.title}」的专属AI助手 👋`
+        }])
+      }
     } catch (e) {
       console.error(e)
       alert('任务加载失败')
@@ -182,7 +198,7 @@ export default function TaskChatPage() {
   const completed = task.progress >= 100
 
   return (
-    <div className="cakie-chat-page cakie-task-chat-page flex flex-col h-[calc(100vh-70px)]">
+    <div className="cakie-chat-page cakie-task-chat-page flex flex-col h-screen">
       {/* 任务头部 + 进度条 */}
       <div className={`cakie-chat-header cakie-task-order-card mx-3 mt-3 px-4 pt-3 pb-3 border-b ${isOverdue ? 'is-overdue border-rosa-200' : 'border-cream-200'}`}>
         <div className="cakie-task-order-heading">
@@ -268,7 +284,7 @@ export default function TaskChatPage() {
       {/* 节点详情面板（点击节点弹出） */}
       {selectedNode && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center px-3 bg-transparent" onClick={() => setSelectedNode(null)}>
-          <div className="bg-white rounded-3xl w-full max-w-[500px] max-h-[85vh] flex flex-col fade-in-up shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-3xl w-full max-w-[380px] max-h-[85vh] flex flex-col fade-in-up shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="px-5 pt-5 pb-3 border-b border-cream-200 flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5 mb-1 flex-wrap">
@@ -352,7 +368,11 @@ export default function TaskChatPage() {
               <CakieAIAvatar className="mr-2 flex-shrink-0 mt-1" />
             )}
             <div className={`max-w-[80%] ${msg.role === 'ai' ? 'ai-bubble' : 'user-bubble'}`}>
-              <div className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+              {msg.role === 'ai' ? (
+                <MarkdownText content={msg.content} />
+              ) : (
+                <div className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</div>
+              )}
             </div>
           </div>
         ))}
@@ -394,13 +414,15 @@ export default function TaskChatPage() {
           >
             <span>📎</span> 上传凭证
           </button>
-          <button
-            onClick={handleSplitTask}
-            className="cakie-task-tag flex items-center gap-1 px-3 py-1.5 text-xs text-rosa-500 whitespace-nowrap"
-            disabled={loading}
-          >
-            <span>📋</span> 拆分任务
-          </button>
+          {!task.parent_id && !task.is_subtask && (
+            <button
+              onClick={handleSplitTask}
+              className="cakie-task-tag flex items-center gap-1 px-3 py-1.5 text-xs text-rosa-500 whitespace-nowrap"
+              disabled={loading}
+            >
+              <span>📋</span> 拆分任务
+            </button>
+          )}
           <button
             onClick={() => sendMessage('帮我找一些这类任务的优秀案例参考')}
             className="cakie-task-tag flex items-center gap-1 px-3 py-1.5 text-xs text-choco-400 whitespace-nowrap"
@@ -457,7 +479,7 @@ export default function TaskChatPage() {
       {/* 逾期弹窗 */}
       {showOverdue && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center px-3 bg-transparent" onClick={() => setShowOverdue(false)}>
-          <div className="bg-white rounded-3xl w-full max-w-[500px] p-5 fade-in-up" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-3xl w-full max-w-[380px] p-5 fade-in-up" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-3">
               <span className="text-2xl">⏰</span>
               <div>

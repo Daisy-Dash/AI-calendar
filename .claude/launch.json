@@ -3,10 +3,10 @@
   "configurations": [
     {
       "name": "frontend",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "--port", "5174"],
-      "port": 5174,
-      "cwd": "AI-calendar/AI-calendar/frontend"
+      "runtimeExecutable": "npx.cmd",
+      "runtimeArgs": ["vite", "--port", "5176"],
+      "port": 5176,
+      "cwd": "frontend"
     }
   ]
 }

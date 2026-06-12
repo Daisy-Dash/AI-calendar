@@ -782,6 +782,8 @@ body {
 
 /* ========== AI对话气泡 ========== */
 .cakie-chat-page {
+  max-width: 100%;
+  overflow-x: hidden;
   color: #4D4038;
   background-color: #FFF7EC;
   background-image:
@@ -977,6 +979,8 @@ body {
 
 .cakie-task-order-card {
   position: relative;
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
   border: 1.5px solid rgba(138, 90, 68, 0.36);
   border-radius: 23px 18px 27px 20px;
   background:
@@ -1069,6 +1073,8 @@ body {
 }
 
 .cakie-task-composer {
+  max-width: calc(100% - 24px);
+  box-sizing: border-box;
   border: 1.5px solid rgba(138, 90, 68, 0.35);
   border-radius: 23px 18px 25px 20px;
   background:

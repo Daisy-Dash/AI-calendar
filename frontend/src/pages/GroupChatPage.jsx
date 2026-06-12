@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { groupAPI, messageAPI, friendAPI, uploadAPI, aiAPI, taskAPI } from '../utils/api'
+import MarkdownText from '../components/MarkdownText'
 
 function CakieChatAsset({ src, alt, fallback, className = '' }) {
   const [failed, setFailed] = useState(false)
@@ -1256,7 +1257,11 @@ export default function GroupChatPage() {
                 msg.sender?.id === user?.id ? 'user-bubble' :
                 'bg-white rounded-2xl p-3 border border-cream-200'
               }>
-                <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                {msg.is_ai ? (
+                  <MarkdownText content={msg.content} />
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                )}
               </div>
               <p className="text-[10px] text-choco-100 mt-0.5 ml-1">
                 {msg.created_at ? new Date(msg.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : ''}
