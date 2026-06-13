@@ -65,19 +65,8 @@ export default function GroupChatPage() {
     loadGroupStats()
     loadKnowledgeFiles()
     loadMyTasks()
-    // 恢复 localStorage 里的搜索结果
-    try {
-      const cached = localStorage.getItem(`search_results_${groupId}`)
-      if (cached) setSearchResults(JSON.parse(cached))
-    } catch {}
+    loadSearchResults()
   }, [groupId])
-
-  // 搜索结果持久化
-  useEffect(() => {
-    if (searchResults.length > 0) {
-      try { localStorage.setItem(`search_results_${groupId}`, JSON.stringify(searchResults)) } catch {}
-    }
-  }, [searchResults, groupId])
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -141,6 +130,17 @@ export default function GroupChatPage() {
       const all = [...tasks].sort(sortByDDL)
       setAllGroupTasks(all)
     } catch (e) { console.error(e) }
+  }
+
+  const loadSearchResults = async () => {
+    try {
+      const res = await groupAPI.getSearchResults(parseInt(groupId))
+      if (res.data?.length > 0) setSearchResults(res.data)
+    } catch {}
+  }
+
+  const saveSearchResults = async (results) => {
+    try { await groupAPI.saveSearchResults(parseInt(groupId), results) } catch {}
   }
 
   const handleChatFileUpload = async (e) => {
@@ -305,6 +305,7 @@ export default function GroupChatPage() {
         })
         if (searchRes.data?.search_results?.length > 0) {
           setSearchResults(searchRes.data.search_results)
+          saveSearchResults(searchRes.data.search_results)
         }
         if (searchRes.data?.reply) {
           await loadMessages()
@@ -915,6 +916,7 @@ export default function GroupChatPage() {
                 })
                 if (searchRes.data?.search_results?.length > 0) {
                   setSearchResults(searchRes.data.search_results)
+                  saveSearchResults(searchRes.data.search_results)
                 }
               } catch (e) {
                 alert('搜索失败，请稍后再试')
@@ -954,6 +956,7 @@ export default function GroupChatPage() {
                     })
                     if (searchRes.data?.search_results?.length > 0) {
                       setSearchResults(searchRes.data.search_results)
+                      saveSearchResults(searchRes.data.search_results)
                     }
                   } catch (e) {
                     alert('搜索失败，请稍后再试')

@@ -77,6 +77,7 @@ export default function App() {
           <Route path="/kanban/group/:groupId" element={<RequireAuth><KanbanPage /></RequireAuth>} />
           <Route path="/task/:projectId/:taskId" element={<RequireAuth><TaskDetailPage /></RequireAuth>} />
           <Route path="/ai-chat" element={<RequireAuth><AIChatPage /></RequireAuth>} />
+          <Route path="/ai-chat/:sessionId" element={<RequireAuth><AIChatPage /></RequireAuth>} />
           <Route path="/task-chat/:taskId" element={<RequireAuth><TaskChatPage /></RequireAuth>} />
           <Route path="/friends" element={<RequireAuth><FriendsPage /></RequireAuth>} />
           <Route path="/create-group" element={<RequireAuth><CreateGroupPage /></RequireAuth>} />

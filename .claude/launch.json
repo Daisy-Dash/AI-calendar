@@ -4,8 +4,8 @@
     {
       "name": "frontend",
       "runtimeExecutable": "npx.cmd",
-      "runtimeArgs": ["vite", "--port", "5176"],
-      "port": 5176,
+      "runtimeArgs": ["vite", "--port", "5173"],
+      "port": 5173,
       "cwd": "frontend"
     }
   ]

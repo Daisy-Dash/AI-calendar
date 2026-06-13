@@ -110,6 +110,18 @@ export default function ProjectListPage() {
         setMyTasks(tasksByGroup)
         setSubtasksMap(subtasksByParent)
 
+        const twoDays = 2 * 86400000
+        for (const subs of Object.values(subtasksByParent)) {
+          for (const st of subs) {
+            if (st.deadline && st.status !== '已完成') {
+              const timeLeft = new Date(st.deadline) - now
+              if (timeLeft < twoDays) {
+                overdueTasks.push(st)
+              }
+            }
+          }
+        }
+
         if (overdueTasks.length > 0) {
           setOverduePopup(overdueTasks)
         }
@@ -130,6 +142,8 @@ export default function ProjectListPage() {
     if (!deadline) return false
     return new Date(deadline) < new Date()
   }
+
+  const parentOnlyTasks = allMyTasks.filter(t => !t.parent_id && !t.is_subtask)
 
   if (loading) {
     return (
@@ -162,7 +176,7 @@ export default function ProjectListPage() {
       </div>
 
       {/* 我的任务概览 */}
-      {allMyTasks.length > 0 && (
+      {parentOnlyTasks.length > 0 && (
         <div className="mb-4">
           <div className="hand-card bg-gradient-to-r from-lilac-50 to-rosa-50 border-lilac-100">
             <div className="flex items-center gap-3">
@@ -178,7 +192,7 @@ export default function ProjectListPage() {
                       taskFilter === '已完成' ? 'bg-sage-200 border-sage-300 text-sage-600' : 'bg-white/80 border-sage-100 text-sage-500'
                     }`}
                   >
-                    {allMyTasks.filter(t => t.status === '已完成').length} 完成
+                    {parentOnlyTasks.filter(t => t.status === '已完成').length} 完成
                   </button>
                   <button
                     onClick={() => setTaskFilter(taskFilter === '进行中' ? null : '进行中')}
@@ -186,7 +200,7 @@ export default function ProjectListPage() {
                       taskFilter === '进行中' ? 'bg-dusty-200 border-dusty-300 text-dusty-600' : 'bg-white/80 border-dusty-100 text-dusty-500'
                     }`}
                   >
-                    {allMyTasks.filter(t => t.status === '进行中').length} 进行中
+                    {parentOnlyTasks.filter(t => t.status === '进行中').length} 进行中
                   </button>
                   <button
                     onClick={() => setTaskFilter(taskFilter === '待处理' ? null : '待处理')}
@@ -194,7 +208,7 @@ export default function ProjectListPage() {
                       taskFilter === '待处理' ? 'bg-cream-200 border-choco-200 text-choco-600' : 'bg-white/80 border-cream-200 text-choco-400'
                     }`}
                   >
-                    {allMyTasks.filter(t => !['已完成','进行中'].includes(t.status)).length} 待处理
+                    {parentOnlyTasks.filter(t => !['已完成','进行中'].includes(t.status)).length} 待处理
                   </button>
                 </div>
               </div>
@@ -204,8 +218,8 @@ export default function ProjectListPage() {
           {/* 筛选结果：按项目分组展示 */}
           {taskFilter && (() => {
             const filtered = taskFilter === '待处理'
-              ? allMyTasks.filter(t => !['已完成','进行中'].includes(t.status))
-              : allMyTasks.filter(t => t.status === taskFilter)
+              ? parentOnlyTasks.filter(t => !['已完成','进行中'].includes(t.status))
+              : parentOnlyTasks.filter(t => t.status === taskFilter)
             if (filtered.length === 0) {
               return (
                 <div className="mt-2 text-center py-4 text-xs text-choco-200 fade-in-up">
@@ -260,6 +274,15 @@ export default function ProjectListPage() {
         </div>
       )}
 
+      {/* 创建新团队项目按钮 */}
+      <button
+        onClick={() => navigate('/create-group')}
+        className="w-full hand-card border-dashed border-sage-200 text-center py-4 text-sage-400 hover:bg-sage-50 transition-all active:scale-[0.98] mb-4"
+      >
+        <span className="text-xl inline-block mr-1">+</span>
+        <span className="text-sm">创建新团队项目</span>
+      </button>
+
       {/* 团队项目列表 */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-3">
@@ -277,21 +300,25 @@ export default function ProjectListPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {groups.map((g, index) => {
-              const stats = groupStats[g.id] || {}
-              const completionRate = Math.round(stats.completion_rate || 0)
-              const totalTasks = stats.total_tasks || 0
-              const completedTasks = stats.completed_tasks || 0
+            {[...groups].sort((a, b) => {
+              const aDone = a.status === 'completed' ? 1 : 0
+              const bDone = b.status === 'completed' ? 1 : 0
+              return aDone - bDone
+            }).map((g, index) => {
+              const isCompleted = g.status === 'completed'
               const personalTasks = myTasks[g.id] || []
-              const myCompleted = personalTasks.filter(t => t.status === '已完成').length
-              const myTotal = personalTasks.length
+              const totalTasks = personalTasks.length
+              const completedTasks = personalTasks.filter(t => t.status === '已完成').length
+              const completionRate = totalTasks > 0 ? Math.round(completedTasks / totalTasks * 100) : 0
 
               return (
                 <div key={g.id} style={{ animationDelay: `${index * 0.08}s` }}>
                   {/* 团队项目卡片 */}
                   <div
                     onClick={() => navigate(`/group-chat/${g.id}`)}
-                    className="hand-card cursor-pointer transition-all active:scale-[0.98] hover:shadow-md"
+                    className={`hand-card cursor-pointer transition-all active:scale-[0.98] hover:shadow-md ${
+                      isCompleted ? 'opacity-50 grayscale' : ''
+                    }`}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex items-center gap-3">
@@ -342,8 +369,8 @@ export default function ProjectListPage() {
                     )}
                   </div>
 
-                  {/* 我在这个项目里的任务卡片列表 — 可折叠展开 */}
-                  {personalTasks.length > 0 && (() => {
+                  {/* 我在这个项目里的任务卡片列表 — 可折叠展开（已完成项目自动折叠） */}
+                  {personalTasks.length > 0 && !isCompleted && (() => {
                     // 默认：任务 ≤ 2 时展开，> 2 时折叠
                     const expanded = expandedGroups[g.id] !== undefined ? expandedGroups[g.id] : personalTasks.length <= 2
                     const overdueCount = personalTasks.filter(t => t.deadline && t.status !== '已完成' && new Date(t.deadline) < new Date()).length
@@ -428,12 +455,14 @@ export default function ProjectListPage() {
                                     const pos = ((si + 1) / subs.length) * 100
                                     const sDone = st.status === '已完成' || (st.progress || 0) >= 100
                                     const sOverdue = st.deadline && !sDone && new Date(st.deadline) < new Date()
+                                    const sApproaching = st.deadline && !sDone && !sOverdue && (new Date(st.deadline) - new Date()) < 2 * 86400000
                                     return (
                                       <div
                                         key={st.id}
                                         className={`absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full border transition-all ${
                                           sDone ? 'bg-sage-400 border-white' :
-                                          sOverdue ? 'bg-red-400 border-white' :
+                                          sOverdue ? 'bg-red-400 border-white animate-pulse' :
+                                          sApproaching ? 'bg-red-300 border-white' :
                                           'bg-white border-rosa-300'
                                         }`}
                                         style={{ left: `${pos}%` }}
@@ -450,9 +479,11 @@ export default function ProjectListPage() {
                               {(subtasksMap[t.id] || []).length > 0 && (
                                 <div className="flex items-center justify-between mt-0.5 text-[8px] text-choco-200">
                                   {subtasksMap[t.id].slice(0, 4).map(st => {
-                                    const sOverdue = st.deadline && st.status !== '已完成' && new Date(st.deadline) < new Date()
+                                    const sDone = st.status === '已完成'
+                                    const sOverdue = st.deadline && !sDone && new Date(st.deadline) < new Date()
+                                    const sApproaching = st.deadline && !sDone && !sOverdue && (new Date(st.deadline) - new Date()) < 2 * 86400000
                                     return (
-                                      <span key={st.id} className={sOverdue ? 'text-red-500' : ''}>
+                                      <span key={st.id} className={sOverdue ? 'text-red-500 font-medium' : sApproaching ? 'text-red-400' : ''}>
                                         {st.deadline ? new Date(st.deadline).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }) : '—'}
                                       </span>
                                     )
@@ -476,15 +507,6 @@ export default function ProjectListPage() {
         )}
       </div>
 
-      {/* 创建新团队项目按钮 */}
-      <button
-        onClick={() => navigate('/create-group')}
-        className="w-full hand-card border-dashed border-sage-200 text-center py-5 text-sage-400 hover:bg-sage-50 transition-all active:scale-[0.98]"
-      >
-        <span className="text-2xl block mb-1">+</span>
-        <span className="text-sm">创建新团队项目</span>
-      </button>
-
       {/* 逾期任务弹窗提醒 */}
       {overduePopup && overduePopup.length > 0 && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center px-3 bg-transparent" onClick={() => setOverduePopup(null)}>
@@ -492,23 +514,35 @@ export default function ProjectListPage() {
             <div className="flex items-center gap-2 mb-3">
               <span className="text-2xl">⏰</span>
               <div>
-                <h3 className="text-base font-medium text-rosa-500">任务逾期提醒</h3>
-                <p className="text-xs text-choco-200">以下任务已超过截止日期</p>
+                <h3 className="text-base font-medium text-rosa-500">任务截止提醒</h3>
+                <p className="text-xs text-choco-200">以下任务已逾期或即将到期</p>
               </div>
             </div>
             <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
-              {overduePopup.map(task => (
-                <div key={task.id} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-rosa-50 border border-rosa-100">
-                  <span className="text-red-400 text-sm">🔴</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-choco-600 truncate">{task.title}</p>
-                    <p className="text-[10px] text-rosa-400">
-                      截止: {new Date(task.deadline).toLocaleDateString('zh-CN')}
-                      {' · '}已逾期 {Math.ceil((new Date() - new Date(task.deadline)) / 86400000)} 天
-                    </p>
+              {overduePopup.map(task => {
+                const isOverdueNow = new Date(task.deadline) < new Date()
+                const daysLeft = Math.ceil((new Date(task.deadline) - new Date()) / 86400000)
+                const isSubtask = task.parent_id || task.is_subtask
+                const parentTask = isSubtask ? allMyTasks.find(t => t.id === task.parent_id) : null
+                return (
+                  <div key={task.id} className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${
+                    isOverdueNow ? 'bg-rosa-50 border-rosa-100' : 'bg-amber-50 border-amber-100'
+                  }`}>
+                    <span className="text-red-400 text-sm">{isOverdueNow ? '🔴' : '🟡'}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-choco-600 truncate">
+                        {isSubtask && parentTask ? `${parentTask.title} › ` : ''}{task.title}
+                      </p>
+                      <p className={`text-[10px] ${isOverdueNow ? 'text-rosa-400' : 'text-amber-500'}`}>
+                        截止: {new Date(task.deadline).toLocaleDateString('zh-CN')}
+                        {isOverdueNow
+                          ? ` · 已逾期 ${Math.abs(daysLeft)} 天`
+                          : ` · ${daysLeft} 天后截止`}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
             <button
               onClick={() => setOverduePopup(null)}

@@ -1,6 +1,6 @@
 # AI 统筹组长 — 技术文档
 
-> 版本: 4.2 | 日期: 2026-06-10
+> 版本: 4.3 | 日期: 2026-06-13
 
 ---
 
@@ -20,7 +20,7 @@
 │              localhost:8000                       │
 ├─────────────────────────────────────────────────┤
 │                AI Services                       │
-│   DeepSeek Function Calling + DuckDuckGo 联网搜索 │
+│   DeepSeek Function Calling + Bing/DDG 联网搜索   │
 │   DeepSeek API (主) / Claude / GPT / 本地回退     │
 ├─────────────────────────────────────────────────┤
 │              SQLite + Auto Backup                │
@@ -56,7 +56,8 @@
 | python-pptx | - | PPT 提取 |
 | pydantic | v2 | 数据验证 |
 | python-dotenv | - | 环境变量 |
-| ddgs | - | DuckDuckGo Function Calling |
+| duckduckgo_search | - | DuckDuckGo 搜索（备用） |
+| httpx + Bing | - | Bing 搜索 HTML 解析（国内主力） |
 
 ### 2.2 前端
 
@@ -73,14 +74,15 @@
 | 方案 | 用途 |
 |------|------|
 | SQLite | 后端主数据库 |
-| localStorage | JWT Token + 折叠展开偏好 + 搜索结果缓存 |
+| localStorage | JWT Token + 折叠展开偏好 + AI 会话历史 |
 
 ### 2.4 AI 服务
 
 | Provider | 说明 |
 |----------|------|
 | DeepSeek | 主力 — OpenAI 兼容接口，支持 Function Calling |
-| DuckDuckGo | 联网搜索 — 通过 ddgs 库，无需 API Key |
+| Bing | 联网搜索主引擎 — HTML 解析 + Base64 URL 解码，国内可直连 |
+| DuckDuckGo | 联网搜索备用 — 通过 ddgs 库，国内可能不可用 |
 | Claude | 可选 |
 | GPT | 可选 |
 | 本地回退 | 无 Key 时关键词匹配 + 模板 |
@@ -154,6 +156,7 @@ class Group:
     invite_code: str
     status: str           # gathering/discussing/confirming/in_progress/completed
     project_brief: str
+    search_results: list  # ⭐ v4.3 AI 搜索案例后端持久化，全组共享
     created_at: datetime
 
 # 群聊消息（多类型）
@@ -271,7 +274,7 @@ ai calendar/
 | 用户 | 7 | /api/users |
 | 任务 | 10 | /api/tasks（新增 chat/upload-proof/split） |
 | AI | 5 | /api/ai |
-| 群组 | 12 | /api/groups（新增 submit-proposal/ask-ai） |
+| 群组 | 14 | /api/groups（新增 submit-proposal/ask-ai/search-results） |
 | 好友 | 5 | /api/friends |
 | 消息 | 5 | /api/messages |
 | 上传 | 2 | /api/upload |
@@ -305,6 +308,8 @@ POST   /api/groups/{id}/tasks/{tid}/confirm       ⭐ 确认/打回（accept 时
 GET    /api/groups/{id}/pending-tasks             我的待确认任务
 POST   /api/groups/{id}/knowledge/{fid}/ask-ai    ⭐ 文件使用建议
 GET    /api/groups/{id}/stats                     团队统计
+GET    /api/groups/{id}/search-results            ⭐ 获取搜索案例（后端持久化）
+PUT    /api/groups/{id}/search-results            ⭐ 保存搜索案例（全组共享）
 ```
 
 ### 5.4 认证方式
@@ -375,32 +380,54 @@ def upload_task_proof(task_id, file):
     GroupMessage(msg_type="ai", content=f"📈 进度更新：{old}% → {new}%")
 ```
 
-### 6.3 AI Function Calling 联网搜索
+### 6.3 AI Function Calling 联网搜索（Bing + DuckDuckGo 双引擎）
 
 ```python
-# services/web_search.py
+# services/web_search.py — v4.3 重写为 Bing 优先 + DDG 备用
+# Bing 国内可直接访问，DuckDuckGo 国内常被墙
+
+def _decode_bing_url(href: str) -> str:
+    """从 Bing 跳转链接 u=a1{base64} 中解码出真实 URL"""
+    m = re.search(r'u=a1([^&"]+)', href)
+    if m:
+        encoded = m.group(1)
+        return base64.b64decode(encoded + "=" * (4 - len(encoded) % 4)).decode()
+    return unquote(href)
+
+def _search_bing(query, max_results=5):
+    """Bing HTML 抓取（setlang=zh-CN&cc=CN 保证中文结果）"""
+    r = httpx.get("https://www.bing.com/search",
+                  params={"q": query, "count": str(max_results),
+                          "setlang": "zh-CN", "cc": "CN"})
+    blocks = re.findall(r'<li class="b_algo"[^>]*>(.*?)</li>', r.text, re.DOTALL)
+    # 从 <h2><a href="...">title</a></h2> 提取标题+URL，<p> 提取摘要
+    # html.unescape() 清理 HTML 实体
+
+def _search_ddg(query, max_results=5, region="cn-zh"):
+    """DuckDuckGo 搜索（备用，国内可能不可用）"""
+
+def search_web(query, max_results=5):
+    """优先 Bing → 失败则 DuckDuckGo"""
+
+def search_news(query, max_results=5):
+    """Bing News 优先 → DuckDuckGo News 备用"""
+
 SEARCH_TOOLS = [
     {"type": "function", "function": {
         "name": "web_search",
-        "parameters": {
-            "query": {"type": "string"},
-            "search_type": {"enum": ["general", "news"]}
-        }
+        "parameters": {"query": str, "search_type": ["general","news"]}
     }},
     {"type": "function", "function": {"name": "multi_search", ...}}
 ]
 
-# services/ai_service.py — 两轮策略
+# services/ai_service.py — Function Calling 循环
 def chat_with_search(message, context):
-    messages = [system, user]
     for round_idx in range(3):
         resp = call_api(messages, tools=SEARCH_TOOLS)
-        if no_tool_calls:
-            return {"reply": resp.content, "search_results": all_results}
+        if no_tool_calls: return {"reply": resp, "search_results": all_results}
         for tool_call in resp.tool_calls:
-            search_result = execute_tool(tool_call)  # 调用 ddgs
-            all_results.extend(search_result)
-            messages.append({"role": "tool", ...})
+            result = execute_tool(tool_call)  # → _search_bing() 或 _search_ddg()
+            all_results.extend(result)
 
 # 返回字段：title / url / snippet（前端 cards 用）
 ```
@@ -487,20 +514,29 @@ const toggleGroupExpanded = (groupId) => {
 const expanded = expandedGroups[g.id] ?? (personalTasks.length <= 2)
 ```
 
-### 6.8 案例搜索结果持久化
+### 6.8 案例搜索结果持久化（后端 DB）
+
+```python
+# models/group.py — Group 模型新增字段
+search_results = Column(JSON, default=list)  # AI 搜索案例，全组共享
+
+# routers/groups.py — 两个新端点
+GET  /api/groups/{id}/search-results   → 读取
+PUT  /api/groups/{id}/search-results   → 更新（body: {results: [...]})
+```
 
 ```jsx
-// GroupChatPage.jsx
+// GroupChatPage.jsx — v4.3 改为后端持久化
 useEffect(() => {
-  const cached = localStorage.getItem(`search_results_${groupId}`)
-  if (cached) setSearchResults(JSON.parse(cached))
+  const loadSearchResults = async () => {
+    const res = await groupAPI.getSearchResults(groupId)
+    if (res.data?.results?.length) setSearchResults(res.data.results)
+  }
+  loadSearchResults()
 }, [groupId])
 
-useEffect(() => {
-  if (searchResults.length > 0) {
-    localStorage.setItem(`search_results_${groupId}`, JSON.stringify(searchResults))
-  }
-}, [searchResults, groupId])
+// 搜索完成后调用
+await groupAPI.saveSearchResults(groupId, newResults)
 ```
 
 ### 6.9 蒙层 + 浮窗 CSS
@@ -538,6 +574,7 @@ MIGRATIONS = [
     ("tasks", "is_subtask", "BOOLEAN", "0"),
     ("groups", "status", "VARCHAR(20)", "'gathering'"),
     ("groups", "project_brief", "TEXT", "''"),
+    ("groups", "search_results", "JSON", "'[]'"),      # v4.3 搜索案例后端持久化
     ("group_messages", "msg_type", "VARCHAR(20)", "'text'"),
     ("group_messages", "metadata_", "JSON", "'{}'"),
     # 新增字段只需加一行

@@ -58,6 +58,8 @@ export const groupAPI = {
   getPendingTasks: (groupId) => api.get(`/groups/${groupId}/pending-tasks`),
   submitProposal: (groupId, data) => api.post(`/groups/${groupId}/submit-proposal`, data, { timeout: 120000 }),
   askAIAboutFile: (groupId, fileId, data) => api.post(`/groups/${groupId}/knowledge/${fileId}/ask-ai`, data || {}, { timeout: 60000 }),
+  getSearchResults: (groupId) => api.get(`/groups/${groupId}/search-results`),
+  saveSearchResults: (groupId, results) => api.put(`/groups/${groupId}/search-results`, { results }),
 }
 
 export const taskAPI = {

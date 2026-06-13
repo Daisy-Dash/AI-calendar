@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { aiAPI, taskAPI, messageAPI, groupAPI } from '../utils/api'
 import MarkdownText from '../components/MarkdownText'
@@ -63,11 +63,10 @@ function saveSessionMessages(id, messages) {
 }
 
 // ── Session List View ──
-function SessionListView({ sessions, onSelect, onCreate, onDelete, onBack }) {
+function SessionListView({ sessions, onSelect, onCreate, onDelete }) {
   return (
-    <div className="cakie-chat-page cakie-inspiration-page flex flex-col h-screen">
+    <div className="cakie-chat-page cakie-inspiration-page flex flex-col h-[calc(100vh-70px)]">
       <div className="cakie-chat-header cakie-inspiration-header mx-3 mt-3 px-4 py-3 flex items-center gap-3">
-        <button onClick={onBack} className="cakie-task-back text-rosa-400 text-sm">←</button>
         <div className="flex items-center gap-2 flex-1">
           <CakieAIAvatar className="cakie-ai-avatar-header" />
           <div>
@@ -470,30 +469,17 @@ function ActiveChatView({ sessionId, onBack }) {
 // ── Main Page Component ──
 export default function AIChatPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const { sessionId } = useParams()
   const [sessions, setSessions] = useState(loadSessions)
-  const [activeSessionId, setActiveSessionId] = useState(() => {
-    // If coming from a group link, auto-create a new session
-    if (searchParams.get('group')) {
-      const id = Date.now().toString()
-      const session = { id, title: '新对话', updatedAt: Date.now() }
-      const updated = [session, ...loadSessions()]
-      saveSessions(updated)
-      return id
-    }
-    return null
-  })
 
   const handleCreate = useCallback(() => {
     const id = Date.now().toString()
     const session = { id, title: '新对话', updatedAt: Date.now() }
-    setSessions(prev => {
-      const updated = [session, ...prev]
-      saveSessions(updated)
-      return updated
-    })
-    setActiveSessionId(id)
-  }, [])
+    const updated = [session, ...loadSessions()]
+    saveSessions(updated)
+    setSessions(updated)
+    navigate(`/ai-chat/${id}`)
+  }, [navigate])
 
   const handleDelete = useCallback((id) => {
     setSessions(prev => {
@@ -502,26 +488,23 @@ export default function AIChatPage() {
       return updated
     })
     try { localStorage.removeItem(`ai_chat_session_${id}`) } catch {}
-    if (activeSessionId === id) setActiveSessionId(null)
-  }, [activeSessionId])
+    if (sessionId === id) navigate('/ai-chat')
+  }, [sessionId, navigate])
 
   const handleBack = useCallback(() => {
-    // Refresh sessions list to get updated titles
-    setSessions(loadSessions())
-    setActiveSessionId(null)
-  }, [])
+    navigate('/ai-chat')
+  }, [navigate])
 
-  if (activeSessionId) {
-    return <ActiveChatView sessionId={activeSessionId} onBack={handleBack} />
+  if (sessionId) {
+    return <ActiveChatView sessionId={sessionId} onBack={handleBack} />
   }
 
   return (
     <SessionListView
       sessions={sessions}
-      onSelect={setActiveSessionId}
+      onSelect={(id) => navigate(`/ai-chat/${id}`)}
       onCreate={handleCreate}
       onDelete={handleDelete}
-      onBack={() => navigate(-1)}
     />
   )
 }

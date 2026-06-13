@@ -30,6 +30,7 @@ class Group(Base):
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     status = Column(String(20), default=GroupStatus.GATHERING.value)
     project_brief = Column(String(2000), default="")  # 项目简介/需求描述
+    search_results = Column(JSON, default=list)  # AI搜索的参考案例，所有成员共享
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

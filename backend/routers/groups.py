@@ -553,6 +553,47 @@ def get_pending_tasks(
     return result
 
 
+@router.get("/{group_id}/search-results")
+def get_search_results(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """获取群组的AI搜索案例结果（所有成员共享）"""
+    member = db.query(GroupMember).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.user_id == current_user.id,
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="您不是该群组成员")
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="群组不存在")
+    return group.search_results or []
+
+
+@router.put("/{group_id}/search-results")
+def update_search_results(
+    group_id: int,
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """更新群组的AI搜索案例结果（所有成员共享）"""
+    member = db.query(GroupMember).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.user_id == current_user.id,
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="您不是该群组成员")
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="群组不存在")
+    group.search_results = data.get("results", [])
+    db.commit()
+    return {"message": "ok"}
+
+
 @router.post("/{group_id}/submit-proposal")
 def submit_proposal(
     group_id: int,
