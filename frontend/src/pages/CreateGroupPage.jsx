@@ -2,6 +2,16 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { groupAPI } from '../utils/api'
 
+function CakieCreateGroupAsset({ src, alt, className = '' }) {
+  const [failed, setFailed] = useState(false)
+
+  if (failed) {
+    return <span className={`cakie-create-group-asset-fallback ${className}`}>蛋糕图标</span>
+  }
+
+  return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} />
+}
+
 export default function CreateGroupPage() {
   const navigate = useNavigate()
   const [mode, setMode] = useState('') // create / join
@@ -47,10 +57,14 @@ export default function CreateGroupPage() {
   if (!mode) {
     return (
       <div className="min-h-screen px-4 pt-12 pb-24">
-        <button onClick={() => navigate(-1)} className="text-rosa-400 text-sm mb-6">← 返回</button>
+        <button onClick={() => navigate(-1)} className="text-rosa-400 text-sm mb-6 flex items-center gap-1"><img src="/assets/cakie/返回箭头_icon-back.png" className="inline-block w-4 h-4" alt="" />返回</button>
 
         <div className="text-center mb-8">
-          <p className="text-5xl mb-3">🍰</p>
+          <CakieCreateGroupAsset
+            src="/assets/cakie/AI小蛋糕拿菜单_agent-menu.png"
+            alt="Team CAKIE 小蛋糕拿菜单"
+            className="cakie-create-group-hero mb-3"
+          />
           <h1 className="text-xl font-medium text-choco-600">团队项目</h1>
           <p className="text-sm text-choco-200 mt-1">创建或加入一个团队</p>
         </div>
@@ -61,8 +75,12 @@ export default function CreateGroupPage() {
             className="hand-card w-full text-left hover:shadow-lg transition-all active:scale-[0.98]"
           >
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-rosa-50 border border-rosa-100 flex items-center justify-center text-2xl">
-                🎂
+              <div className="cakie-create-group-icon-wrap is-create">
+                <CakieCreateGroupAsset
+                  src="/assets/cakie/AI小蛋糕助手_agent-cake.png"
+                  alt="创建团队项目"
+                  className="cakie-create-group-icon"
+                />
               </div>
               <div>
                 <p className="text-base font-medium text-choco-600">新建团队项目</p>
@@ -76,8 +94,12 @@ export default function CreateGroupPage() {
             className="hand-card w-full text-left hover:shadow-lg transition-all active:scale-[0.98]"
           >
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-sage-50 border border-sage-100 flex items-center justify-center text-2xl">
-                🔑
+              <div className="cakie-create-group-icon-wrap is-join">
+                <CakieCreateGroupAsset
+                  src="/assets/cakie/搜索图标_icon-search.png"
+                  alt="加入已有项目"
+                  className="cakie-create-group-icon"
+                />
               </div>
               <div>
                 <p className="text-base font-medium text-choco-600">加入已有项目</p>
@@ -92,12 +114,16 @@ export default function CreateGroupPage() {
 
   return (
     <div className="min-h-screen px-4 pt-8 pb-24">
-      <button onClick={() => setMode('')} className="text-rosa-400 text-sm mb-6">← 返回</button>
+      <button onClick={() => setMode('')} className="text-rosa-400 text-sm mb-6 flex items-center gap-1"><img src="/assets/cakie/返回箭头_icon-back.png" className="inline-block w-4 h-4" alt="" />返回</button>
 
       {mode === 'create' ? (
         <>
           <div className="text-center mb-6">
-            <p className="text-4xl mb-2">🎂</p>
+            <CakieCreateGroupAsset
+              src="/assets/cakie/AI小蛋糕助手_agent-cake.png"
+              alt="创建团队项目"
+              className="cakie-create-group-form-icon mb-2"
+            />
             <h2 className="text-lg font-medium text-choco-600">新建团队项目</h2>
             <p className="text-xs text-choco-200 mt-1">创建后可以拉好友入群</p>
           </div>
@@ -136,7 +162,11 @@ export default function CreateGroupPage() {
       ) : (
         <>
           <div className="text-center mb-6">
-            <p className="text-4xl mb-2">🔑</p>
+            <CakieCreateGroupAsset
+              src="/assets/cakie/搜索图标_icon-search.png"
+              alt="加入团队"
+              className="cakie-create-group-form-icon mb-2"
+            />
             <h2 className="text-lg font-medium text-choco-600">加入团队</h2>
             <p className="text-xs text-choco-200 mt-1">输入好友分享的群号</p>
           </div>

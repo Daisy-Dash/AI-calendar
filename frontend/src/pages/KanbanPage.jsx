@@ -73,7 +73,7 @@ export default function KanbanPage() {
       {/* 头部 */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <button onClick={() => navigate(-1)} className="text-rosa-400 text-lg flex-shrink-0">←</button>
+          <button onClick={() => navigate(-1)} className="text-rosa-400 text-lg flex-shrink-0 flex items-center"><img src="/assets/cakie/返回箭头_icon-back.png" className="inline-block w-5 h-5" alt="" /></button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-medium text-choco-600 truncate">{group.name}</h1>
             <p className="text-xs text-choco-200">📋 团队看板</p>
@@ -155,7 +155,7 @@ export default function KanbanPage() {
         <div className="flex items-center justify-between text-[10px] text-choco-300">
           <span>📋 {completed}/{total} 任务完成</span>
           <span>
-            ⚠️ {tasks.filter(t => t.deadline && t.status !== '已完成' && new Date(t.deadline) < new Date()).length} 逾期 ·{' '}
+            <img src="/assets/cakie/任务过期图标_icon-overdue.png" className="inline-block w-3.5 h-3.5" alt="" /> {tasks.filter(t => t.deadline && t.status !== '已完成' && new Date(t.deadline) < new Date()).length} 逾期 ·{' '}
             ◎ {tasks.filter(t => t.status === '进行中').length} 进行
           </span>
         </div>
@@ -228,7 +228,7 @@ export default function KanbanPage() {
                       isOverdue ? 'bg-red-100' :
                       isMine ? 'bg-rosa-100' : 'bg-lilac-50'
                     }`}>
-                      {isDone ? '✅' : isOverdue ? '⚠️' : isMine ? '🤖' : assigneeAvatar}
+                      {isDone ? '✅' : isOverdue ? <img src="/assets/cakie/任务过期图标_icon-overdue.png" className="inline-block w-5 h-5" alt="" /> : isMine ? '🤖' : assigneeAvatar}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
@@ -241,7 +241,7 @@ export default function KanbanPage() {
                           <span className={`text-[10px] flex-shrink-0 whitespace-nowrap ${
                             isOverdue && !isDone ? 'text-red-500 font-medium' : 'text-choco-300'
                           }`}>
-                            {isOverdue && !isDone ? '⚠️ 逾期' : '📅 '}
+                            {isOverdue && !isDone ? <><img src="/assets/cakie/任务过期图标_icon-overdue.png" className="inline-block w-3 h-3" alt="" /> 逾期</> : '📅 '}
                             {new Date(task.deadline).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}
                           </span>
                         )}

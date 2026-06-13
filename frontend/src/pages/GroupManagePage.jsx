@@ -206,7 +206,7 @@ export default function GroupManagePage() {
   if (error && !group) {
     return (
       <div className="px-4 pt-6 pb-24">
-        <button onClick={() => navigate('/groups')} className="text-gray-400 hover:text-warm-500 mb-4">← 返回</button>
+        <button onClick={() => navigate('/groups')} className="text-gray-400 hover:text-warm-500 mb-4 flex items-center gap-1"><img src="/assets/cakie/返回箭头_icon-back.png" className="inline-block w-4 h-4" alt="" />返回</button>
         <div className="hand-card text-center py-10">
           <div className="text-4xl mb-3">😞</div>
           <p className="text-gray-400">{error}</p>
@@ -219,7 +219,7 @@ export default function GroupManagePage() {
     <div className="px-4 pt-6 pb-24">
       {/* 头部导航 */}
       <div className="flex items-center gap-3 mb-4">
-        <button onClick={() => navigate('/groups')} className="text-gray-400 hover:text-warm-500 text-lg">←</button>
+        <button onClick={() => navigate('/groups')} className="text-gray-400 hover:text-warm-500 text-lg flex items-center"><img src="/assets/cakie/返回箭头_icon-back.png" className="inline-block w-5 h-5" alt="" /></button>
         <div className="flex-1">
           <h1 className="text-xl font-hand text-warm-700 truncate">{group?.name || groupNameParam || '群组'}</h1>
           {group?.description && <p className="text-xs text-gray-400 mt-0.5">{group.description}</p>}

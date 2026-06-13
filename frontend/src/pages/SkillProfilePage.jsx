@@ -178,7 +178,7 @@ export default function SkillProfilePage() {
     <div className="cakie-skill-page px-4 pt-6 pb-24 fade-in-up">
       {/* 头部 */}
       <div className="cakie-skill-header flex items-center gap-3 mb-5">
-        <button onClick={() => navigate(-1)} className="cakie-skill-back text-rosa-400 text-lg">←</button>
+        <button onClick={() => navigate(-1)} className="cakie-skill-back text-rosa-400 text-lg flex items-center"><img src="/assets/cakie/返回箭头_icon-back.png" className="inline-block w-5 h-5" alt="" /></button>
         <div>
           <p className="cakie-skill-kicker">TEAM CAKIE · MENU CARD</p>
           <h1 className="text-xl font-hand text-choco-600">来完善你的 CAKIE 菜单卡</h1>

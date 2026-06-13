@@ -391,7 +391,7 @@ export default function GroupChatPage() {
       {/* 顶部栏 */}
       <div className="cakie-group-header flex items-center justify-between px-4 py-3 relative">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <button onClick={() => navigate('/')} className="cakie-group-back flex-shrink-0">←</button>
+          <button onClick={() => navigate('/')} className="cakie-group-back flex-shrink-0 flex items-center"><img src="/assets/cakie/返回箭头_icon-back.png" className="inline-block w-5 h-5" alt="" /></button>
           <div className="flex-1 min-w-0">
             <h1 className="text-base font-medium text-choco-600 truncate">{group.name}</h1>
             <p className="text-xs text-choco-300 truncate">{group.member_count || 0} 块成员 · CAKIE 正在店内</p>
@@ -586,7 +586,7 @@ export default function GroupChatPage() {
                       </p>
                       <p className={`text-[10px] ${isOverdue ? 'text-red-500 font-medium' : 'text-choco-200'}`}>
                         {task.status}
-                        {task.deadline && (isOverdue ? ` · ⚠️ 已逾期 ${new Date(task.deadline).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}` : ` · 截止 ${new Date(task.deadline).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}`)}
+                        {task.deadline && (isOverdue ? ` · ` : ` · 截止 `)}{isOverdue && task.deadline && <><img src="/assets/cakie/任务过期图标_icon-overdue.png" className="inline-block w-3 h-3" alt="" /> 已逾期 {new Date(task.deadline).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}</>}{!isOverdue && task.deadline && new Date(task.deadline).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}
                       </p>
                     </div>
                     <button
@@ -660,7 +660,7 @@ export default function GroupChatPage() {
                     isMine ? 'bg-rosa-100' :
                     'bg-lilac-100'
                   }`}>
-                    {isDone ? '✅' : isOverdue ? '⚠️' : isMine ? '🤖' : '👤'}
+                    {isDone ? '✅' : isOverdue ? <img src="/assets/cakie/任务过期图标_icon-overdue.png" className="inline-block w-4 h-4" alt="" /> : isMine ? '🤖' : '👤'}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
@@ -673,7 +673,7 @@ export default function GroupChatPage() {
                       </p>
                       {task.deadline && (
                         <span className={`text-[9px] flex-shrink-0 ${isOverdue && !isDone ? 'text-red-500 font-medium' : 'text-choco-200'}`}>
-                          {isOverdue && !isDone ? '⚠️ 已逾期' : new Date(task.deadline).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}
+                          {isOverdue && !isDone ? <><img src="/assets/cakie/任务过期图标_icon-overdue.png" className="inline-block w-3 h-3" alt="" /> 已逾期</> : new Date(task.deadline).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })}
                         </span>
                       )}
                     </div>
@@ -1165,7 +1165,7 @@ export default function GroupChatPage() {
                                 {task.deadline && (
                                   <div className="flex items-center gap-1.5 mt-1">
                                     <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-dusty-100 text-dusty-600 font-medium">
-                                      ⏰ 提交节点 {task.deadline}
+                                      <img src="/assets/cakie/任务过期图标_icon-overdue.png" className="inline-block w-3 h-3" alt="" /> 提交节点 {task.deadline}
                                     </span>
                                     {task.days_from_now && (
                                       <span className="text-[10px] text-choco-200">
@@ -1447,7 +1447,7 @@ export default function GroupChatPage() {
                         </span>
                         {task.deadline && (
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-dusty-100 text-dusty-600 font-medium">
-                            ⏰ 提交节点 {task.deadline}
+                            <img src="/assets/cakie/任务过期图标_icon-overdue.png" className="inline-block w-3 h-3" alt="" /> 提交节点 {task.deadline}
                           </span>
                         )}
                       </div>

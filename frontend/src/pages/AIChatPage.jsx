@@ -279,7 +279,7 @@ function ActiveChatView({ sessionId, onBack }) {
     <div className="cakie-chat-page cakie-inspiration-page flex flex-col h-screen">
       {/* 头部 */}
       <div className="cakie-chat-header cakie-inspiration-header mx-3 mt-3 px-4 py-3 flex items-center gap-3">
-        <button onClick={onBack} className="cakie-task-back text-rosa-400 text-sm">←</button>
+        <button onClick={onBack} className="cakie-task-back text-rosa-400 text-sm flex items-center"><img src="/assets/cakie/返回箭头_icon-back.png" className="inline-block w-4 h-4" alt="" /></button>
         <div className="flex items-center gap-2 flex-1">
           <CakieAIAvatar className="cakie-ai-avatar-header" />
           <div>
@@ -307,7 +307,7 @@ function ActiveChatView({ sessionId, onBack }) {
             onClick={() => setShowGroupPicker(true)}
             className="cakie-inspiration-note w-full flex items-center gap-3 p-3 transition-all"
           >
-            <span className="text-xl">💌</span>
+            <img src="/assets/cakie/转发群名片_icon-share-card.png" className="inline-block w-5 h-5" alt="" />
             <div className="text-left flex-1">
               <p className="text-sm font-medium text-choco-500">递上一张小组菜单卡</p>
               <p className="text-[10px] text-choco-300">CAKIE 会读取你的任务，一起调配执行灵感</p>
@@ -365,7 +365,7 @@ function ActiveChatView({ sessionId, onBack }) {
             <button onClick={() => setShowGroupPicker(true)}
               className="cakie-inspiration-tag flex items-center gap-1 px-3 py-1.5 text-xs text-lilac-400 whitespace-nowrap"
               disabled={loading}>
-              <span>💌</span> 转发群名片
+              <img src="/assets/cakie/转发群名片_icon-share-card.png" className="inline-block w-4 h-4" alt="" /> 转发群名片
             </button>
             <button onClick={() => sendMessage('帮我分析一下我最近的任务完成情况')}
               className="cakie-inspiration-tag flex items-center gap-1 px-3 py-1.5 text-xs text-choco-400 whitespace-nowrap"
@@ -430,7 +430,7 @@ function ActiveChatView({ sessionId, onBack }) {
           <div className="bg-white rounded-t-3xl w-full max-w-[380px] p-5 pb-8 fade-in-up" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-cream-300 rounded-full mx-auto mb-4" />
             <div className="flex items-center gap-2 mb-4">
-              <span className="text-2xl">💌</span>
+              <img src="/assets/cakie/转发群名片_icon-share-card.png" className="inline-block w-6 h-6" alt="" />
               <div>
                 <h3 className="text-lg font-medium text-choco-600">转发群名片</h3>
                 <p className="text-xs text-choco-200">选择一个群组，AI将读取你的任务信息</p>

@@ -211,7 +211,7 @@ export default function TaskChatPage() {
         </div>
         <div className="cakie-task-dashed-divider" />
         <div className="flex items-center gap-2 mb-2">
-          <button onClick={() => navigate(-1)} className="cakie-task-back text-rosa-400 text-sm">←</button>
+          <button onClick={() => navigate(-1)} className="cakie-task-back text-rosa-400 text-sm flex items-center"><img src="/assets/cakie/返回箭头_icon-back.png" className="inline-block w-4 h-4" alt="" /></button>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-choco-600 truncate">{task.title}</p>
             <div className="flex items-center gap-2 mt-0.5">
@@ -222,7 +222,7 @@ export default function TaskChatPage() {
               }`}>{task.status}</span>
               {task.deadline && (
                 <span className={`text-[10px] ${isOverdue ? 'text-red-500 font-medium' : 'text-choco-300'}`}>
-                  {isOverdue ? '⚠️ 已逾期 ' : '📅 截止 '}{new Date(task.deadline).toLocaleDateString('zh-CN')}
+                  {isOverdue ? <><img src="/assets/cakie/任务过期图标_icon-overdue.png" className="inline-block w-3 h-3" alt="" /> 已逾期 </> : '📅 截止 '}{new Date(task.deadline).toLocaleDateString('zh-CN')}
                 </span>
               )}
             </div>
@@ -294,7 +294,7 @@ export default function TaskChatPage() {
                     'bg-rosa-100 text-rosa-600'
                   }`}>
                     {selectedNode.status === '已完成' ? '✅ 已完成' :
-                     (selectedNode.deadline && new Date(selectedNode.deadline) < new Date()) ? '⚠️ 已逾期' :
+                     (selectedNode.deadline && new Date(selectedNode.deadline) < new Date()) ? <><img src="/assets/cakie/任务过期图标_icon-overdue.png" className="inline-block w-3 h-3" alt="" /> 已逾期</> :
                      '○ 待提交'}
                   </span>
                   <span className="text-[10px] text-choco-300 whitespace-nowrap">节点 {subtasks.findIndex(s => s.id === selectedNode.id) + 1} / {subtasks.length}</span>
@@ -312,7 +312,7 @@ export default function TaskChatPage() {
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
               {/* DDL */}
               <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-cream-50 border border-cream-200">
-                <span className="text-lg">⏰</span>
+                <img src="/assets/cakie/任务过期图标_icon-overdue.png" className="inline-block w-5 h-5" alt="" />
                 <div className="flex-1">
                   <p className="text-[10px] text-choco-300">提交截止时间</p>
                   <p className={`text-sm font-medium ${selectedNode.deadline && new Date(selectedNode.deadline) < new Date() ? 'text-red-500' : 'text-choco-600'}`}>
@@ -481,7 +481,7 @@ export default function TaskChatPage() {
         <div className="fixed inset-0 z-[200] flex items-center justify-center px-3 bg-transparent" onClick={() => setShowOverdue(false)}>
           <div className="bg-white rounded-3xl w-full max-w-[380px] p-5 fade-in-up" onClick={e => e.stopPropagation()}>
             <div className="flex items-center gap-2 mb-3">
-              <span className="text-2xl">⏰</span>
+              <img src="/assets/cakie/任务过期图标_icon-overdue.png" className="inline-block w-6 h-6" alt="" />
               <div>
                 <h3 className="text-base font-medium text-rosa-500">任务已逾期</h3>
                 <p className="text-xs text-choco-200">请尽快完成或与团队沟通调整</p>

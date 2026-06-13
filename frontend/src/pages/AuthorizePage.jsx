@@ -74,9 +74,9 @@ export default function AuthorizePage() {
             </button>
             <button
               onClick={() => navigate(`/discussion/${projectId}`)}
-              className="w-full text-center mt-4 text-sm text-rosa-400 hover:text-rosa-500 transition-colors"
+              className="w-full text-center mt-4 text-sm text-rosa-400 hover:text-rosa-500 transition-colors flex items-center justify-center gap-1"
             >
-              ← 返回讨论修改方案
+              <img src="/assets/cakie/返回箭头_icon-back.png" className="inline-block w-4 h-4" alt="" />返回讨论修改方案
             </button>
           </>
         ) : (

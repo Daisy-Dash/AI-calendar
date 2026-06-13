@@ -142,7 +142,7 @@ export default function DiscussionPage() {
     <div className="flex flex-col h-screen max-h-screen">
       <div className="flex items-center justify-between px-4 py-3 border-b-[1.5px] border-cream-300 bg-white">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/')} className="text-rosa-400 text-lg">←</button>
+          <button onClick={() => navigate('/')} className="text-rosa-400 text-lg flex items-center"><img src="/assets/cakie/返回箭头_icon-back.png" className="inline-block w-5 h-5" alt="" /></button>
           <div>
             <h1 className="text-base font-medium text-choco-600">{project.name}</h1>
             <p className="text-xs text-choco-200">与 AI 统筹组长讨论</p>

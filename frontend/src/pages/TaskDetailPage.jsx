@@ -142,7 +142,7 @@ export default function TaskDetailPage() {
       )}
 
       <div className="flex items-center gap-3 mb-4">
-        <button onClick={() => navigate(`/kanban/${projectId}`)} className="text-rosa-400 text-lg">←</button>
+        <button onClick={() => navigate(`/kanban/${projectId}`)} className="text-rosa-400 text-lg flex items-center"><img src="/assets/cakie/返回箭头_icon-back.png" className="inline-block w-5 h-5" alt="" /></button>
         <h1 className="text-lg font-medium flex-1 truncate text-choco-600">{task.title}</h1>
         <span className={`text-xs px-2.5 py-1 rounded-full ${
           task.status === 'completed' ? 'bg-sage-50 text-sage-500' :

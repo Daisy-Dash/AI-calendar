@@ -104,7 +104,7 @@ export default function FriendsPage() {
             <h1 className="text-2xl font-hand font-medium text-choco-600 mt-1">好友</h1>
             <p className="text-xs text-choco-300 mt-1">找到你的蛋糕小伙伴</p>
           </div>
-          <button onClick={() => navigate(-1)} className="cakie-friends-back">返回</button>
+          <button onClick={() => navigate(-1)} className="cakie-friends-back flex items-center gap-1"><img src="/assets/cakie/返回箭头_icon-back.png" className="inline-block w-4 h-4" alt="" />返回</button>
         </div>
 
         {/* Tab 切换 */}
