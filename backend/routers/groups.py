@@ -638,7 +638,7 @@ def submit_proposal(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """组员讨论后提交方案 — AI根据方案重新拆解任务"""
+    """组员讨论后提交方案 — AI根据方案重新拆解任务 / 建议调整"""
     from datetime import datetime, timedelta
     from models.message import GroupMessage
 
@@ -671,8 +671,16 @@ def submit_proposal(
         },
     )
     db.add(proposal_msg)
+    db.flush()
 
-    # 2. 获取成员信息
+    # 2. 按新方案重建AI知识库（更新核心方案部分）
+    try:
+        from services.ai_service import AIService
+        AIService().build_group_knowledge(group_id, db)
+    except Exception as e:
+        print(f"[Proposal] Knowledge rebuild error: {e}")
+
+    # 3. 获取成员信息
     members = db.query(GroupMember).filter(GroupMember.group_id == group_id).all()
     member_info = []
     for m in members:
@@ -687,7 +695,54 @@ def submit_proposal(
                 "role": m.role,
             })
 
-    # 3. 删除原"待确认"任务（即将被新方案替代）
+    new_brief = f"【组员讨论方案】\n{proposal}\n\n【原项目描述】\n{group.project_brief or group.description or ''}"
+    group.project_brief = new_brief
+
+    # ── 项目已在执行中：生成调整建议，需组员审批 ──
+    if group.status == "in_progress":
+        existing_tasks = db.query(Task).filter(
+            Task.group_id == group_id,
+            Task.parent_id.is_(None),
+            Task.status.in_(["待处理", "进行中"]),
+        ).all()
+
+        adjustments = _ai_suggest_adjustments(
+            proposal, existing_tasks, member_info, group
+        )
+
+        if not adjustments:
+            db.commit()
+            return {
+                "message": "方案已记录，AI分析后认为现有任务无需调整",
+                "adjustments": [],
+                "status": "in_progress",
+            }
+
+        # 存储调整建议到消息
+        adj_metadata = {
+            "type": "adjustment_proposal",
+            "submitter": current_user.username,
+            "adjustments": adjustments,
+            "votes": {},  # {user_id: true/false}
+        }
+        adj_msg = GroupMessage(
+            group_id=group_id,
+            sender_id=None,
+            content=f"📋 收到 {current_user.username} 的新方案，AI 分析后建议对现有任务做以下调整，请各相关组员确认：",
+            msg_type="adjustment_proposal",
+            metadata_=adj_metadata,
+        )
+        db.add(adj_msg)
+        db.commit()
+
+        return {
+            "message": "方案已记录，AI已生成调整建议等待组员确认",
+            "adjustments": adjustments,
+            "status": "in_progress",
+        }
+
+    # ── 讨论/确认阶段：全量重新拆解任务 ──
+    # 删除原"待确认"任务（即将被新方案替代）
     old_pending = db.query(Task).filter(
         Task.group_id == group_id,
         Task.status == "待确认",
@@ -696,13 +751,9 @@ def submit_proposal(
         db.delete(t)
     db.flush()
 
-    # 4. 把组员方案作为新项目描述给AI重新拆解
-    new_brief = f"【组员讨论方案】\n{proposal}\n\n【原项目描述】\n{group.project_brief or group.description or ''}"
-    group.project_brief = new_brief
-
     tasks_data = _ai_decompose_tasks(new_brief, member_info)
 
-    # 5. 创建新任务
+    # 创建新任务
     now = datetime.now()
     created_tasks = []
     for t in tasks_data:
@@ -737,7 +788,7 @@ def submit_proposal(
             "days_from_now": days,
         })
 
-    # 6. 发送新任务卡片
+    # 发送新任务卡片
     tasks_by_member = {}
     for ct in created_tasks:
         name = ct.get('assigned_name', '未分配')
@@ -778,6 +829,96 @@ def submit_proposal(
         "message": "已根据方案重新拆解任务",
         "tasks": created_tasks,
         "status": "confirming",
+    }
+
+
+@router.post("/{group_id}/vote-adjustment/{message_id}")
+def vote_adjustment(
+    group_id: int,
+    message_id: int,
+    data: dict,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """组员对AI调整建议投票（同意/拒绝）"""
+    from datetime import datetime, timedelta
+    from models.message import GroupMessage
+
+    member = db.query(GroupMember).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.user_id == current_user.id,
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="您不是该群组成员")
+
+    msg = db.query(GroupMessage).filter(
+        GroupMessage.id == message_id,
+        GroupMessage.group_id == group_id,
+        GroupMessage.msg_type == "adjustment_proposal",
+    ).first()
+    if not msg:
+        raise HTTPException(status_code=404, detail="调整建议不存在")
+
+    approve = data.get("approve", True)
+    meta = dict(msg.metadata_ or {})
+    votes = dict(meta.get("votes", {}))
+    votes[str(current_user.id)] = approve
+    meta["votes"] = votes
+    msg.metadata_ = meta
+
+    # 统计投票：所有受影响的成员都投过票才执行
+    adjustments = meta.get("adjustments", [])
+    affected_ids = set()
+    for adj in adjustments:
+        if adj.get("assigned_to"):
+            affected_ids.add(str(adj["assigned_to"]))
+        if adj.get("new_assigned_to"):
+            affected_ids.add(str(adj["new_assigned_to"]))
+
+    all_members = db.query(GroupMember).filter(
+        GroupMember.group_id == group_id,
+    ).all()
+    all_member_ids = {str(m.user_id) for m in all_members}
+
+    # 受影响的成员都投票了
+    voters_needed = affected_ids & all_member_ids if affected_ids else all_member_ids
+    all_voted = all(str(uid) in votes for uid in voters_needed)
+
+    if all_voted:
+        # 统计：有任何人拒绝则整体拒绝
+        any_rejected = any(not v for v in votes.values())
+
+        if any_rejected:
+            meta["status"] = "rejected"
+            msg.metadata_ = meta
+            reject_msg = GroupMessage(
+                group_id=group_id,
+                sender_id=None,
+                content="❌ 调整建议被拒绝，维持现有任务分配不变。",
+                msg_type="ai",
+            )
+            db.add(reject_msg)
+        else:
+            # 全部同意 → 执行调整
+            meta["status"] = "approved"
+            msg.metadata_ = meta
+            group = db.query(Group).filter(Group.id == group_id).first()
+            applied = _apply_adjustments(adjustments, group_id, db)
+            approve_msg = GroupMessage(
+                group_id=group_id,
+                sender_id=None,
+                content=f"✅ 全体组员已通过调整建议，已更新 {applied} 项任务。",
+                msg_type="ai",
+            )
+            db.add(approve_msg)
+
+    db.commit()
+
+    return {
+        "voted": True,
+        "approve": approve,
+        "all_voted": all_voted,
+        "status": meta.get("status", "pending"),
     }
 
 
@@ -856,6 +997,178 @@ def ask_ai_about_file(
         "sender": None,
         "created_at": ai_msg.created_at.isoformat() if ai_msg.created_at else "",
     }
+
+
+def _ai_suggest_adjustments(proposal: str, existing_tasks, member_info: list, group) -> list:
+    """AI对比新方案与现有任务，生成调整建议列表"""
+    import json as _json
+
+    tasks_desc = []
+    for t in existing_tasks:
+        assignee = "未分配"
+        for m in member_info:
+            if m["id"] == t.assigned_to:
+                assignee = m["name"]
+                break
+        tasks_desc.append(
+            f"  - ID={t.id}「{t.title}」负责人={assignee} 状态={t.status} "
+            f"截止={t.deadline.strftime('%Y-%m-%d') if t.deadline else '无'}"
+        )
+
+    members_str = "\n".join([
+        f"  - {m['name']}（专业：{', '.join(m.get('major', [])[:3]) or '未填写'}"
+        f"｜工具：{', '.join(m.get('tools', [])[:6]) or '未填写'}"
+        f"｜技能：{', '.join(m.get('skills', [])[:6]) or '未填写'}）"
+        for m in member_info
+    ])
+
+    prompt = f"""你是项目管理AI。小组项目已在执行中，组员提交了新的方案/方向调整，请对比现有任务分配，给出调整建议。
+
+【新提交的方案】
+{proposal[:2000]}
+
+【现有任务分配】
+{chr(10).join(tasks_desc)}
+
+【团队成员】
+{members_str}
+
+请分析新方案与现有任务的差异，判断是否需要调整。如果不需要调整，返回空数组 []。
+
+如需调整，返回JSON数组，每项是一个调整建议（只返回需要调整的部分）：
+[
+  {{
+    "action": "modify",
+    "task_id": 原任务ID,
+    "changes": "具体修改内容描述",
+    "new_title": "新标题（如不改可省略）",
+    "new_description": "新描述（如不改可省略）",
+    "new_assigned_name": "新负责人姓名（如不改可省略）",
+    "new_deadline_days": 新截止天数从今天算（如不改可省略）,
+    "reason": "调整原因"
+  }},
+  {{
+    "action": "add",
+    "title": "新增任务标题",
+    "description": "任务描述",
+    "assigned_name": "负责人姓名",
+    "priority": "高/中/低",
+    "days_from_now": 截止天数,
+    "reason": "新增原因"
+  }},
+  {{
+    "action": "remove",
+    "task_id": 要删除的任务ID,
+    "reason": "删除原因"
+  }}
+]
+
+原则：
+1. 尽量保留现有已在进行中的任务，只做必要调整
+2. 如果新方案只是细化了方向，可能不需要大改
+3. 修改任务时说明具体改了什么
+4. 只返回纯JSON，不要其他文字"""
+
+    try:
+        from services.ai_service import AIService
+        ai = AIService()
+        if not ai.is_available:
+            return []
+
+        reply = ai.chat(message=prompt, context="你是项目调整顾问，请客观分析并返回JSON")
+        text = reply.strip()
+        if "```" in text:
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+            text = text.strip()
+
+        start = text.find("[")
+        end = text.rfind("]") + 1
+        if start >= 0 and end > start:
+            adjustments = _json.loads(text[start:end])
+            # 匹配成员名到ID
+            for adj in adjustments:
+                name = adj.get("assigned_name") or adj.get("new_assigned_name")
+                if name:
+                    for m in member_info:
+                        if m["name"] == name or name in m["name"]:
+                            if adj["action"] == "add":
+                                adj["assigned_to"] = m["id"]
+                                adj["assigned_name"] = m["name"]
+                            else:
+                                adj["new_assigned_to"] = m["id"]
+                                adj["new_assigned_name"] = m["name"]
+                            break
+            return adjustments
+    except Exception as e:
+        print(f"[Adjustment] AI suggest failed: {e}")
+
+    return []
+
+
+def _apply_adjustments(adjustments: list, group_id: int, db) -> int:
+    """执行已通过审批的调整建议"""
+    from datetime import datetime, timedelta
+
+    applied = 0
+    now = datetime.now()
+
+    for adj in adjustments:
+        action = adj.get("action")
+
+        if action == "modify" and adj.get("task_id"):
+            task = db.query(Task).filter(
+                Task.id == adj["task_id"],
+                Task.group_id == group_id,
+            ).first()
+            if task:
+                if adj.get("new_title"):
+                    task.title = adj["new_title"]
+                if adj.get("new_description"):
+                    task.description = adj["new_description"]
+                if adj.get("new_assigned_to"):
+                    task.assigned_to = adj["new_assigned_to"]
+                    task.user_id = adj["new_assigned_to"]
+                if adj.get("new_deadline_days"):
+                    try:
+                        task.deadline = now + timedelta(days=int(adj["new_deadline_days"]))
+                    except (ValueError, TypeError):
+                        pass
+                applied += 1
+
+        elif action == "add":
+            days = adj.get("days_from_now", 7)
+            try:
+                days = max(1, min(60, int(days)))
+            except (ValueError, TypeError):
+                days = 7
+            task = Task(
+                title=adj.get("title", "新任务"),
+                description=adj.get("description", ""),
+                user_id=adj.get("assigned_to") or 0,
+                group_id=group_id,
+                assigned_to=adj.get("assigned_to"),
+                status="待确认",
+                priority=_parse_priority(adj.get("priority", "中")),
+                deadline=now + timedelta(days=days),
+            )
+            db.add(task)
+            applied += 1
+
+        elif action == "remove" and adj.get("task_id"):
+            task = db.query(Task).filter(
+                Task.id == adj["task_id"],
+                Task.group_id == group_id,
+            ).first()
+            if task:
+                # 不硬删，标记为已取消
+                task.status = "已完成"
+                task.description = f"[因方案调整已取消] {task.description or ''}"
+                applied += 1
+
+    db.flush()
+    return applied
 
 
 def _ai_decompose_tasks(project_desc: str, members: list) -> list:

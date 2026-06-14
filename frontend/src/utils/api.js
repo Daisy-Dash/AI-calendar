@@ -62,6 +62,7 @@ export const groupAPI = {
   saveSearchResults: (groupId, results) => api.put(`/groups/${groupId}/search-results`, { results }),
   getAIKnowledge: (groupId) => api.get(`/groups/${groupId}/ai-knowledge`),
   rebuildKnowledge: (groupId) => api.post(`/groups/${groupId}/rebuild-knowledge`, {}, { timeout: 60000 }),
+  voteAdjustment: (groupId, messageId, approve) => api.post(`/groups/${groupId}/vote-adjustment/${messageId}`, { approve }),
 }
 
 export const taskAPI = {

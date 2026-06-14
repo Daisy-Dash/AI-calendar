@@ -377,6 +377,7 @@ export default function GroupChatPage() {
       await loadGroup()
       loadGroupStats()
       loadMyTasks()
+      loadAIKnowledge()
       setProposalText('')
       setShowProposalInput(false)
     } catch (e) {
@@ -1230,6 +1231,90 @@ export default function GroupChatPage() {
                   <div className="mt-2 px-3 py-2 rounded-xl bg-sage-50 border border-sage-100">
                     <p className="text-[11px] text-sage-500">⚡ 请各位组员确认自己的任务，如有异议可以打回重新分配</p>
                   </div>
+                </div>
+                <p className="text-[10px] text-choco-100 mt-1 ml-10">
+                  {msg.created_at ? new Date(msg.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : ''}
+                </p>
+              </div>
+            )
+          }
+
+          // ─── 调整建议卡片 ───
+          if (msg.msg_type === 'adjustment_proposal' && msg.metadata?.adjustments) {
+            const adjs = msg.metadata.adjustments
+            const votes = msg.metadata.votes || {}
+            const status = msg.metadata.status || 'pending'
+            const myVote = votes[String(user?.id)]
+            return (
+              <div key={msg.id} className="fade-in-up mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CakieChatAsset
+                    src="/assets/cakie/AI小蛋糕助手_agent-cake.png"
+                    alt="CAKIE" fallback="CAKIE" className="cakie-ai-avatar flex-shrink-0"
+                  />
+                  <p className="text-[10px] text-choco-200">AI 统筹组长 · 方案调整建议</p>
+                </div>
+                <div className="ml-10 space-y-2">
+                  <div className="px-3 py-2 rounded-xl bg-gradient-to-r from-amber-50 to-cream-50 border border-amber-200">
+                    <p className="text-sm font-medium text-choco-600">📋 新方案调整建议</p>
+                    <p className="text-[10px] text-choco-200">
+                      提交人：{msg.metadata.submitter} · 共 {adjs.length} 项调整 ·
+                      {status === 'approved' ? ' ✅ 已通过' : status === 'rejected' ? ' ❌ 已拒绝' : ' ⏳ 等待组员确认'}
+                    </p>
+                  </div>
+
+                  {adjs.map((adj, i) => (
+                    <div key={i} className={`px-3 py-2 rounded-xl border ${
+                      adj.action === 'add' ? 'bg-sage-50 border-sage-200' :
+                      adj.action === 'remove' ? 'bg-rosa-50 border-rosa-200' :
+                      'bg-lilac-50 border-lilac-200'
+                    }`}>
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <span className="text-xs">{adj.action === 'add' ? '➕' : adj.action === 'remove' ? '🗑️' : '✏️'}</span>
+                        <span className="text-xs font-medium text-choco-600">
+                          {adj.action === 'add' ? '新增' : adj.action === 'remove' ? '移除' : '修改'}
+                        </span>
+                        <span className="text-xs text-choco-400">
+                          {adj.action === 'add' ? adj.title : adj.action === 'modify' ? (adj.new_title || `任务#${adj.task_id}`) : `任务#${adj.task_id}`}
+                        </span>
+                      </div>
+                      {adj.changes && <p className="text-[11px] text-choco-400 ml-5">{adj.changes}</p>}
+                      {adj.description && adj.action === 'add' && <p className="text-[11px] text-choco-400 ml-5">{adj.description}</p>}
+                      {adj.reason && <p className="text-[10px] text-lilac-400 ml-5 mt-0.5">💡 {adj.reason}</p>}
+                    </div>
+                  ))}
+
+                  {status === 'pending' && (
+                    <div className="flex items-center gap-2 mt-2">
+                      {myVote === undefined ? (
+                        <>
+                          <button
+                            className="flex-1 py-1.5 rounded-xl text-xs font-medium bg-rosa-100 text-rosa-600 hover:bg-rosa-200 transition-colors"
+                            onClick={async () => {
+                              try {
+                                await groupAPI.voteAdjustment(parseInt(groupId), msg.id, false)
+                                await loadMessages()
+                              } catch (e) { alert(e.response?.data?.detail || '操作失败') }
+                            }}
+                          >拒绝调整</button>
+                          <button
+                            className="flex-1 py-1.5 rounded-xl text-xs font-medium bg-sage-200 text-sage-700 hover:bg-sage-300 transition-colors"
+                            onClick={async () => {
+                              try {
+                                await groupAPI.voteAdjustment(parseInt(groupId), msg.id, true)
+                                await loadMessages()
+                                loadMyTasks()
+                              } catch (e) { alert(e.response?.data?.detail || '操作失败') }
+                            }}
+                          >同意调整</button>
+                        </>
+                      ) : (
+                        <p className="text-[11px] text-choco-300">
+                          {myVote ? '✅ 你已同意，等待其他组员确认' : '❌ 你已拒绝此调整'}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <p className="text-[10px] text-choco-100 mt-1 ml-10">
                   {msg.created_at ? new Date(msg.created_at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : ''}
