@@ -94,8 +94,14 @@ export default function ProjectListPage() {
             if (!tasksByGroup[t.group_id]) tasksByGroup[t.group_id] = []
             tasksByGroup[t.group_id].push(t)
           }
-          if (t.deadline && t.status !== '已完成' && new Date(t.deadline) < now) {
-            overdueTasks.push(t)
+          // 用日历天判断逾期（忽略时分秒）
+          if (t.deadline && t.status !== '已完成') {
+            const dlDate = new Date(t.deadline)
+            const dlDay = new Date(dlDate.getFullYear(), dlDate.getMonth(), dlDate.getDate())
+            const todayDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+            if (dlDay <= todayDay) {
+              overdueTasks.push(t)
+            }
           }
         }
         // 每个项目内的任务按 DDL 升序排
@@ -110,12 +116,14 @@ export default function ProjectListPage() {
         setMyTasks(tasksByGroup)
         setSubtasksMap(subtasksByParent)
 
-        const twoDays = 2 * 86400000
+        const todayDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        const twoDaysLater = new Date(todayDay.getTime() + 2 * 86400000)
         for (const subs of Object.values(subtasksByParent)) {
           for (const st of subs) {
             if (st.deadline && st.status !== '已完成') {
-              const timeLeft = new Date(st.deadline) - now
-              if (timeLeft < twoDays) {
+              const dlDate = new Date(st.deadline)
+              const dlDay = new Date(dlDate.getFullYear(), dlDate.getMonth(), dlDate.getDate())
+              if (dlDay < twoDaysLater) {
                 overdueTasks.push(st)
               }
             }
@@ -520,23 +528,30 @@ export default function ProjectListPage() {
             </div>
             <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
               {overduePopup.map(task => {
-                const isOverdueNow = new Date(task.deadline) < new Date()
-                const daysLeft = Math.ceil((new Date(task.deadline) - new Date()) / 86400000)
+                const dl = new Date(task.deadline)
+                const now = new Date()
+                const dlDay = new Date(dl.getFullYear(), dl.getMonth(), dl.getDate())
+                const todayDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+                const daysLeft = Math.round((dlDay - todayDay) / 86400000)
+                const isOverdueNow = daysLeft < 0
+                const isDueToday = daysLeft === 0
                 const isSubtask = task.parent_id || task.is_subtask
                 const parentTask = isSubtask ? allMyTasks.find(t => t.id === task.parent_id) : null
                 return (
                   <div key={task.id} className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${
-                    isOverdueNow ? 'bg-rosa-50 border-rosa-100' : 'bg-amber-50 border-amber-100'
+                    isOverdueNow || isDueToday ? 'bg-rosa-50 border-rosa-100' : 'bg-amber-50 border-amber-100'
                   }`}>
-                    <span className="text-red-400 text-sm">{isOverdueNow ? '🔴' : '🟡'}</span>
+                    <span className="text-red-400 text-sm">{isOverdueNow || isDueToday ? '🔴' : '🟡'}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-choco-600 truncate">
                         {isSubtask && parentTask ? `${parentTask.title} › ` : ''}{task.title}
                       </p>
-                      <p className={`text-[10px] ${isOverdueNow ? 'text-rosa-400' : 'text-amber-500'}`}>
-                        截止: {new Date(task.deadline).toLocaleDateString('zh-CN')}
+                      <p className={`text-[10px] ${isOverdueNow || isDueToday ? 'text-rosa-400' : 'text-amber-500'}`}>
+                        截止: {dl.toLocaleDateString('zh-CN')}
                         {isOverdueNow
                           ? ` · 已逾期 ${Math.abs(daysLeft)} 天`
+                          : isDueToday
+                          ? ' · 今天截止'
                           : ` · ${daysLeft} 天后截止`}
                       </p>
                     </div>
