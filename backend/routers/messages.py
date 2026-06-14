@@ -493,6 +493,13 @@ async def upload_knowledge_file(
     db.commit()
     db.refresh(file_msg)
 
+    # 文件上传后重建AI知识库
+    try:
+        from services.ai_service import AIService
+        AIService().build_group_knowledge(group_id, db)
+    except Exception as e:
+        print(f"[Knowledge Upload] Rebuild error: {e}")
+
     return {
         "file_id": kf.id,
         "message_id": file_msg.id,

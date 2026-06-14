@@ -6,7 +6,8 @@
       "runtimeExecutable": "npx.cmd",
       "runtimeArgs": ["vite", "--port", "5173"],
       "port": 5173,
-      "cwd": "frontend"
+      "cwd": "frontend",
+      "autoPort": false
     }
   ]
 }

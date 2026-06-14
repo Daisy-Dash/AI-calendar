@@ -53,6 +53,15 @@ export default function GroupChatPage() {
   const [submittingProposal, setSubmittingProposal] = useState(false)
   const [proofUploadingTaskId, setProofUploadingTaskId] = useState(null)
   const [showCakeGathering, setShowCakeGathering] = useState(false)
+  const [aiKnowledge, setAIKnowledge] = useState('')
+
+  const loadAIKnowledge = async () => {
+    try {
+      const res = await groupAPI.getAIKnowledge(parseInt(groupId))
+      if (res.data?.knowledge) setAIKnowledge(res.data.knowledge)
+    } catch {}
+  }
+
   const fileInputRef = useRef(null)
   const chatFileRef = useRef(null)
   const proofFileRef = useRef(null)
@@ -66,6 +75,7 @@ export default function GroupChatPage() {
     loadKnowledgeFiles()
     loadMyTasks()
     loadSearchResults()
+    loadAIKnowledge()
   }, [groupId])
 
   useEffect(() => {
@@ -143,6 +153,35 @@ export default function GroupChatPage() {
     try { await groupAPI.saveSearchResults(parseInt(groupId), results) } catch {}
   }
 
+  const buildSearchContext = () => {
+    // 优先使用后端AI知识库（已归纳整理过的结构化分析）
+    if (aiKnowledge) {
+      return `项目名称：${group?.name || ''}\n\n${aiKnowledge}`
+    }
+
+    // 降级：手动拼接原始上下文
+    const parts = []
+    const brief = group?.project_brief || group?.description || ''
+    parts.push(`项目名称：${group?.name || ''}`)
+    if (brief) parts.push(`项目概述：${brief}`)
+
+    const fileSummaries = knowledgeFiles
+      .filter(f => f.summary && f.summary.trim())
+      .map(f => `[${f.file_name}] ${f.summary}`)
+    if (fileSummaries.length > 0) {
+      parts.push(`上传的参考文件摘要：\n${fileSummaries.join('\n')}`)
+    }
+
+    const proposals = messages
+      .filter(m => m.msg_type === 'proposal')
+      .map(m => m.content)
+    if (proposals.length > 0) {
+      parts.push(`小组讨论方案：\n${proposals.join('\n')}`)
+    }
+
+    return parts.join('\n\n')
+  }
+
   const handleChatFileUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -151,6 +190,7 @@ export default function GroupChatPage() {
       const res = await messageAPI.uploadKnowledgeFile(parseInt(groupId), file)
       await loadMessages()
       await loadKnowledgeFiles()
+      loadAIKnowledge()
     } catch (err) {
       alert('上传失败: ' + (err.response?.data?.detail || err.message))
     }
@@ -293,15 +333,17 @@ export default function GroupChatPage() {
       })
       await loadMessages()
       await loadGroup()  // 状态会变成 discussing
+      loadAIKnowledge()
       setShowBriefInput(false)
       setUploadedFiles([])
 
       // 启动后立即联网搜索参考案例（AI 解释和案例平行进行，提供给小组讨论参考）
       setSearching(true)
       try {
+        const ctx = `项目名称：${group?.name || ''}\n项目概述：${brief}`
         const searchRes = await aiAPI.searchChat({
-          message: `请围绕项目「${(group?.name || '')}」帮我搜索一些可参考的案例、竞品和最佳实践。项目描述：${brief.slice(0, 200)}`,
-          context: `项目名称：${group?.name}，项目描述：${brief.slice(0, 300)}`,
+          message: `请围绕项目「${(group?.name || '')}」帮我搜索一些可参考的案例、竞品和最佳实践。`,
+          context: ctx,
         })
         if (searchRes.data?.search_results?.length > 0) {
           setSearchResults(searchRes.data.search_results)
@@ -336,6 +378,7 @@ export default function GroupChatPage() {
       await loadGroup()
       loadGroupStats()
       loadMyTasks()
+      loadAIKnowledge()
       setProposalText('')
       setShowProposalInput(false)
     } catch (e) {
@@ -909,10 +952,10 @@ export default function GroupChatPage() {
             onClick={async () => {
               setSearching(true)
               try {
-                const brief = group.project_brief || group.description || group.name
+                const ctx = buildSearchContext()
                 const searchRes = await aiAPI.searchChat({
-                  message: `请围绕项目「${group.name}」帮我搜索一些可参考的案例、竞品和最佳实践。项目描述：${brief.slice(0, 200)}`,
-                  context: `项目名称：${group.name}，项目描述：${brief.slice(0, 300)}`,
+                  message: `请围绕项目「${group.name}」帮我搜索一些可参考的案例、竞品和最佳实践。`,
+                  context: ctx,
                 })
                 if (searchRes.data?.search_results?.length > 0) {
                   setSearchResults(searchRes.data.search_results)
@@ -949,10 +992,10 @@ export default function GroupChatPage() {
                 onClick={async () => {
                   setSearching(true)
                   try {
-                    const brief = group.project_brief || group.description || group.name
+                    const ctx = buildSearchContext()
                     const searchRes = await aiAPI.searchChat({
-                      message: `请围绕项目「${group.name}」帮我搜索一些可参考的案例、竞品和最佳实践。项目描述：${brief.slice(0, 200)}`,
-                      context: `项目名称：${group.name}，项目描述：${brief.slice(0, 300)}`,
+                      message: `请围绕项目「${group.name}」帮我搜索一些可参考的案例、竞品和最佳实践。`,
+                      context: ctx,
                     })
                     if (searchRes.data?.search_results?.length > 0) {
                       setSearchResults(searchRes.data.search_results)

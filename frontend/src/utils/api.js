@@ -60,6 +60,8 @@ export const groupAPI = {
   askAIAboutFile: (groupId, fileId, data) => api.post(`/groups/${groupId}/knowledge/${fileId}/ask-ai`, data || {}, { timeout: 60000 }),
   getSearchResults: (groupId) => api.get(`/groups/${groupId}/search-results`),
   saveSearchResults: (groupId, results) => api.put(`/groups/${groupId}/search-results`, { results }),
+  getAIKnowledge: (groupId) => api.get(`/groups/${groupId}/ai-knowledge`),
+  rebuildKnowledge: (groupId) => api.post(`/groups/${groupId}/rebuild-knowledge`, {}, { timeout: 60000 }),
 }
 
 export const taskAPI = {

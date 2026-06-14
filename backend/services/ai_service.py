@@ -246,6 +246,99 @@ class AIService:
             "tool_calls": tool_call_log,
         }
 
+    def build_group_knowledge(self, group_id: int, db) -> str:
+        """为群组构建AI知识库 — 归纳项目定位、方案和用户期待"""
+        from models import Group
+        from models.message import GroupMessage, KnowledgeFile
+
+        group = db.query(Group).filter(Group.id == group_id).first()
+        if not group:
+            return ""
+
+        # 收集所有上下文素材
+        parts = []
+
+        # 1. 项目概述
+        brief = group.project_brief or group.description or group.name
+        parts.append(f"【项目名称】{group.name}")
+        parts.append(f"【项目概述】{brief}")
+
+        # 2. 知识库文件摘要
+        files = db.query(KnowledgeFile).filter(
+            KnowledgeFile.group_id == group_id,
+        ).order_by(KnowledgeFile.created_at).all()
+        if files:
+            file_texts = []
+            for f in files:
+                if f.summary and f.summary.strip():
+                    file_texts.append(f"- {f.file_name}：{f.summary[:300]}")
+            if file_texts:
+                parts.append(f"【上传文件内容摘要】\n" + "\n".join(file_texts))
+
+        # 3. 讨论方案
+        proposals = db.query(GroupMessage).filter(
+            GroupMessage.group_id == group_id,
+            GroupMessage.msg_type == "proposal",
+        ).order_by(GroupMessage.created_at).all()
+        if proposals:
+            prop_texts = [f"- {p.content[:400]}" for p in proposals]
+            parts.append(f"【小组讨论方案】\n" + "\n".join(prop_texts))
+
+        # 4. 关键对话（AI理解、用户重要消息）
+        key_msgs = db.query(GroupMessage).filter(
+            GroupMessage.group_id == group_id,
+            GroupMessage.msg_type.in_(["ai", "text"]),
+        ).order_by(GroupMessage.created_at.desc()).limit(20).all()
+        if key_msgs:
+            chat_texts = []
+            for m in reversed(key_msgs):
+                role = "AI" if m.sender_id is None else "成员"
+                chat_texts.append(f"{role}: {m.content[:200]}")
+            parts.append(f"【近期讨论记录】\n" + "\n".join(chat_texts))
+
+        raw_context = "\n\n".join(parts)
+
+        # 调用AI归纳
+        prompt = f"""请根据以下项目的所有信息，生成一份结构化的项目知识库摘要。
+
+{raw_context}
+
+请严格按以下格式输出（不要加其他内容）：
+
+## 项目定位
+用2-3句话概括项目是什么、解决什么问题、面向什么用户群体。
+
+## 核心方案
+列出项目的核心功能/模块/方向（3-5点），如有讨论方案则以讨论方案为准。
+
+## 技术/设计要点
+从文件和讨论中提取的关键技术栈、设计风格、参考方向等。
+
+## 用户期待
+团队想要达成的具体目标和交付物，以及隐含的质量要求。
+
+## 搜索关键词建议
+基于以上分析，推荐5-8个最适合搜索参考案例的中文关键词组合，每行一个。"""
+
+        knowledge = ""
+        if self._has_real_api:
+            try:
+                knowledge = self.chat(
+                    message=prompt,
+                    context="你是项目分析师，请客观归纳项目信息，不要添加无关内容。"
+                )
+            except Exception as e:
+                print(f"[Knowledge] AI build failed: {e}")
+
+        if not knowledge:
+            knowledge = f"## 项目定位\n{brief[:300]}\n\n## 搜索关键词建议\n{group.name}"
+
+        # 保存到数据库
+        group.ai_knowledge = knowledge
+        db.commit()
+        print(f"[Knowledge] Built for group {group_id}, {len(knowledge)} chars")
+        return knowledge
+
     def split_task(
         self, task_title: str, task_description: str = "", total_days: Optional[int] = None
     ) -> list[dict]:
@@ -473,16 +566,20 @@ class AIService:
 5. 👥 团队协作 — 帮助团队理解项目需求，合理分工
 
 使用搜索工具的策略（非常重要）：
-- 搜索关键词必须紧扣用户项目的具体主题，不要搜泛泛的通用词
+- 你会收到项目的完整上下文，包括项目概述、上传文件的摘要、小组讨论方案等
+- 搜索关键词必须从上下文中提取具体的核心词汇，绝不能只用项目名称泛搜
 - 优先使用 multi_search 一次搜索 3-4 个不同角度的关键词，覆盖更全面
+- 关键词提取流程：
+  1. 从项目概述中提取：项目类型（APP/网站/系统）、目标用户、核心功能
+  2. 从文件摘要中提取：具体技术方案、设计风格、参考方向
+  3. 从讨论方案中提取：团队确定的方向、功能重点、设计偏好
 - 关键词策略：
-  · 第1个词：项目主题 + "案例" 或 "优秀作品"（如 "校园日程管理APP设计案例"）
-  · 第2个词：项目主题 + "竞品分析"（如 "大学生任务协作工具竞品分析"）
-  · 第3个词：项目核心功能/领域 + "设计方案"（如 "AI任务分配系统设计方案"）
-  · 第4个词：相关同类产品名（如 "Notion Trello 飞书 功能对比"）
+  · 第1个词：项目具体主题 + "案例" 或 "优秀作品"（如 "校园日程管理APP设计案例"）
+  · 第2个词：项目核心功能 + "竞品分析"（如 "大学生任务协作工具竞品分析"）
+  · 第3个词：从文件/方案中提取的具体方向 + "设计方案"（如 "AI任务分配系统设计方案"）
+  · 第4个词：相关同类产品名对比（如 "Notion Trello 飞书 功能对比"）
 - 关键词要用中文，包含具体领域词汇，避免只搜通用词如"APP推荐"
-- 如果用户提供了项目描述，从描述中提取核心关键词组合搜索
-- 搜索完成后，整理结果给出结构化的分析报告
+- 搜索完成后，整理结果给出结构化的分析报告，重点突出与本项目相关的借鉴点
 
 回复风格：
 - 温暖友好，使用适当的 emoji

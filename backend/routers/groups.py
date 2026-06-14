@@ -394,6 +394,13 @@ def start_workflow(
     group.status = "discussing"
     db.commit()
 
+    # 3. 异步构建AI知识库（首次，基于项目概述）
+    try:
+        from services.ai_service import AIService
+        AIService().build_group_knowledge(group_id, db)
+    except Exception as e:
+        print(f"[Start Workflow] Knowledge build error: {e}")
+
     return {
         "message": "AI已完成任务理解，等待小组提交讨论方案",
         "status": "discussing",
@@ -551,6 +558,43 @@ def get_pending_tasks(
             "deadline": t.deadline.strftime("%Y-%m-%d") if t.deadline else None,
         })
     return result
+
+
+@router.get("/{group_id}/ai-knowledge")
+def get_ai_knowledge(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """获取群组AI知识库"""
+    member = db.query(GroupMember).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.user_id == current_user.id,
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="您不是该群组成员")
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="群组不存在")
+    return {"knowledge": group.ai_knowledge or ""}
+
+
+@router.post("/{group_id}/rebuild-knowledge")
+def rebuild_knowledge(
+    group_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """手动触发重建AI知识库"""
+    member = db.query(GroupMember).filter(
+        GroupMember.group_id == group_id,
+        GroupMember.user_id == current_user.id,
+    ).first()
+    if not member:
+        raise HTTPException(status_code=403, detail="您不是该群组成员")
+    from services.ai_service import AIService
+    knowledge = AIService().build_group_knowledge(group_id, db)
+    return {"knowledge": knowledge}
 
 
 @router.get("/{group_id}/search-results")
@@ -736,6 +780,13 @@ def submit_proposal(
 
     group.status = "confirming"
     db.commit()
+
+    # 方案提交后重建AI知识库
+    try:
+        from services.ai_service import AIService
+        AIService().build_group_knowledge(group_id, db)
+    except Exception as e:
+        print(f"[Proposal] Knowledge rebuild error: {e}")
 
     return {
         "message": "已根据方案重新拆解任务",
