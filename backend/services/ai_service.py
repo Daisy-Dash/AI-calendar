@@ -334,7 +334,9 @@ class AIService:
             knowledge = f"## 项目定位\n{brief[:300]}\n\n## 搜索关键词建议\n{group.name}"
 
         # 保存到数据库
+        from datetime import datetime
         group.ai_knowledge = knowledge
+        group.knowledge_updated_at = datetime.now()
         db.commit()
         print(f"[Knowledge] Built for group {group_id}, {len(knowledge)} chars")
         return knowledge

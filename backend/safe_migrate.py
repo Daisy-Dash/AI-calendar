@@ -21,6 +21,7 @@ MIGRATIONS = [
     ("groups", "project_brief", "VARCHAR(2000)", "''"),
     ("groups", "search_results", "JSON", "'[]'"),
     ("groups", "ai_knowledge", "TEXT", "''"),
+    ("groups", "knowledge_updated_at", "DATETIME", "NULL"),
 
     # Task 表新增字段
     ("tasks", "start_time", "DATETIME", "NULL"),

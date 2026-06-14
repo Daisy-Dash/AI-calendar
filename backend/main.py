@@ -47,6 +47,11 @@ async def lifespan(app: FastAPI):
     from services.ddl_reminder import init_scheduler, check_ddl_and_notify
     init_scheduler()
     check_ddl_and_notify()
+
+    # 启动AI知识库自动更新调度器
+    from services.knowledge_scheduler import init_knowledge_scheduler
+    init_knowledge_scheduler()
+
     yield
 
 

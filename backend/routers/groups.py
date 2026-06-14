@@ -394,13 +394,6 @@ def start_workflow(
     group.status = "discussing"
     db.commit()
 
-    # 3. 异步构建AI知识库（首次，基于项目概述）
-    try:
-        from services.ai_service import AIService
-        AIService().build_group_knowledge(group_id, db)
-    except Exception as e:
-        print(f"[Start Workflow] Knowledge build error: {e}")
-
     return {
         "message": "AI已完成任务理解，等待小组提交讨论方案",
         "status": "discussing",
@@ -780,13 +773,6 @@ def submit_proposal(
 
     group.status = "confirming"
     db.commit()
-
-    # 方案提交后重建AI知识库
-    try:
-        from services.ai_service import AIService
-        AIService().build_group_knowledge(group_id, db)
-    except Exception as e:
-        print(f"[Proposal] Knowledge rebuild error: {e}")
 
     return {
         "message": "已根据方案重新拆解任务",

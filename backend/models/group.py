@@ -32,6 +32,7 @@ class Group(Base):
     project_brief = Column(String(2000), default="")  # 项目简介/需求描述
     search_results = Column(JSON, default=list)  # AI搜索的参考案例，所有成员共享
     ai_knowledge = Column(Text, default="")  # AI归纳的项目知识库（任务定位/方案/期待）
+    knowledge_updated_at = Column(DateTime(timezone=True), nullable=True)  # 知识库上次更新时间
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

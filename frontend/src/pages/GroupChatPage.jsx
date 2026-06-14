@@ -333,7 +333,6 @@ export default function GroupChatPage() {
       })
       await loadMessages()
       await loadGroup()  // 状态会变成 discussing
-      loadAIKnowledge()
       setShowBriefInput(false)
       setUploadedFiles([])
 
@@ -378,7 +377,6 @@ export default function GroupChatPage() {
       await loadGroup()
       loadGroupStats()
       loadMyTasks()
-      loadAIKnowledge()
       setProposalText('')
       setShowProposalInput(false)
     } catch (e) {
