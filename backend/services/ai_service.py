@@ -200,12 +200,18 @@ class AIService:
                     result_str = execute_tool_call(func_name, func_args)
                     try:
                         parsed = json.loads(result_str)
+                        seen_urls = {r.get("url") for r in all_search_results}
+                        new_items = []
                         if isinstance(parsed, list):
-                            all_search_results.extend(parsed)
+                            new_items = parsed
                         elif isinstance(parsed, dict):
                             for v in parsed.values():
                                 if isinstance(v, list):
-                                    all_search_results.extend(v)
+                                    new_items.extend(v)
+                        for item in new_items:
+                            if item.get("url") not in seen_urls:
+                                all_search_results.append(item)
+                                seen_urls.add(item.get("url"))
                     except Exception:
                         pass
 
@@ -558,36 +564,37 @@ class AIService:
 - 了解用户的上下文后提供个性化建议"""
 
     def _get_search_system_prompt(self) -> str:
-        return """你是 AI 统筹组长，一个面向大学生团队的智能协作助手，具备联网搜索能力。
+        return """你是 AI 统筹组长，帮大学生团队搜索**已上线的真实产品、优秀设计案例和竞品**作为参考。
 
-你的核心能力：
-1. 🔍 联网搜索 — 通过 web_search 工具搜索互联网获取实时信息
-2. 📋 竞品分析 — 搜索并分析同类产品，总结优劣势和可借鉴点
-3. 📊 市场调研 — 了解行业趋势、用户需求、技术方案
-4. 💡 项目建议 — 基于搜索结果给出具体的项目方向和设计建议
-5. 👥 团队协作 — 帮助团队理解项目需求，合理分工
+⚠️ 最重要的原则 — 你搜的必须是"案例"，即**真实存在的产品/作品/项目**：
+- ✅ 正确："日程管理 APP 推荐"  → 找到 Forest、Timo、Todoist 等真实产品
+- ✅ 正确："手绘风 UI设计 Dribbble"  → 找到设计作品
+- ❌ 错误："手绘风 是什么"  → 这是词义解释，不是案例
+- ❌ 错误："手绘教程"  → 这是教学内容，不是案例
 
-使用搜索工具的策略（非常重要）：
-- 你会收到项目的完整上下文，包括项目概述、上传文件的摘要、小组讨论方案等
-- 搜索关键词必须从上下文中提取具体的核心词汇，绝不能只用项目名称泛搜
-- 优先使用 multi_search 一次搜索 3-4 个不同角度的关键词，覆盖更全面
-- 关键词提取流程：
-  1. 从项目概述中提取：项目类型（APP/网站/系统）、目标用户、核心功能
-  2. 从文件摘要中提取：具体技术方案、设计风格、参考方向
-  3. 从讨论方案中提取：团队确定的方向、功能重点、设计偏好
-- 关键词策略：
-  · 第1个词：项目具体主题 + "案例" 或 "优秀作品"（如 "校园日程管理APP设计案例"）
-  · 第2个词：项目核心功能 + "竞品分析"（如 "大学生任务协作工具竞品分析"）
-  · 第3个词：从文件/方案中提取的具体方向 + "设计方案"（如 "AI任务分配系统设计方案"）
-  · 第4个词：相关同类产品名对比（如 "Notion Trello 飞书 功能对比"）
-- 关键词要用中文，包含具体领域词汇，避免只搜通用词如"APP推荐"
-- 搜索完成后，整理结果给出结构化的分析报告，重点突出与本项目相关的借鉴点
+⚠️ 搜索词必须简洁（3-5个核心词）！绝对不要把所有项目特征塞进一个搜索词！
+错误示范："手绘风格 AI 日程协作 APP 推荐 案例" — 词太多太杂，搜索引擎会混乱
+正确做法：拆成多个短搜索词，每个词只关注一个角度
 
-回复风格：
-- 温暖友好，使用适当的 emoji
-- 引用搜索结果时标注来源（产品名/网站）
-- 给出结构化分析（表格对比、优劣势列表）
-- 最后给出明确的建议和下一步行动"""
+必须使用 multi_search，按以下 4 个角度各出一个**简短**搜索词：
+  · 角度1（同类产品）: "[项目核心类型] APP 推荐"
+    例: "日程管理 APP 推荐" 或 "协作工具 APP 推荐"
+    注意: 不要加风格词！这里只找产品类型。
+  · 角度2（竞品分析）: "[项目类型] 竞品 对比 测评"
+    例: "日程管理软件 竞品分析 对比"
+  · 角度3（设计参考）: "[风格词] UI设计 Dribbble"
+    例: "手绘风 APP UI设计 Dribbble" 或 "卡通风格 界面设计 作品"
+    注意: 这里只搜设计风格，不要加产品类型！
+  · 角度4（具体产品）: "[已知竞品名] 功能 测评"
+    例: "Forest APP 功能测评" 或 "Todoist 使用体验"
+    如果不知道竞品名，搜 "[项目类型] 最佳 排行榜"
+
+⚠️ 角度1和角度3绝不能合并！"产品类型"和"视觉风格"是两个独立的搜索维度。
+
+回复要求：
+- 只推荐真实产品/作品，忽略教程、词义解释、百科、广告
+- 每个案例说明：产品名、核心功能、与本项目的借鉴点
+- 最后总结可借鉴的方向"""
 
     def _build_split_prompt(self, title: str, description: str, total_days: Optional[int]) -> str:
         days_hint = f"，总时长约{total_days}天" if total_days else ""

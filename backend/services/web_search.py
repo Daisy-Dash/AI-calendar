@@ -83,21 +83,104 @@ def _search_ddg(query: str, max_results: int = 5, region: str = "cn-zh") -> list
         return results
 
 
+_JUNK_PATTERNS = re.compile(
+    r"教程|入门指南|怎么画|如何画|手把手|零基础|学习笔记|是什么意思|"
+    r"百度百科|维基百科|_百科|百科词条|词条|百度知道|百度经验|知乎日报|"
+    r"作文|造句|近义词|反义词|翻译|高清图片|图片下载|壁纸|"
+    r"素材下载|免费素材|在线画|一文读懂|什么是.{0,4}？|"
+    r"PPT模板|简历模板|Word模板|合同范本|"
+    r"How to get help|Microsoft Support|support\.microsoft\.com|"
+    r"基础教程|从零开始|新手入门|学习路线",
+    re.IGNORECASE,
+)
+
+_GOOD_DOMAINS = re.compile(
+    r"dribbble\.com|behance\.net|zcool\.com\.cn|uisdc\.com|"
+    r"36kr\.com|sspai\.com|ifanr\.com|producthunt\.com|"
+    r"figma\.com|medium\.com|juejin\.cn|woshipm\.com|"
+    r"zhihu\.com|mp\.weixin\.qq\.com|github\.com",
+    re.IGNORECASE,
+)
+
+_GOOD_TITLE_SIGNALS = re.compile(
+    r"App|APP|产品|竞品|测评|推荐|盘点|案例|体验|功能|设计作品|"
+    r"UI|UX|界面设计|对比|分析|评测|上线|工具|软件|应用|"
+    r"Dribbble|Behance|站酷|最佳|top|排行",
+    re.IGNORECASE,
+)
+
+_CASE_KEYWORDS = ["案例", "竞品", "推荐", "对比", "测评", "盘点", "优秀作品", "产品分析"]
+
+
+def _enhance_query(query: str) -> str:
+    """如果搜索词缺少明确的案例/竞品导向词，补一个最小后缀"""
+    if any(k in query for k in _CASE_KEYWORDS):
+        return query
+    return query + " 推荐"
+
+
+def _score_result(r: dict, query: str = "") -> int:
+    """给搜索结果打分：越高越可能是有价值的案例"""
+    score = 0
+    title = r.get("title", "")
+    snippet = r.get("snippet", "")
+    url = r.get("url", "")
+    text = title + " " + snippet
+
+    if _JUNK_PATTERNS.search(text):
+        return -100
+
+    if _GOOD_DOMAINS.search(url):
+        score += 30
+    if _GOOD_TITLE_SIGNALS.search(title):
+        score += 20
+    if _GOOD_TITLE_SIGNALS.search(snippet):
+        score += 5
+
+    # 含有具体产品名称特征（大写字母开头、英文品牌名）
+    if re.search(r'[A-Z][a-z]+|[a-z]+\.[a-z]+', title):
+        score += 5
+
+    # 关键词命中检查：query 中的核心词至少有一个出现在结果中
+    if query:
+        # 提取 query 中 2 字以上的中文词
+        q_words = re.findall(r'[一-鿿]{2,}', query)
+        hits = sum(1 for w in q_words if w in text)
+        if q_words and hits == 0:
+            score -= 50  # 完全不相关
+        else:
+            score += hits * 5
+
+    return score
+
+
+def _filter_results(results: list[dict], query: str = "") -> list[dict]:
+    """过滤垃圾结果并按相关性排序"""
+    scored = [(r, _score_result(r, query)) for r in results]
+    scored = [(r, s) for r, s in scored if s > -20]
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return [r for r, s in scored]
+
+
 def search_web(query: str, max_results: int = 5, region: str = "cn-zh") -> list[dict]:
     """执行网络搜索，优先 Bing，失败则 DuckDuckGo"""
+    query = _enhance_query(query)
+
     # Bing 优先（国内稳定）
     try:
-        results = _search_bing(query, max_results)
+        results = _search_bing(query, max_results + 5)
         if results:
-            print(f"[WebSearch] Bing 返回 {len(results)} 条结果")
+            results = _filter_results(results, query)[:max_results]
+            print(f"[WebSearch] Bing 返回 {len(results)} 条结果 (query={query})")
             return results
     except Exception as e:
         print(f"[WebSearch] Bing 搜索失败: {e}")
 
     # DuckDuckGo 备用
     try:
-        results = _search_ddg(query, max_results, region)
+        results = _search_ddg(query, max_results + 5, region)
         if results:
+            results = _filter_results(results, query)[:max_results]
             print(f"[WebSearch] DuckDuckGo 返回 {len(results)} 条结果")
             return results
     except Exception as e:
@@ -229,9 +312,16 @@ def execute_tool_call(tool_name: str, arguments: dict) -> str:
     elif tool_name == "multi_search":
         queries = arguments.get("queries", [])
         all_results = {}
-        for q in queries[:4]:  # 最多4个搜索
-            results = search_web(q, max_results=3)
-            all_results[q] = results
+        seen_urls = set()
+        for q in queries[:4]:
+            results = search_web(q, max_results=5)
+            deduped = []
+            for r in results:
+                url = r.get("url", "")
+                if url not in seen_urls:
+                    seen_urls.add(url)
+                    deduped.append(r)
+            all_results[q] = deduped[:3]
 
         return json.dumps(all_results, ensure_ascii=False)
 
