@@ -24,10 +24,49 @@ def _decode_bing_url(href: str) -> str:
     return unquote(href)
 
 
-def _search_bing(query: str, max_results: int = 5) -> list[dict]:
-    """通过 Bing 搜索（国内可直接访问）"""
+def _search_ddg_html(query: str, max_results: int = 5) -> list[dict]:
+    """DuckDuckGo HTML 搜索（中文搜索效果最好）"""
     headers = {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+        "Accept-Language": "zh-CN,zh;q=0.9",
+    }
+    with httpx.Client(follow_redirects=True, timeout=15, headers=headers) as c:
+        r = c.get(
+            "https://html.duckduckgo.com/html/",
+            params={"q": query, "kl": "cn-zh"},
+        )
+        text = r.text
+
+    results = []
+    blocks = re.findall(
+        r'<div class="result\s[^"]*results_links[^"]*"[^>]*>(.*?)</div>\s*</div>\s*</div>',
+        text, re.DOTALL,
+    )
+
+    for b in blocks[:max_results]:
+        a_m = re.search(r'<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>(.*?)</a>', b, re.DOTALL)
+        snippet_m = re.search(r'class="result__snippet"[^>]*>(.*?)</(?:a|div)>', b, re.DOTALL)
+        if not a_m:
+            continue
+
+        raw_url = a_m.group(1)
+        if "duckduckgo.com/y.js" in raw_url:
+            u_m = re.search(r'uddg=([^&]+)', raw_url)
+            raw_url = unquote(u_m.group(1)) if u_m else raw_url
+
+        title_val = html_lib.unescape(re.sub(r'<[^>]+>', '', a_m.group(2)).strip())
+        snippet_val = html_lib.unescape(re.sub(r'<[^>]+>', '', snippet_m.group(1)).strip()) if snippet_m else ""
+
+        if raw_url and title_val:
+            results.append({"title": title_val, "url": raw_url, "snippet": snippet_val})
+
+    return results
+
+
+def _search_bing(query: str, max_results: int = 5) -> list[dict]:
+    """Bing 搜索（备用）"""
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
         "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
     }
     with httpx.Client(follow_redirects=True, timeout=15, headers=headers) as c:
@@ -41,7 +80,6 @@ def _search_bing(query: str, max_results: int = 5) -> list[dict]:
     blocks = re.findall(r'<li class="b_algo"[^>]*>(.*?)</li>', text, re.DOTALL)
 
     for b in blocks[:max_results]:
-        # Title from <h2> (skip the site-label <a> that Bing prepends)
         h2_m = re.search(r'<h2[^>]*>.*?<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', b, re.DOTALL)
         if not h2_m:
             continue
@@ -56,31 +94,9 @@ def _search_bing(query: str, max_results: int = 5) -> list[dict]:
         snippet_val = html_lib.unescape(snippet_val)
 
         if url_val and title_val:
-            results.append({
-                "title": title_val,
-                "url": url_val,
-                "snippet": snippet_val,
-            })
+            results.append({"title": title_val, "url": url_val, "snippet": snippet_val})
 
     return results
-
-
-def _search_ddg(query: str, max_results: int = 5, region: str = "cn-zh") -> list[dict]:
-    """DuckDuckGo 搜索（备用，国内可能不可用）"""
-    try:
-        from ddgs import DDGS
-    except ImportError:
-        from duckduckgo_search import DDGS
-
-    with DDGS(proxy=None) as ddgs:
-        results = []
-        for r in ddgs.text(query, region=region, max_results=max_results):
-            results.append({
-                "title": r.get("title", ""),
-                "url": r.get("href", r.get("link", "")),
-                "snippet": r.get("body", r.get("snippet", "")),
-            })
-        return results
 
 
 _JUNK_PATTERNS = re.compile(
@@ -90,7 +106,9 @@ _JUNK_PATTERNS = re.compile(
     r"素材下载|免费素材|在线画|一文读懂|什么是.{0,4}？|"
     r"PPT模板|简历模板|Word模板|合同范本|"
     r"How to get help|Microsoft Support|support\.microsoft\.com|"
-    r"基础教程|从零开始|新手入门|学习路线",
+    r"基础教程|从零开始|新手入门|学习路线|"
+    r"教育新闻|教育政策|教育资讯|招生|高考|中考|考研真题|"
+    r"论文范文|开题报告模板|毕业设计模板|课程设计报告",
     re.IGNORECASE,
 )
 
@@ -163,10 +181,20 @@ def _filter_results(results: list[dict], query: str = "") -> list[dict]:
 
 
 def search_web(query: str, max_results: int = 5, region: str = "cn-zh") -> list[dict]:
-    """执行网络搜索，优先 Bing，失败则 DuckDuckGo"""
+    """执行网络搜索，优先 DuckDuckGo（中文效果好），Bing 备用"""
     query = _enhance_query(query)
 
-    # Bing 优先（国内稳定）
+    # DuckDuckGo HTML 优先（中文搜索效果最佳）
+    try:
+        results = _search_ddg_html(query, max_results + 5)
+        if results:
+            results = _filter_results(results, query)[:max_results]
+            print(f"[WebSearch] DuckDuckGo 返回 {len(results)} 条结果 (query={query})")
+            return results
+    except Exception as e:
+        print(f"[WebSearch] DuckDuckGo 搜索失败: {e}")
+
+    # Bing 备用
     try:
         results = _search_bing(query, max_results + 5)
         if results:
@@ -175,16 +203,6 @@ def search_web(query: str, max_results: int = 5, region: str = "cn-zh") -> list[
             return results
     except Exception as e:
         print(f"[WebSearch] Bing 搜索失败: {e}")
-
-    # DuckDuckGo 备用
-    try:
-        results = _search_ddg(query, max_results + 5, region)
-        if results:
-            results = _filter_results(results, query)[:max_results]
-            print(f"[WebSearch] DuckDuckGo 返回 {len(results)} 条结果")
-            return results
-    except Exception as e:
-        print(f"[WebSearch] DuckDuckGo 搜索失败: {e}")
 
     print(f"[WebSearch] 所有搜索引擎均无结果: {query}")
     return []

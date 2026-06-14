@@ -344,10 +344,9 @@ export default function GroupChatPage() {
           message: `请围绕项目「${(group?.name || '')}」帮我搜索一些可参考的案例、竞品和最佳实践。`,
           context: ctx,
         })
-        if (searchRes.data?.search_results?.length > 0) {
-          setSearchResults(searchRes.data.search_results)
-          saveSearchResults(searchRes.data.search_results)
-        }
+        const newResults = searchRes.data?.search_results || []
+        setSearchResults(newResults)
+        saveSearchResults(newResults)
         if (searchRes.data?.reply) {
           await loadMessages()
         }
@@ -956,10 +955,9 @@ export default function GroupChatPage() {
                   message: `请围绕项目「${group.name}」帮我搜索一些可参考的案例、竞品和最佳实践。`,
                   context: ctx,
                 })
-                if (searchRes.data?.search_results?.length > 0) {
-                  setSearchResults(searchRes.data.search_results)
-                  saveSearchResults(searchRes.data.search_results)
-                }
+                const newResults = searchRes.data?.search_results || []
+                setSearchResults(newResults)
+                saveSearchResults(newResults)
               } catch (e) {
                 alert('搜索失败，请稍后再试')
               }
@@ -996,10 +994,9 @@ export default function GroupChatPage() {
                       message: `请围绕项目「${group.name}」帮我搜索一些可参考的案例、竞品和最佳实践。`,
                       context: ctx,
                     })
-                    if (searchRes.data?.search_results?.length > 0) {
-                      setSearchResults(searchRes.data.search_results)
-                      saveSearchResults(searchRes.data.search_results)
-                    }
+                    const newResults = searchRes.data?.search_results || []
+                    setSearchResults(newResults)
+                    saveSearchResults(newResults)
                   } catch (e) {
                     alert('搜索失败，请稍后再试')
                   }
