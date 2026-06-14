@@ -1,6 +1,6 @@
 # AI 统筹组长 — 技术文档
 
-> 版本: 4.3 | 日期: 2026-06-13
+> 版本: 4.4 | 日期: 2026-06-14
 
 ---
 
@@ -20,7 +20,7 @@
 │              localhost:8000                       │
 ├─────────────────────────────────────────────────┤
 │                AI Services                       │
-│   DeepSeek Function Calling + Bing/DDG 联网搜索   │
+│   DeepSeek Function Calling + DDG/Tavily/Bing 联网搜索│
 │   DeepSeek API (主) / Claude / GPT / 本地回退     │
 ├─────────────────────────────────────────────────┤
 │              SQLite + Auto Backup                │
@@ -56,8 +56,9 @@
 | python-pptx | - | PPT 提取 |
 | pydantic | v2 | 数据验证 |
 | python-dotenv | - | 环境变量 |
-| duckduckgo_search | - | DuckDuckGo 搜索（备用） |
-| httpx + Bing | - | Bing 搜索 HTML 解析（国内主力） |
+| httpx + DDG HTML | - | DuckDuckGo HTML 搜索（主力，中文效果最佳） |
+| httpx + Tavily API | - | Tavily 搜索 API（备用，质量高，有配额限制） |
+| httpx + Bing | - | Bing 搜索 HTML 解析（末选兜底） |
 
 ### 2.2 前端
 
@@ -81,8 +82,9 @@
 | Provider | 说明 |
 |----------|------|
 | DeepSeek | 主力 — OpenAI 兼容接口，支持 Function Calling |
-| Bing | 联网搜索主引擎 — HTML 解析 + Base64 URL 解码，国内可直连 |
-| DuckDuckGo | 联网搜索备用 — 通过 ddgs 库，国内可能不可用 |
+| DuckDuckGo | 联网搜索主引擎 — HTML 直接解析，中文搜索效果最佳 |
+| Tavily | 联网搜索备用 — REST API，搜索质量高，有 API 配额限制 |
+| Bing | 联网搜索末选 — HTML 解析 + Base64 URL 解码，中文分词效果差 |
 | Claude | 可选 |
 | GPT | 可选 |
 | 本地回退 | 无 Key 时关键词匹配 + 模板 |
@@ -380,54 +382,62 @@ def upload_task_proof(task_id, file):
     GroupMessage(msg_type="ai", content=f"📈 进度更新：{old}% → {new}%")
 ```
 
-### 6.3 AI Function Calling 联网搜索（Bing + DuckDuckGo 双引擎）
+### 6.3 AI Function Calling 联网搜索（DDG + Tavily + Bing 三引擎）
 
 ```python
-# services/web_search.py — v4.3 重写为 Bing 优先 + DDG 备用
-# Bing 国内可直接访问，DuckDuckGo 国内常被墙
+# services/web_search.py — v4.4 三引擎：DDG 优先 → Tavily 备用 → Bing 末选
+# DDG 中文搜索效果最佳，Tavily API 质量高但有配额，Bing 中文分词差仅兜底
 
-def _decode_bing_url(href: str) -> str:
-    """从 Bing 跳转链接 u=a1{base64} 中解码出真实 URL"""
-    m = re.search(r'u=a1([^&"]+)', href)
-    if m:
-        encoded = m.group(1)
-        return base64.b64decode(encoded + "=" * (4 - len(encoded) % 4)).decode()
-    return unquote(href)
+def _search_ddg_html(query, max_results=5):
+    """DuckDuckGo HTML 搜索（主力）— 直接解析 html.duckduckgo.com"""
+    r = httpx.get("https://html.duckduckgo.com/html/",
+                  params={"q": query, "kl": "cn-zh"})
+    # 从 div.result 提取标题+URL+摘要，解码 uddg= 跳转链接
+
+def _search_tavily(query, max_results=5):
+    """Tavily API 搜索（备用）— REST API，质量高"""
+    r = httpx.post("https://api.tavily.com/search",
+                   json={"api_key": key, "query": query, ...})
 
 def _search_bing(query, max_results=5):
-    """Bing HTML 抓取（setlang=zh-CN&cc=CN 保证中文结果）"""
-    r = httpx.get("https://www.bing.com/search",
-                  params={"q": query, "count": str(max_results),
-                          "setlang": "zh-CN", "cc": "CN"})
-    blocks = re.findall(r'<li class="b_algo"[^>]*>(.*?)</li>', r.text, re.DOTALL)
-    # 从 <h2><a href="...">title</a></h2> 提取标题+URL，<p> 提取摘要
-    # html.unescape() 清理 HTML 实体
-
-def _search_ddg(query, max_results=5, region="cn-zh"):
-    """DuckDuckGo 搜索（备用，国内可能不可用）"""
+    """Bing HTML 抓取（末选）— Base64 URL 解码"""
 
 def search_web(query, max_results=5):
-    """优先 Bing → 失败则 DuckDuckGo"""
+    """DDG → Tavily → Bing 三级降级，每级过滤后无结果才降级"""
 
-def search_news(query, max_results=5):
-    """Bing News 优先 → DuckDuckGo News 备用"""
+# 搜索结果质量保障
+_JUNK_PATTERNS = re.compile(r"教程|百科|新闻|考试|...")  # 20+ 垃圾模式
+_GOOD_DOMAINS = re.compile(r"dribbble|behance|woshipm|...")  # 优质域名加分
+_GOOD_TITLE_SIGNALS = re.compile(r"APP|推荐|竞品|...")  # 标题信号加分
+
+def _score_result(r, query):
+    """评分：垃圾模式-100，无关键词命中-50，好域名+30，好标题+20"""
+
+def _filter_results(results, query):
+    """过滤 score<-20 的垃圾，按分数降序排列"""
 
 SEARCH_TOOLS = [
-    {"type": "function", "function": {
-        "name": "web_search",
-        "parameters": {"query": str, "search_type": ["general","news"]}
-    }},
+    {"type": "function", "function": {"name": "web_search", ...}},
     {"type": "function", "function": {"name": "multi_search", ...}}
 ]
 
-# services/ai_service.py — Function Calling 循环
+# services/ai_service.py — Function Calling 循环 + 4角度搜索策略
+# AI 系统提示要求按4角度拆分搜索词：
+#   角度1: 同类产品（"[类型] APP 推荐"）
+#   角度2: 竞品分析（"[类型] 竞品 对比 测评"）
+#   角度3: 设计参考（"[风格词] UI设计 Dribbble"）
+#   角度4: 具体产品（"[已知竞品名] 功能 测评"）
+
 def chat_with_search(message, context):
     for round_idx in range(3):
         resp = call_api(messages, tools=SEARCH_TOOLS)
         if no_tool_calls: return {"reply": resp, "search_results": all_results}
         for tool_call in resp.tool_calls:
-            result = execute_tool(tool_call)  # → _search_bing() 或 _search_ddg()
-            all_results.extend(result)
+            result = execute_tool(tool_call)
+            # 跨查询 URL 去重
+            for item in result:
+                if item["url"] not in seen_urls:
+                    all_results.append(item)
 
 # 返回字段：title / url / snippet（前端 cards 用）
 ```
@@ -631,3 +641,12 @@ npm run preview
 
 ### 8.6 为什么浮窗蒙层用 bg-transparent 而不是黑底？
 莫兰迪风格强调温暖低对比。黑底+模糊在该色系下显得突兀。完全透明蒙层 + 浮窗自身 shadow-2xl 提供视觉层级，更符合整体调性。
+
+### 8.7 为什么搜索引擎改用 DDG 优先而不是 Bing？
+Bing 的服务端 HTML 抓取对中文分词效果极差——搜索"小组协作 APP 推荐"返回 YouTube 帮助页，搜索"团队任务管理"返回"团队_百度百科"。DuckDuckGo HTML 接口（`html.duckduckgo.com/html/`）对中文搜索效果远优于 Bing，且返回结构稳定易解析。Tavily API 作为备用兼顾质量与配额控制。
+
+### 8.8 为什么搜索要过滤和评分而不是直接返回？
+搜索引擎对"手绘风"这类关键词会返回"手绘教程"、"百度百科"等释义内容，不是用户需要的真实产品案例。通过垃圾模式匹配（-100分）、关键词相关性检查（-50分）、好域名加分（+30）、标题信号加分（+20）的评分体系，确保只返回真实案例，零教程零百科。
+
+### 8.9 为什么 AI 搜索要按4个角度拆分搜索词？
+把所有项目特征塞进一个搜索词（如"手绘风格 AI 日程协作 APP 推荐 案例"）会导致搜索引擎混乱。拆成4个短搜索词（同类产品/竞品分析/设计参考/具体产品），每个只关注一个维度，搜索精度大幅提升。
