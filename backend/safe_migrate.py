@@ -19,6 +19,7 @@ MIGRATIONS = [
     # Group 表新增字段
     ("groups", "status", "VARCHAR(20)", "'gathering'"),
     ("groups", "project_brief", "VARCHAR(2000)", "''"),
+    ("groups", "search_results", "JSON", "'[]'"),
 
     # Task 表新增字段
     ("tasks", "start_time", "DATETIME", "NULL"),

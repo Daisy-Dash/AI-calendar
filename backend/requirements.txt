@@ -13,3 +13,9 @@ httpx
 pydantic
 pydantic-settings
 ddgs
+
+# 文件解析
+python-docx
+PyPDF2
+python-pptx
+Pillow
