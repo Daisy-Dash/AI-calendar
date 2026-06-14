@@ -1,4 +1,4 @@
-"""网络搜索服务 - Bing + DuckDuckGo 双引擎"""
+"""网络搜索服务 - DuckDuckGo + Tavily + Bing 三引擎"""
 import base64
 import html as html_lib
 import json
@@ -99,6 +99,37 @@ def _search_bing(query: str, max_results: int = 5) -> list[dict]:
     return results
 
 
+def _search_tavily(query: str, max_results: int = 5) -> list[dict]:
+    """Tavily API 搜索（质量高，有 API 配额限制）"""
+    from config import settings
+    api_key = settings.TAVILY_API_KEY
+    if not api_key:
+        return []
+
+    with httpx.Client(timeout=30) as c:
+        r = c.post(
+            "https://api.tavily.com/search",
+            json={
+                "api_key": api_key,
+                "query": query,
+                "max_results": max_results,
+                "search_depth": "basic",
+                "include_answer": False,
+            },
+        )
+        r.raise_for_status()
+        data = r.json()
+
+    results = []
+    for item in data.get("results", []):
+        results.append({
+            "title": item.get("title", ""),
+            "url": item.get("url", ""),
+            "snippet": item.get("content", "")[:300],
+        })
+    return results
+
+
 _JUNK_PATTERNS = re.compile(
     r"教程|入门指南|怎么画|如何画|手把手|零基础|学习笔记|是什么意思|"
     r"百度百科|维基百科|_百科|百科词条|词条|百度知道|百度经验|知乎日报|"
@@ -181,26 +212,39 @@ def _filter_results(results: list[dict], query: str = "") -> list[dict]:
 
 
 def search_web(query: str, max_results: int = 5, region: str = "cn-zh") -> list[dict]:
-    """执行网络搜索，优先 DuckDuckGo（中文效果好），Bing 备用"""
+    """执行网络搜索：DDG → Tavily → Bing"""
     query = _enhance_query(query)
 
-    # DuckDuckGo HTML 优先（中文搜索效果最佳）
+    # 1. DuckDuckGo HTML 优先（中文搜索效果最佳）
     try:
         results = _search_ddg_html(query, max_results + 5)
         if results:
             results = _filter_results(results, query)[:max_results]
             print(f"[WebSearch] DuckDuckGo 返回 {len(results)} 条结果 (query={query})")
-            return results
+            if results:
+                return results
     except Exception as e:
         print(f"[WebSearch] DuckDuckGo 搜索失败: {e}")
 
-    # Bing 备用
+    # 2. Tavily API 备用（质量高）
+    try:
+        results = _search_tavily(query, max_results + 3)
+        if results:
+            results = _filter_results(results, query)[:max_results]
+            print(f"[WebSearch] Tavily 返回 {len(results)} 条结果 (query={query})")
+            if results:
+                return results
+    except Exception as e:
+        print(f"[WebSearch] Tavily 搜索失败: {e}")
+
+    # 3. Bing 最后兜底
     try:
         results = _search_bing(query, max_results + 5)
         if results:
             results = _filter_results(results, query)[:max_results]
             print(f"[WebSearch] Bing 返回 {len(results)} 条结果 (query={query})")
-            return results
+            if results:
+                return results
     except Exception as e:
         print(f"[WebSearch] Bing 搜索失败: {e}")
 

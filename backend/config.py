@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     DEEPSEEK_API_KEY: Optional[str] = None
     DEEPSEEK_API_MODEL: str = "deepseek-chat"
 
+    # Tavily 搜索 API
+    TAVILY_API_KEY: Optional[str] = "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"
+
     # CORS 配置
     CORS_ORIGINS: list[str] = [
         "http://localhost:5173",
